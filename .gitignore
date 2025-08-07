@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+s3
+
+node_modules
+dist*
+
+.yarn
+
+src/lib/__tests__/test-data

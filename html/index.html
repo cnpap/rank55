@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LOL 游戏助手 - 专业的英雄联盟战绩查询工具</title>
+    <meta
+      name="description"
+      content="LOL 游戏助手是一款专业的英雄联盟战绩查询工具，支持实时房间成员战绩分析、详细比赛数据查看等功能。"
+    />
+    <meta name="keywords" content="LOL,英雄联盟,战绩查询,游戏助手,比赛分析" />
+
+    <style>
+      /* 基础重置和字体 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica,
+          Arial, sans-serif;
+        line-height: 1.6;
+        color: #ffffff;
+        background: #0a0e1a;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* 主要容器 */
+      .main-container {
+        min-height: 100vh;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* 固定背景 */
+      .background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      .background img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* 磨砂蒙层 */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 14, 26, 0.75);
+        backdrop-filter: blur(12px) saturate(1.2);
+        -webkit-backdrop-filter: blur(12px) saturate(1.2);
+        z-index: 2;
+      }
+
+      .overlay::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(224, 93, 56, 0.08) 0%,
+          rgba(15, 52, 96, 0.12) 50%,
+          rgba(26, 26, 46, 0.15) 100%
+        );
+        mix-blend-mode: overlay;
+      }
+
+      /* 内容区域 */
+      .content {
+        position: relative;
+        z-index: 3;
+        text-align: center;
+        max-width: 1200px;
+        padding: 0 40px;
+        width: 100%;
+      }
+
+      /* 标题区域 */
+      .title-section {
+        margin-bottom: 40px;
+      }
+
+      .hero-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: rgba(224, 93, 56, 0.15);
+        border: 1px solid rgba(224, 93, 56, 0.3);
+        border-radius: 50px;
+        color: #ff6b35;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        backdrop-filter: blur(20px);
+        letter-spacing: 0.5px;
+      }
+
+      .update-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: 50px;
+        color: #22c55e;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        backdrop-filter: blur(20px);
+        letter-spacing: 0.3px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .main-title {
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, #ffffff 0%, #ff6b35 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .subtitle {
+        font-size: 22px;
+        margin-bottom: 12px;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .description {
+        font-size: 16px;
+        margin-bottom: 32px;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.6;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* 产品截图轮播 */
+      .product-showcase {
+        margin-bottom: 40px;
+      }
+
+      .carousel-container {
+        position: relative;
+        max-width: 640px;
+        margin: 0 auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        /* 移除固定的 aspect-ratio，让容器高度由内容决定 */
+      }
+
+      .carousel-slide {
+        display: none;
+        width: 100%;
+        height: auto;
+      }
+
+      .carousel-slide.active {
+        display: block;
+      }
+
+      .carousel-slide img {
+        width: auto;
+        max-width: 100%;
+        height: 400px; /* 固定高度 */
+        object-fit: contain; /* 改为 contain 以保持图片比例 */
+        display: block;
+        border-radius: 12px;
+        margin: 0 auto; /* 居中显示 */
+      }
+
+      /* 轮播指示器 */
+      .carousel-indicators {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+      }
+
+      .indicator:hover {
+        background: rgba(255, 107, 53, 0.6);
+        transform: scale(1.1);
+      }
+
+      .indicator.active {
+        background: #ff6b35;
+        border-color: rgba(255, 107, 53, 0.3);
+        transform: scale(1.3);
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+      }
+
+      /* 下载按钮 */
+      .download-section {
+        text-align: center;
+      }
+
+      .download-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 40px;
+        background: linear-gradient(135deg, #e05d38 0%, #d54d2a 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 16px;
+        font-size: 18px;
+        font-weight: 600;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow:
+          0 12px 40px rgba(224, 93, 56, 0.3),
+          0 0 0 1px rgba(224, 93, 56, 0.5);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .download-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+
+      .download-btn:hover::before {
+        left: 100%;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-4px);
+        box-shadow:
+          0 20px 60px rgba(224, 93, 56, 0.4),
+          0 0 0 1px rgba(224, 93, 56, 0.6);
+      }
+
+      .download-icon {
+        font-size: 20px;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 1024px) {
+        .main-title {
+          font-size: 3rem;
+        }
+
+        .subtitle {
+          font-size: 20px;
+        }
+
+        .description {
+          font-size: 15px;
+        }
+
+        .content {
+          padding: 0 30px;
+        }
+
+        .carousel-container {
+          max-width: 600px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .main-title {
+          font-size: 2.5rem;
+        }
+
+        .subtitle {
+          font-size: 18px;
+        }
+
+        .description {
+          font-size: 14px;
+        }
+
+        .content {
+          padding: 0 20px;
+        }
+
+        .carousel-container {
+          max-width: 100%;
+          margin: 0 20px;
+        }
+
+        .title-section {
+          margin-bottom: 30px;
+        }
+
+        .product-showcase {
+          margin-bottom: 30px;
+        }
+      }
+
+      /* 平滑滚动 */
+      html {
+        scroll-behavior: smooth;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 固定背景 -->
+    <div class="background">
+      <img src="assets/bg.jpeg" alt="背景" />
+    </div>
+
+    <!-- 磨砂蒙层 -->
+    <div class="overlay"></div>
+
+    <!-- 主要内容 -->
+    <div class="main-container">
+      <div class="content">
+        <!-- 标题区域 -->
+        <div class="title-section">
+          <div class="update-badge">🚀 当前版本 测试版本</div>
+          <h1 class="main-title">LOL 游戏助手</h1>
+          <div class="subtitle">正在飞速更新，8月份每天都有新功能上线！</div>
+          <p class="description">
+            深度分析每场比赛数据，实时掌握队友对手实力。
+          </p>
+        </div>
+
+        <!-- 产品截图轮播 -->
+        <div class="product-showcase">
+          <div class="carousel-container">
+            <div class="carousel-slide active">
+              <img src="assets/history.png" alt="详细战绩查询" />
+            </div>
+            <div class="carousel-slide">
+              <img src="assets/room.png" alt="房间成员分析" />
+            </div>
+          </div>
+          <div class="carousel-indicators">
+            <div class="indicator active" data-slide="0"></div>
+            <div class="indicator" data-slide="1"></div>
+          </div>
+        </div>
+
+        <!-- 下载按钮 -->
+        <div class="download-section">
+          <a
+            href="#"
+            class="download-btn"
+            id="downloadBtn"
+            onclick="downloadLatestVersion()"
+          >
+            <span class="download-icon">⬇</span>
+            <span id="downloadText">立即下载 Windows 版本</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 轮播功能
+      let currentSlide = 0;
+      const slides = document.querySelectorAll('.carousel-slide');
+      const indicators = document.querySelectorAll('.indicator');
+
+      // 缓存版本信息
+      let cachedVersionInfo = null;
+      let versionInfoPromise = null;
+
+      function showSlide(index) {
+        slides.forEach((slide, i) => {
+          slide.classList.toggle('active', i === index);
+        });
+        indicators.forEach((indicator, i) => {
+          indicator.classList.toggle('active', i === index);
+        });
+      }
+
+      function nextSlide() {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+      }
+
+      // 自动轮播，间隔8秒
+      setInterval(nextSlide, 8000);
+
+      // 指示器点击事件
+      indicators.forEach((indicator, index) => {
+        indicator.addEventListener('click', () => {
+          currentSlide = index;
+          showSlide(currentSlide);
+        });
+      });
+
+      // 获取版本信息的统一函数
+      async function getVersionInfo() {
+        // 如果已经有缓存，直接返回
+        if (cachedVersionInfo) {
+          return cachedVersionInfo;
+        }
+
+        // 如果正在请求中，等待现有请求完成
+        if (versionInfoPromise) {
+          return versionInfoPromise;
+        }
+
+        // 创建新的请求
+        versionInfoPromise = fetch('https://{{endpoint}}/latest.json')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`
+              );
+            }
+            return response.json();
+          })
+          .then(data => {
+            cachedVersionInfo = data;
+            versionInfoPromise = null; // 清除请求状态
+            return data;
+          })
+          .catch(error => {
+            versionInfoPromise = null; // 清除请求状态
+            throw error;
+          });
+      }
+
+      // 下载最新版本功能
+      async function downloadLatestVersion() {
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadText = document.getElementById('downloadText');
+        const originalText = downloadText.textContent;
+
+        try {
+          // 更新按钮状态
+          downloadText.textContent = '获取最新版本信息...';
+          downloadBtn.style.pointerEvents = 'none';
+          downloadBtn.style.opacity = '0.7';
+
+          // 使用缓存的版本信息
+          const latestInfo = await getVersionInfo();
+
+          // 验证响应数据
+          if (!latestInfo.updateUrl) {
+            throw new Error('无效的版本信息：缺少下载链接');
+          }
+
+          // 更新按钮文本显示版本号
+          if (latestInfo.version) {
+            downloadText.textContent = `下载 v${latestInfo.version}...`;
+          } else {
+            downloadText.textContent = '开始下载...';
+          }
+
+          // 创建隐藏的下载链接并触发下载
+          const downloadLink = document.createElement('a');
+          downloadLink.href = latestInfo.updateUrl;
+          downloadLink.download = '';
+          downloadLink.style.display = 'none';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+
+          // 下载开始后恢复按钮状态
+          setTimeout(() => {
+            downloadText.textContent = latestInfo.version
+              ? `立即下载 v${latestInfo.version}`
+              : originalText;
+            downloadBtn.style.pointerEvents = 'auto';
+            downloadBtn.style.opacity = '1';
+          }, 2000);
+        } catch (error) {
+          console.error('下载失败:', error);
+
+          // 显示错误信息
+          downloadText.textContent = '下载失败，请重试';
+
+          // 3秒后恢复原始状态
+          setTimeout(() => {
+            downloadText.textContent = originalText;
+            downloadBtn.style.pointerEvents = 'auto';
+            downloadBtn.style.opacity = '1';
+          }, 3000);
+
+          alert(`下载失败: ${error.message}\n\n请检查网络连接或稍后重试。`);
+        }
+      }
+
+      // 页面加载时获取并显示最新版本号
+      async function updateVersionDisplay() {
+        try {
+          const latestInfo = await getVersionInfo();
+          if (latestInfo.version) {
+            // 更新版本徽章
+            const updateBadge = document.querySelector('.update-badge');
+            if (updateBadge) {
+              updateBadge.textContent = `🚀 当前版本 v${latestInfo.version}`;
+            }
+
+            // 更新下载按钮文本
+            const downloadText = document.getElementById('downloadText');
+            if (downloadText) {
+              downloadText.textContent = `立即下载 v${latestInfo.version}`;
+            }
+          }
+        } catch (error) {
+          console.log('获取版本信息失败:', error);
+          // 静默失败，不影响页面正常显示
+        }
+      }
+
+      // 页面加载完成后更新版本显示
+      document.addEventListener('DOMContentLoaded', updateVersionDisplay);
+    </script>
+  </body>
+</html>
