@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { BanPickService } from '../service/ban-pick-service';
+import { GameflowService } from '../service/gameflow-service';
 import { LCUClientInterface } from '../client/interface';
 import fs from 'fs/promises';
 import path from 'path';
@@ -20,12 +21,14 @@ async function ensureTestDataDir() {
 describe('GamePhaseAndPlayers', () => {
   let lcuClient: LCUClientInterface;
   let banPickService: BanPickService;
+  let gameflowService: GameflowService;
 
   describe('游戏阶段和玩家信息测试 - 真实LOL测试', () => {
     beforeEach(async () => {
       try {
         lcuClient = await LCUClient.create();
         banPickService = new BanPickService(lcuClient);
+        gameflowService = new GameflowService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过真实LOL测试: ${error}`);
         return;
@@ -259,6 +262,113 @@ describe('GamePhaseAndPlayers', () => {
         console.log('✅ 获取玩家段位信息测试完成');
       } catch (error) {
         console.log(`❌ 获取玩家段位信息测试失败: ${error}`);
+        throw error;
+      }
+    });
+
+    it('应该能够检测当前是否在排队中', async () => {
+      if (!lcuClient) return;
+
+      console.log('=== 开始测试检测排队状态 ===');
+
+      const isConnected = await lcuClient.isConnected();
+      if (!isConnected) {
+        console.log('⏭️ LOL客户端未连接');
+        return;
+      }
+
+      console.log('🔗 成功连接到LOL客户端');
+
+      try {
+        // 获取当前游戏流程阶段
+        const gameflowPhase = await gameflowService.getGameflowPhase();
+        console.log(`🎮 当前游戏流程阶段: ${gameflowPhase}`);
+
+        // 检查是否在排队中
+        const isInMatchmaking = await gameflowService.isInMatchmaking();
+        console.log(`🔍 是否在排队中: ${isInMatchmaking ? '是' : '否'}`);
+
+        // 获取详细的游戏流程会话信息
+        const gameflowSession = await gameflowService.getGameflowSession();
+        console.log('🔄 游戏流程会话详情:', gameflowSession);
+
+        // 检查是否有待接受的对局
+        const hasReadyCheck = await gameflowService.hasReadyCheck();
+        console.log(`⏰ 是否有待接受的对局: ${hasReadyCheck ? '是' : '否'}`);
+
+        // 如果有待接受的对局，获取 Ready Check 详情
+        let readyCheckState = null;
+        if (hasReadyCheck) {
+          try {
+            readyCheckState = await gameflowService.getReadyCheckState();
+            console.log('✅ Ready Check 状态详情:', readyCheckState);
+          } catch (error) {
+            console.log('⚠️ 获取 Ready Check 状态失败:', error);
+          }
+        }
+
+        // 检查是否在游戏中
+        const isInGame = await gameflowService.isInGame();
+        console.log(`🎯 是否在游戏中: ${isInGame ? '是' : '否'}`);
+
+        // 保存排队状态信息
+        await ensureTestDataDir();
+        const filename = path.join(TEST_DATA_DIR, 'matchmaking_status.json');
+        await fs.writeFile(
+          filename,
+          JSON.stringify(
+            {
+              timestamp: new Date().toISOString(),
+              gameflowPhase,
+              isInMatchmaking,
+              hasReadyCheck,
+              isInGame,
+              gameflowSession,
+              readyCheckState,
+              statusSummary: {
+                phase: gameflowPhase,
+                description: isInMatchmaking
+                  ? '正在排队中'
+                  : hasReadyCheck
+                    ? '有待接受的对局'
+                    : isInGame
+                      ? '在游戏中'
+                      : '空闲状态',
+              },
+            },
+            null,
+            2
+          )
+        );
+        console.log(`💾 排队状态信息已保存到: ${filename}`);
+
+        // 验证结果
+        expect(typeof gameflowPhase).toBe('string');
+        expect(typeof isInMatchmaking).toBe('boolean');
+        expect(typeof hasReadyCheck).toBe('boolean');
+        expect(typeof isInGame).toBe('boolean');
+        expect(typeof gameflowSession).toBe('object');
+
+        if (readyCheckState) {
+          expect(typeof readyCheckState).toBe('object');
+          expect(readyCheckState.state).toBeDefined();
+          expect(readyCheckState.playerResponse).toBeDefined();
+        }
+
+        // 状态逻辑验证
+        if (isInMatchmaking) {
+          expect(gameflowPhase).toBe('Matchmaking');
+          expect(hasReadyCheck).toBe(false);
+        }
+
+        if (hasReadyCheck) {
+          expect(gameflowPhase).toBe('ReadyCheck');
+          expect(isInMatchmaking).toBe(false);
+        }
+
+        console.log('✅ 检测排队状态测试完成');
+      } catch (error) {
+        console.log(`❌ 检测排队状态测试失败: ${error}`);
         throw error;
       }
     });
