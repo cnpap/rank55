@@ -1,30 +1,7 @@
+import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
-
-// 游戏流程状态枚举
-export enum GameflowPhase {
-  None = 'None',
-  Lobby = 'Lobby',
-  Matchmaking = 'Matchmaking',
-  ReadyCheck = 'ReadyCheck',
-  ChampSelect = 'ChampSelect',
-  GameStart = 'GameStart',
-  InProgress = 'InProgress',
-  Reconnect = 'Reconnect',
-  WaitingForStats = 'WaitingForStats',
-  PreEndOfGame = 'PreEndOfGame',
-  EndOfGame = 'EndOfGame',
-  TerminatedInError = 'TerminatedInError',
-}
-
-// 游戏流程会话数据
-export interface GameflowSession {
-  phase: GameflowPhase;
-  gameData?: any;
-  map?: any;
-  gameMode?: string;
-  isCustomGame?: boolean;
-}
+import { GameflowSession } from '@/types/game-phase-info';
 
 // Ready Check 数据
 export interface ReadyCheckState {
@@ -56,13 +33,13 @@ export class GameflowService extends BaseService {
   }
 
   // 获取当前游戏流程阶段
-  async getGameflowPhase(): Promise<GameflowPhase> {
+  async getGameflowPhase(): Promise<GameflowPhaseEnum> {
     try {
       const phase = await this.makeRequest(
         'GET',
         '/lol-gameflow/v1/gameflow-phase'
       );
-      return phase as GameflowPhase;
+      return phase as GameflowPhaseEnum;
     } catch (error) {
       throw new Error(`获取游戏流程阶段失败: ${error}`);
     }
@@ -105,7 +82,7 @@ export class GameflowService extends BaseService {
   async hasReadyCheck(): Promise<boolean> {
     try {
       const phase = await this.getGameflowPhase();
-      if (phase !== GameflowPhase.ReadyCheck) {
+      if (phase !== GameflowPhaseEnum.ReadyCheck) {
         return false;
       }
 
@@ -125,7 +102,7 @@ export class GameflowService extends BaseService {
   async isInMatchmaking(): Promise<boolean> {
     try {
       const phase = await this.getGameflowPhase();
-      return phase === GameflowPhase.Matchmaking;
+      return phase === GameflowPhaseEnum.Matchmaking;
     } catch (error) {
       console.warn('检查匹配状态失败:', error);
       return false;
@@ -137,13 +114,13 @@ export class GameflowService extends BaseService {
     try {
       const phase = await this.getGameflowPhase();
       return [
-        GameflowPhase.ChampSelect,
-        GameflowPhase.GameStart,
-        GameflowPhase.InProgress,
-        GameflowPhase.Reconnect,
-        GameflowPhase.WaitingForStats,
-        GameflowPhase.PreEndOfGame,
-        GameflowPhase.EndOfGame,
+        GameflowPhaseEnum.ChampSelect,
+        GameflowPhaseEnum.GameStart,
+        GameflowPhaseEnum.InProgress,
+        GameflowPhaseEnum.Reconnect,
+        GameflowPhaseEnum.WaitingForStats,
+        GameflowPhaseEnum.PreEndOfGame,
+        GameflowPhaseEnum.EndOfGame,
       ].includes(phase);
     } catch (error) {
       console.warn('检查游戏状态失败:', error);
