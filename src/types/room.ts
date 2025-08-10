@@ -2,7 +2,7 @@ export interface Room {
   canStartActivity: boolean;
   gameConfig: GameConfig;
   invitations: Invitation[];
-  localMember: LocalMember;
+  localMember: Member;
   members: Member[];
   mucJwtDto: MucJwtDto;
   multiUserChatId: string;
@@ -50,43 +50,6 @@ export interface Invitation {
   timestamp: string;
   toSummonerId: number;
   toSummonerName: string;
-}
-
-export interface LocalMember {
-  allowedChangeActivity: boolean;
-  allowedInviteOthers: boolean;
-  allowedKickOthers: boolean;
-  allowedStartActivity: boolean;
-  allowedToggleInvite: boolean;
-  autoFillEligible: boolean;
-  autoFillProtectedForPromos: boolean;
-  autoFillProtectedForRemedy: boolean;
-  autoFillProtectedForSoloing: boolean;
-  autoFillProtectedForStreaking: boolean;
-  botChampionId: number;
-  botDifficulty: string;
-  botId: string;
-  botPosition: string;
-  botUuid: string;
-  firstPositionPreference: string;
-  intraSubteamPosition: any;
-  isBot: boolean;
-  isLeader: boolean;
-  isSpectator: boolean;
-  memberData: any;
-  playerSlots: any[];
-  puuid: string;
-  ready: boolean;
-  secondPositionPreference: string;
-  showGhostedBanner: boolean;
-  strawberryMapId: any;
-  subteamIndex: any;
-  summonerIconId: number;
-  summonerId: number;
-  summonerInternalName: string;
-  summonerLevel: number;
-  summonerName: string;
-  teamId: number;
 }
 
 export interface Member {

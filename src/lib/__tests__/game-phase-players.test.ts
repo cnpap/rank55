@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { BanPickService } from '../service/ban-pick-service';
 import { GameflowService } from '../service/gameflow-service';
+import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
 import fs from 'fs/promises';
 import path from 'path';
@@ -22,6 +23,7 @@ describe('GamePhaseAndPlayers', () => {
   let lcuClient: LCUClientInterface;
   let banPickService: BanPickService;
   let gameflowService: GameflowService;
+  let summonerService: SummonerService;
 
   describe('游戏阶段和玩家信息测试 - 真实LOL测试', () => {
     beforeEach(async () => {
@@ -29,6 +31,7 @@ describe('GamePhaseAndPlayers', () => {
         lcuClient = await LCUClient.create();
         banPickService = new BanPickService(lcuClient);
         gameflowService = new GameflowService(lcuClient);
+        summonerService = new SummonerService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过真实LOL测试: ${error}`);
         return;
@@ -50,11 +53,11 @@ describe('GamePhaseAndPlayers', () => {
 
       try {
         // 获取基本游戏阶段
-        const gamePhase = await banPickService.getGamePhase();
+        const gamePhase = await gameflowService.getGameflowPhase();
         console.log(`🎮 当前游戏阶段: ${gamePhase}`);
 
         // 获取详细的游戏流程信息
-        const gameflowSession = await banPickService.getGameflowSession();
+        const gameflowSession = await gameflowService.getGameflowSession();
         console.log('🔄 游戏流程会话信息:', gameflowSession);
 
         // 检查是否在英雄选择阶段
@@ -132,7 +135,7 @@ describe('GamePhaseAndPlayers', () => {
         console.log(`👥 敌方队伍人数: ${playersInfo.theirTeam?.length || 0}`);
 
         // 获取当前召唤师信息
-        const currentSummoner = await banPickService.getCurrentSummoner();
+        const currentSummoner = await summonerService.getCurrentSummoner();
         console.log('🧙‍♂️ 当前召唤师信息:', currentSummoner);
 
         // 获取详细玩家信息（包括段位）
@@ -219,7 +222,7 @@ describe('GamePhaseAndPlayers', () => {
 
       try {
         // 获取当前召唤师信息
-        const currentSummoner = await banPickService.getCurrentSummoner();
+        const currentSummoner = await summonerService.getCurrentSummoner();
         console.log('🧙‍♂️ 当前召唤师信息:', currentSummoner);
 
         if (!currentSummoner || !currentSummoner.summonerId) {
@@ -228,8 +231,8 @@ describe('GamePhaseAndPlayers', () => {
         }
 
         // 获取当前召唤师的段位信息
-        const rankedStats = await banPickService.getRankedStats(
-          currentSummoner.summonerId
+        const rankedStats = await summonerService.getRankedStats(
+          currentSummoner.summonerId.toString()
         );
         console.log('🏆 当前召唤师段位信息:', rankedStats);
 
@@ -388,15 +391,15 @@ describe('GamePhaseAndPlayers', () => {
 
       try {
         // 获取游戏阶段
-        const gamePhase = await banPickService.getGamePhase();
+        const gamePhase = await gameflowService.getGameflowPhase();
         console.log(`🎮 当前游戏阶段: ${gamePhase}`);
 
         // 获取游戏流程会话
-        const gameflowSession = await banPickService.getGameflowSession();
+        const gameflowSession = await gameflowService.getGameflowSession();
         console.log('🔄 游戏流程会话:', gameflowSession);
 
         // 获取当前召唤师信息
-        const currentSummoner = await banPickService.getCurrentSummoner();
+        const currentSummoner = await summonerService.getCurrentSummoner();
         console.log('🧙‍♂️ 当前召唤师:', currentSummoner);
 
         let champSelectData = null;

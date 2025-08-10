@@ -1,29 +1,26 @@
+import { writeFileSync } from 'node:fs';
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
+import { GameflowService } from './gameflow-service';
+import { SummonerService } from './summoner-service';
+import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { ChampSelectSession } from '@/types/champ-select-session';
 
 export class BanPickService extends BaseService {
+  private gameflowService: GameflowService;
+  private summonerService: SummonerService;
+
   constructor(client?: LCUClientInterface) {
     super(client);
-  }
-
-  // 获取当前游戏阶段信息
-  async getGamePhase(): Promise<string> {
-    try {
-      const data = await this.makeRequest(
-        'GET',
-        '/lol-gameflow/v1/gameflow-phase'
-      );
-      return data;
-    } catch (error) {
-      throw new Error(`获取游戏阶段失败: ${error}`);
-    }
+    this.gameflowService = new GameflowService(client);
+    this.summonerService = new SummonerService(client);
   }
 
   // 检查是否在 ban/pick 阶段
   async isInChampSelect(): Promise<boolean> {
     try {
-      const phase = await this.getGamePhase();
-      return phase === 'ChampSelect';
+      const phase = await this.gameflowService.getGameflowPhase();
+      return phase === GameflowPhaseEnum.ChampSelect;
     } catch (error) {
       console.warn('检查 ban/pick 阶段失败:', error);
       return false;
@@ -31,12 +28,14 @@ export class BanPickService extends BaseService {
   }
 
   // 获取英雄选择会话信息
-  async getChampSelectSession(): Promise<any> {
+  async getChampSelectSession(): Promise<ChampSelectSession> {
     try {
       const data = await this.makeRequest(
         'GET',
         '/lol-champ-select/v1/session'
       );
+      // 将数据保存在 json 文件中
+      writeFileSync('champ-select-session.json', JSON.stringify(data));
       return data;
     } catch (error) {
       throw new Error(`获取英雄选择会话信息失败: ${error}`);
@@ -137,7 +136,7 @@ export class BanPickService extends BaseService {
   }
 
   // 获取详细的 ban 阶段信息（用于调试）
-  async getBanPhaseDetails(): Promise<any> {
+  async getBanPhaseDetails() {
     try {
       const session = await this.getChampSelectSession();
       const phaseInfo = await this.getCurrentPhaseInfo();
@@ -422,7 +421,7 @@ export class BanPickService extends BaseService {
   }
 
   // 获取对局中的玩家信息
-  async getMatchPlayersInfo(): Promise<any> {
+  async getMatchPlayersInfo() {
     try {
       const session = await this.getChampSelectSession();
       if (!session) {
@@ -441,26 +440,14 @@ export class BanPickService extends BaseService {
   }
 
   // 获取当前召唤师信息
-  async getCurrentSummoner(): Promise<any> {
-    try {
-      const data = await this.makeRequest(
-        'GET',
-        '/lol-summoner/v1/current-summoner'
-      );
-      return data;
-    } catch (error) {
-      throw new Error(`获取当前召唤师信息失败: ${error}`);
-    }
+  async getCurrentSummoner() {
+    return this.summonerService.getCurrentSummoner();
   }
 
   // 根据召唤师ID获取排位信息
-  async getRankedStats(summonerId: string): Promise<any> {
+  async getRankedStats(summonerId: string) {
     try {
-      const data = await this.makeRequest(
-        'GET',
-        `/lol-ranked/v1/ranked-stats/${summonerId}`
-      );
-      return data;
+      return await this.summonerService.getRankedStats(summonerId);
     } catch (error) {
       console.warn(`获取召唤师 ${summonerId} 排位信息失败:`, error);
       return null;
@@ -478,7 +465,7 @@ export class BanPickService extends BaseService {
       for (const player of matchInfo.myTeam) {
         let rankedInfo = null;
         if (player.summonerId) {
-          rankedInfo = await this.getRankedStats(player.summonerId);
+          rankedInfo = await this.getRankedStats(player.summonerId.toString());
         }
 
         myTeamDetailed.push({
@@ -493,7 +480,7 @@ export class BanPickService extends BaseService {
       for (const player of matchInfo.theirTeam) {
         let rankedInfo = null;
         if (player.summonerId) {
-          rankedInfo = await this.getRankedStats(player.summonerId);
+          rankedInfo = await this.getRankedStats(player.summonerId.toString());
         }
 
         theirTeamDetailed.push({
@@ -517,11 +504,6 @@ export class BanPickService extends BaseService {
 
   // 获取游戏流程状态（更详细的游戏阶段信息）
   async getGameflowSession(): Promise<any> {
-    try {
-      const data = await this.makeRequest('GET', '/lol-gameflow/v1/session');
-      return data;
-    } catch (error) {
-      throw new Error(`获取游戏流程会话失败: ${error}`);
-    }
+    return this.gameflowService.getGameflowSession();
   }
 }
