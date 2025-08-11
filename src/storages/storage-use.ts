@@ -10,8 +10,8 @@ export const $session = new TypedStorageService<$SessionStorage>(
 
 // 位置设置类型
 export interface PositionSetting {
-  banChampions: string[];
-  pickChampions: string[];
+  banChampions: string[]; // 英雄ID字符串数组
+  pickChampions: string[]; // 英雄ID字符串数组
 }
 
 export type PositionSettings = Record<AssignedPosition, PositionSetting>;

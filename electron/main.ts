@@ -109,14 +109,23 @@ ipcMain.handle('update-get-status', () => {
 // LCU 相关处理程序
 ipcMain.handle(
   'lcu-request',
-  async (event, method: 'GET' | 'POST', endpoint: string, body?: any) => {
+  async (
+    _,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    endpoint: string,
+    body?: any
+  ) => {
     try {
       const client = await ensureLCUClient();
 
       if (method === 'GET') {
         return await client.get(endpoint);
-      } else {
+      } else if (method === 'POST') {
         return await client.post(endpoint, body);
+      } else if (method === 'PATCH') {
+        return await client.patch(endpoint, body);
+      } else if (method === 'DELETE') {
+        return await client.delete(endpoint);
       }
     } catch (error) {
       console.error('LCU 请求失败:', error);

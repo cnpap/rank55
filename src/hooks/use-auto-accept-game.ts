@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { GameflowService } from '@/lib/service/gameflow-service';
-import { $local } from '@/storages/storage-use';
+import { $local, PositionSetting } from '@/storages/storage-use';
 import { toast } from 'vue-sonner';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { BanPickService } from '@/lib/service/ban-pick-service';
@@ -137,7 +137,10 @@ export function useAutoAcceptGame() {
   };
 
   // 执行禁用操作
-  const executeBanAction = async (flatActions: any[], myPositionInfo: any) => {
+  const executeBanAction = async (
+    flatActions: any[],
+    myPositionInfo: PositionSetting
+  ) => {
     const autoBanEnabled = $local.getItem('autoBanEnabled');
     console.log(`自动禁用开关状态: ${autoBanEnabled}`);
     console.log(
@@ -156,6 +159,7 @@ export function useAutoAcceptGame() {
     console.log(`已禁用的英雄: ${banedChampions}`);
 
     for (const championId of myPositionInfo.banChampions) {
+      console.log(`当前禁用英雄: ${championId}`);
       const championIdNum = parseInt(championId);
       console.log(`尝试禁用英雄: ${championIdNum}`);
 
@@ -200,6 +204,7 @@ export function useAutoAcceptGame() {
     console.log(`已选择的英雄: ${pickedChampions}`);
 
     for (const championId of myPositionInfo.pickChampions) {
+      console.log(`当前选择英雄: ${championId}`);
       const championIdNum = parseInt(championId);
       console.log(`尝试选择英雄: ${championIdNum}`);
 

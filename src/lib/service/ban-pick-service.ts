@@ -59,13 +59,21 @@ export class BanPickService extends BaseService {
   // 检查当前是否是禁用阶段（改进版本）
   async isBanPhase(): Promise<boolean> {
     const session = await this.getChampSelectSession();
-    return session.actions[session.actions.length - 1][0].type === 'ban';
+    return session.actions.flat().some(a => a.isInProgress && a.type === 'ban');
   }
 
   // 检查当前是否是选择阶段（改进版本）
   async isPickPhase(): Promise<boolean> {
     const session = await this.getChampSelectSession();
-    return session.actions[session.actions.length - 1][0].type === 'pick';
+    return session.actions
+      .flat()
+      .some(a => a.isInProgress && a.type === 'pick');
+  }
+
+  // 检查当前是否是预选阶段
+  async isPrePickPhase(): Promise<boolean> {
+    const session = await this.getChampSelectSession();
+    return session.actions.flat().every(a => !a.isInProgress);
   }
 
   async pickAction(
