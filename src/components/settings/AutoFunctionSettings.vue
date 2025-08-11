@@ -8,34 +8,34 @@ import { Plus, Minus, Clock } from 'lucide-vue-next';
 const autoBanEnabled = ref($local.getItem('autoBanEnabled') || false);
 const autoPickEnabled = ref($local.getItem('autoPickEnabled') || false);
 
-// 倒计时设置
+// 延迟执行设置
 const autoBanCountdown = ref($local.getItem('autoBanCountdown') || 5);
 const autoPickCountdown = ref($local.getItem('autoPickCountdown') || 5);
 
 // 倒计时控制方法
 function incrementBanCountdown() {
-  if (autoBanCountdown.value < 15) {
+  if (autoBanCountdown.value < 20) {
     autoBanCountdown.value++;
     saveCountdownSettings();
   }
 }
 
 function decrementBanCountdown() {
-  if (autoBanCountdown.value > 5) {
+  if (autoBanCountdown.value > 1) {
     autoBanCountdown.value--;
     saveCountdownSettings();
   }
 }
 
 function incrementPickCountdown() {
-  if (autoPickCountdown.value < 15) {
+  if (autoPickCountdown.value < 20) {
     autoPickCountdown.value++;
     saveCountdownSettings();
   }
 }
 
 function decrementPickCountdown() {
-  if (autoPickCountdown.value > 5) {
+  if (autoPickCountdown.value > 1) {
     autoPickCountdown.value--;
     saveCountdownSettings();
   }
@@ -100,14 +100,14 @@ defineExpose({
           </label>
         </div>
 
-        <!-- 倒计时设置 -->
+        <!-- 延迟执行设置 -->
         <div class="flex items-center gap-2">
           <Clock class="text-muted-foreground h-4 w-4" />
-          <span class="text-muted-foreground text-xs">倒计时剩余</span>
+          <span class="text-muted-foreground text-xs">进入阶段后</span>
           <div class="flex items-center gap-1">
             <button
               @click="decrementBanCountdown"
-              :disabled="autoBanCountdown <= 5"
+              :disabled="autoBanCountdown <= 1"
               class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Minus class="h-3 w-3" />
@@ -119,13 +119,13 @@ defineExpose({
             </div>
             <button
               @click="incrementBanCountdown"
-              :disabled="autoBanCountdown >= 15"
+              :disabled="autoBanCountdown >= 20"
               class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus class="h-3 w-3" />
             </button>
           </div>
-          <span class="text-muted-foreground text-xs">秒时执行</span>
+          <span class="text-muted-foreground text-xs">秒后执行</span>
         </div>
       </div>
 
@@ -151,14 +151,14 @@ defineExpose({
           </label>
         </div>
 
-        <!-- 倒计时设置 -->
+        <!-- 延迟执行设置 -->
         <div class="flex items-center gap-2">
           <Clock class="text-muted-foreground h-4 w-4" />
-          <span class="text-muted-foreground text-xs">倒计时剩余</span>
+          <span class="text-muted-foreground text-xs">进入阶段后</span>
           <div class="flex items-center gap-1">
             <button
               @click="decrementPickCountdown"
-              :disabled="autoPickCountdown <= 5"
+              :disabled="autoPickCountdown <= 1"
               class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Minus class="h-3 w-3" />
@@ -170,13 +170,13 @@ defineExpose({
             </div>
             <button
               @click="incrementPickCountdown"
-              :disabled="autoPickCountdown >= 15"
+              :disabled="autoPickCountdown >= 20"
               class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus class="h-3 w-3" />
             </button>
           </div>
-          <span class="text-muted-foreground text-xs">秒时执行</span>
+          <span class="text-muted-foreground text-xs">秒后执行</span>
         </div>
       </div>
     </div>

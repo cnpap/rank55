@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ChampionData } from '@/types/champion';
-import { gameAssets } from '@/assets/data-assets';
+import Loading from '@/components/Loading.vue';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
   champions: ChampionData[];
@@ -40,7 +41,7 @@ const filteredChampions = computed(() => {
 });
 
 function getChampionImageUrl(championKey: string): string {
-  return gameAssets.getChampionIcon(championKey);
+  return staticAssets.getChampionIcon(championKey);
 }
 
 function isChampionSelected(championId: string): boolean {
@@ -53,11 +54,16 @@ function handleToggleChampion(champion: ChampionData) {
 </script>
 
 <template>
-  <!-- 模板部分保持不变 -->
   <div class="h-full overflow-y-auto p-1">
-    <div v-if="isLoading" class="py-8 text-center">
-      <p class="text-gray-600">加载中...</p>
+    <!-- 加载状态 - 在可滚动区域的水平垂直中心 -->
+    <div v-if="isLoading" class="flex h-full items-center justify-center">
+      <div class="flex flex-col items-center text-center">
+        <Loading size="lg" class="text-primary mb-4" />
+        <p class="text-gray-600">加载中...</p>
+      </div>
     </div>
+
+    <!-- 英雄网格 -->
     <div v-else class="grid grid-cols-8 gap-0.5">
       <div
         v-for="champion in filteredChampions"

@@ -67,7 +67,7 @@ const championSelection = reactive<{
   currentType: '' | 'ban' | 'pick';
 }>({
   isOpen: false,
-  currentPosition: 'jungle',
+  currentPosition: '' as any,
   currentType: '', // 'ban' 或 'pick'
 });
 
@@ -102,6 +102,7 @@ async function loadChampionData() {
   isLoadingChampions.value = true;
   const championData = await dataUtils.fetchChampionData();
   champions.value = Object.values(championData.data);
+  isLoadingChampions.value = false;
 }
 
 // 加载设置
