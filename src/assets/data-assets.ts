@@ -77,14 +77,12 @@ export const staticAssets = {
     getDataAsset(`${StaticAssets.RANK_IMAGES}${rankId}.png`),
   getRankMiniIcon: (rankId: string) =>
     getDataAsset(`${StaticAssets.RANK_IMAGES}${rankId}_mini.png`),
-  getRuneIcon: (runeId: string) =>
-    getDataAsset(`${StaticAssets.RUNE_IMAGES}${runeId}.png`),
-  getPerkIcon: (perkId: string) =>
-    getDataAsset(`${StaticAssets.PERK_IMAGES}${perkId}.png`),
+  getRuneIcon: (runeId: string) => `./${StaticAssets.RUNE_IMAGES}${runeId}.png`,
+  getPerkIcon: (perkId: string) => `./${StaticAssets.PERK_IMAGES}${perkId}.png`,
   getProfileIcon: (profileIconId: string) =>
     `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,
   getSpellIcon: (spellId: string) =>
-    getDataAsset(`${StaticAssets.SPELL_IMAGES}${spellId}.png`),
+    `./${StaticAssets.SPELL_IMAGES}${spellId}.png`,
 };
 
 // 静态资源数据加载工具
