@@ -40,12 +40,12 @@ export class BanPickService extends BaseService {
     if (positions.length < 5) {
       // 通过排除法计算，少了的位置是什么
       const missingPositions: AssignedPosition = (
-        ['bottom', 'jungle', 'mid', 'top', 'support'] as AssignedPosition[]
+        ['bottom', 'jungle', 'middle', 'top', 'support'] as AssignedPosition[]
       ).filter((pos: AssignedPosition) => !positions.includes(pos))[0];
       // 回写到对象中
       for (const item of myTeam) {
         if (
-          !['bottom', 'jungle', 'mid', 'top', 'support'].includes(
+          !['bottom', 'jungle', 'middle', 'top', 'support'].includes(
             item.assignedPosition
           )
         ) {
@@ -74,7 +74,12 @@ export class BanPickService extends BaseService {
     type: 'ban' | 'pick' = 'pick'
   ) {
     const session = await this.getChampSelectSession();
-    const id = session.actions[session.actions.length - 1][0].id;
+    const myself = session.myTeam.find(
+      t => t.cellId === session.localPlayerCellId
+    );
+    const id = session.actions
+      .flat()
+      .find(a => a.actorCellId === myself?.cellId && a.type === type)?.id;
     const endpoint = `/lol-champ-select/v1/session/actions/${id}`;
     const body = { championId: championId, completed, type };
     await this.makeRequest('PATCH', endpoint, body);
@@ -90,8 +95,13 @@ export class BanPickService extends BaseService {
     await this.pickAction(championId, true);
   }
 
-  // 预选英雄（hover，不完成 action）
+  // 预 pick 英雄
   async hoverChampion(championId: number): Promise<void> {
     await this.pickAction(championId, false);
+  }
+
+  // 预 ban 英雄
+  async preBanChampion(championId: number): Promise<void> {
+    await this.pickAction(championId, false, 'ban');
   }
 }

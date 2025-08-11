@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { $local } from '@/storages/storage-use';
 import { toast } from 'vue-sonner';
 import { RotateCcw } from 'lucide-vue-next';
-
-const autoAcceptGame = ref(false);
-
-// 加载设置
-function loadSettings() {
-  const savedAutoAccept = $local.getItem('autoAcceptGame');
-  autoAcceptGame.value = savedAutoAccept || false;
-}
+const savedAutoAccept = $local.getItem('autoAcceptGame');
+const autoAcceptGame = ref(savedAutoAccept || false);
 
 // 保存设置
 function saveSettings() {
@@ -29,10 +23,6 @@ function resetSettings() {
   saveSettings();
   toast.success('游戏设置已重置');
 }
-
-onMounted(() => {
-  loadSettings();
-});
 
 // 暴露方法给父组件
 defineExpose({

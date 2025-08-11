@@ -7,6 +7,7 @@ import ChampionSelector from './ChampionSelector.vue';
 import { Ban, Plus, Users } from 'lucide-vue-next';
 import { dataUtils } from '@/assets/versioned-assets';
 import { staticAssets } from '@/assets/data-assets';
+import { AssignedPosition } from '@/types/players-info';
 
 // Props
 interface Props {
@@ -17,19 +18,14 @@ const props = withDefaults(defineProps<Props>(), {
   modelValue: () => ({
     top: { banChampions: [], pickChampions: [] },
     jungle: { banChampions: [], pickChampions: [] },
-    mid: { banChampions: [], pickChampions: [] },
-    adc: { banChampions: [], pickChampions: [] },
+    middle: { banChampions: [], pickChampions: [] },
+    bottom: { banChampions: [], pickChampions: [] },
     support: { banChampions: [], pickChampions: [] },
   }),
 });
 
-// Emits
-const emit = defineEmits<{
-  'update:modelValue': [value: PositionSettings];
-}>();
-
 // 游戏位置定义
-const positions = [
+const positions: { key: AssignedPosition; name: string; icon: string }[] = [
   {
     key: 'top',
     name: '上单',
@@ -41,12 +37,12 @@ const positions = [
     icon: 'jungle.png',
   },
   {
-    key: 'mid',
+    key: 'middle',
     name: '中单',
     icon: 'middle.png',
   },
   {
-    key: 'adc',
+    key: 'bottom',
     name: 'ADC',
     icon: 'bottom.png',
   },
@@ -65,9 +61,13 @@ const isLoadingChampions = ref(false);
 const positionSettings = reactive<PositionSettings>({ ...props.modelValue });
 
 // 英雄选择状态
-const championSelection = reactive({
+const championSelection = reactive<{
+  isOpen: boolean;
+  currentPosition: AssignedPosition;
+  currentType: '' | 'ban' | 'pick';
+}>({
   isOpen: false,
-  currentPosition: '',
+  currentPosition: 'jungle',
   currentType: '', // 'ban' 或 'pick'
 });
 
@@ -100,58 +100,38 @@ async function loadChampionData() {
   if (champions.value.length > 0) return;
 
   isLoadingChampions.value = true;
-  try {
-    const championData = await dataUtils.fetchChampionData();
-    champions.value = Object.values(championData.data);
-  } catch (error) {
-    console.error('加载英雄数据失败:', error);
-    toast.error('英雄数据加载失败');
-  } finally {
-    isLoadingChampions.value = false;
-  }
+  const championData = await dataUtils.fetchChampionData();
+  champions.value = Object.values(championData.data);
 }
 
 // 加载设置
 function loadSettings() {
-  try {
-    const savedPositionSettings = $local.getItem('positionSettings');
-    if (savedPositionSettings) {
-      Object.assign(positionSettings, savedPositionSettings);
-      emitUpdate();
-    }
-  } catch (error) {
-    console.error('加载位置设置失败:', error);
+  const savedPositionSettings = $local.getItem('positionSettings');
+  if (savedPositionSettings) {
+    Object.assign(positionSettings, savedPositionSettings);
   }
 }
 
 // 保存设置
 function saveSettings() {
-  try {
-    $local.setItem('positionSettings', positionSettings);
-    toast.success('位置设置已保存');
-    emitUpdate();
-  } catch (error) {
-    console.error('保存位置设置失败:', error);
-    toast.error('保存位置设置失败');
-  }
-}
-
-// 发送更新事件
-function emitUpdate() {
-  emit('update:modelValue', { ...positionSettings });
+  $local.setItem('positionSettings', positionSettings);
+  toast.success('位置设置已保存');
 }
 
 // 重置设置
 function resetSettings() {
   Object.keys(positionSettings).forEach(key => {
-    positionSettings[key] = { banChampions: [], pickChampions: [] };
+    positionSettings[key as AssignedPosition] = {
+      banChampions: [],
+      pickChampions: [],
+    };
   });
   saveSettings();
 }
 
 // 打开英雄选择器
 function openChampionSelector(position: string, type: 'ban' | 'pick') {
-  championSelection.currentPosition = position;
+  championSelection.currentPosition = position as AssignedPosition;
   championSelection.currentType = type;
   championSelection.isOpen = true;
   loadChampionData();

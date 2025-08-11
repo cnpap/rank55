@@ -53,10 +53,7 @@ export class GameflowService extends BaseService {
       return false;
     }
     const readyCheckState = await this.getReadyCheckState();
-    return (
-      readyCheckState.state === 'InProgress' &&
-      readyCheckState.playerResponse === 'None'
-    );
+    return readyCheckState.playerResponse === 'None';
   }
 
   // 检查是否在游戏中

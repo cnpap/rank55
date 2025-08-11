@@ -24,7 +24,7 @@ describe('BanPickActions', () => {
     });
 
     it('应该能够 Pick 英雄 154', async () => {
-      await banPickService.pickChampion(154);
+      await banPickService.pickChampion(1);
       console.log('✅ Pick 英雄 154 成功');
     });
 

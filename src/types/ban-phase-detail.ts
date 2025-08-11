@@ -39,5 +39,5 @@ export interface AllAction {
   isAllyAction: boolean;
   isInProgress: boolean;
   pickTurn: number;
-  type: 'ban' | 'pick';
+  type: 'ban' | 'pick' | 'ten_bans_reveal';
 }

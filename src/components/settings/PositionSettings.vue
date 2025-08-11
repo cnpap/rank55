@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { $local, type PositionSettings } from '@/storages/storage-use';
+import { type PositionSettings } from '@/storages/storage-use';
 import AutoFunctionSettings from './AutoFunctionSettings.vue';
 import PositionChampionSettings from './PositionChampionSettings.vue';
 import { RotateCcw } from 'lucide-vue-next';
@@ -18,8 +18,8 @@ const autoFunctionSettings = ref({
 const positionSettings = reactive<PositionSettings>({
   top: { banChampions: [], pickChampions: [] },
   jungle: { banChampions: [], pickChampions: [] },
-  mid: { banChampions: [], pickChampions: [] },
-  adc: { banChampions: [], pickChampions: [] },
+  middle: { banChampions: [], pickChampions: [] },
+  bottom: { banChampions: [], pickChampions: [] },
   support: { banChampions: [], pickChampions: [] },
 });
 

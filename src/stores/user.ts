@@ -277,11 +277,14 @@ export const useUserStore = defineStore('user', () => {
       const userData = await summonerService.getCurrentSummoner();
       currentUser.value = userData;
 
-      console.log('成功获取当前用户信息:', {
-        displayName: displayName.value,
-        level: summonerLevel.value,
-        summonerId: userData.summonerId,
-      });
+      console.log(
+        '成功获取当前用户信息:',
+        JSON.stringify({
+          displayName: displayName.value,
+          level: summonerLevel.value,
+          summonerId: userData.summonerId,
+        })
+      );
     } catch (error: any) {
       console.error('获取当前用户信息失败:', error);
       setError(error.message || '获取用户信息失败');

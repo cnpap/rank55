@@ -9,7 +9,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
   search: [];
   searchFromHistory: [name: string];
 }>();
@@ -52,7 +51,6 @@ const searchFromHistory = (name: string) => {
               ></div>
               <Input
                 :model-value="props.modelValue"
-                @update:model-value="emit('update:modelValue', String($event))"
                 placeholder="请输入召唤师名称..."
                 class="placeholder:text-muted-foreground/70 relative z-10 border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 @keyup.enter="handleSearch"

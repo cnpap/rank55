@@ -1,48 +1,16 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { $local } from '@/storages/storage-use';
 import { Plus, Minus, Clock } from 'lucide-vue-next';
-import { eventBus } from '@/lib/event-bus';
-
-// Props
-interface Props {
-  modelValue?: {
-    autoBanEnabled: boolean;
-    autoPickEnabled: boolean;
-    autoBanCountdown: number;
-    autoPickCountdown: number;
-  };
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  modelValue: () => ({
-    autoBanEnabled: false,
-    autoPickEnabled: false,
-    autoBanCountdown: 5,
-    autoPickCountdown: 5,
-  }),
-});
-
-// Emits
-const emit = defineEmits<{
-  'update:modelValue': [
-    value: {
-      autoBanEnabled: boolean;
-      autoPickEnabled: boolean;
-      autoBanCountdown: number;
-      autoPickCountdown: number;
-    },
-  ];
-}>();
 
 // 自动功能设置
-const autoBanEnabled = ref(props.modelValue.autoBanEnabled);
-const autoPickEnabled = ref(props.modelValue.autoPickEnabled);
+const autoBanEnabled = ref($local.getItem('autoBanEnabled') || false);
+const autoPickEnabled = ref($local.getItem('autoPickEnabled') || false);
 
 // 倒计时设置
-const autoBanCountdown = ref(props.modelValue.autoBanCountdown);
-const autoPickCountdown = ref(props.modelValue.autoPickCountdown);
+const autoBanCountdown = ref($local.getItem('autoBanCountdown') || 5);
+const autoPickCountdown = ref($local.getItem('autoPickCountdown') || 5);
 
 // 倒计时控制方法
 function incrementBanCountdown() {
@@ -75,67 +43,15 @@ function decrementPickCountdown() {
 
 // 保存倒计时设置
 function saveCountdownSettings() {
-  try {
-    $local.setItem('autoBanCountdown', autoBanCountdown.value);
-    $local.setItem('autoPickCountdown', autoPickCountdown.value);
-    emitUpdate();
-  } catch (error) {
-    console.error('保存倒计时设置失败:', error);
-  }
+  $local.setItem('autoBanCountdown', autoBanCountdown.value);
+  $local.setItem('autoPickCountdown', autoPickCountdown.value);
 }
 
 // 保存自动功能设置
 function saveAutoSettings() {
-  try {
-    $local.setItem('autoBanEnabled', autoBanEnabled.value);
-    $local.setItem('autoPickEnabled', autoPickEnabled.value);
-
-    // 发送事件通知
-    if (autoBanEnabled.value) {
-      eventBus.emit('auto-ban:enable');
-    } else {
-      eventBus.emit('auto-ban:disable');
-    }
-
-    if (autoPickEnabled.value) {
-      eventBus.emit('auto-pick:enable');
-    } else {
-      eventBus.emit('auto-pick:disable');
-    }
-
-    toast.success('自动功能设置已保存');
-    emitUpdate();
-  } catch (error) {
-    console.error('保存自动功能设置失败:', error);
-    toast.error('保存自动功能设置失败');
-  }
-}
-
-// 发送更新事件
-function emitUpdate() {
-  emit('update:modelValue', {
-    autoBanEnabled: autoBanEnabled.value,
-    autoPickEnabled: autoPickEnabled.value,
-    autoBanCountdown: autoBanCountdown.value,
-    autoPickCountdown: autoPickCountdown.value,
-  });
-}
-
-// 加载设置
-function loadSettings() {
-  try {
-    // 加载自动功能设置
-    autoBanEnabled.value = $local.getItem('autoBanEnabled') || false;
-    autoPickEnabled.value = $local.getItem('autoPickEnabled') || false;
-
-    // 加载倒计时设置
-    autoBanCountdown.value = $local.getItem('autoBanCountdown') || 5;
-    autoPickCountdown.value = $local.getItem('autoPickCountdown') || 5;
-
-    emitUpdate();
-  } catch (error) {
-    console.error('加载自动功能设置失败:', error);
-  }
+  $local.setItem('autoBanEnabled', autoBanEnabled.value);
+  $local.setItem('autoPickEnabled', autoPickEnabled.value);
+  toast.success('自动功能设置已保存');
 }
 
 // 重置设置
@@ -151,18 +67,6 @@ function resetSettings() {
 // 监听自动功能设置变化
 watch([autoBanEnabled, autoPickEnabled], () => {
   saveAutoSettings();
-});
-
-onMounted(() => {
-  loadSettings();
-
-  // 如果已经开启自动功能，发送启用事件
-  if (autoBanEnabled.value) {
-    eventBus.emit('auto-ban:enable');
-  }
-  if (autoPickEnabled.value) {
-    eventBus.emit('auto-pick:enable');
-  }
 });
 
 // 暴露方法给父组件

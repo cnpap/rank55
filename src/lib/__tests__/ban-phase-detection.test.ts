@@ -2,29 +2,40 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { BanPickService } from '../service/ban-pick-service';
 import { LCUClientInterface } from '../client/interface';
-import { AllAction, BanAction } from '@/types/ban-phase-detail';
+import { AllAction } from '@/types/ban-phase-detail';
+import { GameflowService } from '../service/gameflow-service';
 
 describe('ChampSelectPhaseDetection', () => {
   let lcuClient: LCUClientInterface;
   let banPickService: BanPickService;
+  let gameflowService: GameflowService;
 
   describe('英雄选择阶段检测 - 真实LOL测试', () => {
     beforeEach(async () => {
       try {
         lcuClient = await LCUClient.create();
         banPickService = new BanPickService(lcuClient);
+        gameflowService = new GameflowService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过真实LOL测试: ${error}`);
         return;
       }
     });
 
+    it('应该能够接受对局', async () => {
+      await gameflowService.acceptReadyCheck();
+      console.log('✅ 接受对局成功');
+    });
+
     it('应该能够准确检测当前是ban阶段还是pick阶段', async () => {
       const session = await banPickService.getChampSelectSession();
-      const type = session.actions[session.actions.length - 1][0].type;
+      const type = session.actions.flat().find(a => a.isInProgress)?.type;
       console.log(`   - 当前阶段: ${session.timer.phase}`);
       console.log(`   - 是否为Ban阶段: ${type === 'ban' ? '是' : '否'}`);
       console.log(`   - 是否为Pick阶段: ${type === 'pick' ? '是' : '否'}`);
+      console.log(
+        `   - 是否为 ban pick 转换公示阶段: ${type === 'ten_bans_reveal' ? '是' : '否'}`
+      );
       console.log(`   - 本地玩家Cell ID: ${session.localPlayerCellId}`);
 
       // 显示当前阶段的相关Actions
