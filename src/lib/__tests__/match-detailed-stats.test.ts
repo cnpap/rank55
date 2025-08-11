@@ -2,26 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
-import fs from 'fs/promises';
-import path from 'path';
 import { testDataLoader } from '../data-loader';
 import {
   formatGameDuration,
   formatNumber,
   getQueueName,
 } from '../rank-helpers';
-
-// 创建测试数据目录路径
-const TEST_DATA_DIR = path.join(__dirname, 'test-data');
-
-// 确保测试数据目录存在
-async function ensureTestDataDir() {
-  try {
-    await fs.access(TEST_DATA_DIR);
-  } catch {
-    await fs.mkdir(TEST_DATA_DIR, { recursive: true });
-  }
-}
 
 describe('MatchDetailedStats', () => {
   let lcuClient: LCUClientInterface;
@@ -81,14 +67,6 @@ describe('MatchDetailedStats', () => {
         console.log('ℹ️ 当前召唤师没有游戏记录');
         return;
       }
-
-      // 确保测试数据目录存在
-      await ensureTestDataDir();
-
-      // 保存战绩数据到测试数据文件夹
-      const filename = path.join(TEST_DATA_DIR, 'match_detailed_stats.json');
-      await fs.writeFile(filename, JSON.stringify(matchHistory, null, 2));
-      console.log(`💾 战绩详细统计数据已保存到: ${filename}`);
 
       // 显示详细的伤害统计数据
       await printDetailedMatchStats(matchHistory, summoner, summonerService);

@@ -5,18 +5,6 @@ import { LCUClientInterface } from '../client/interface';
 import fs from 'fs/promises';
 import path from 'path';
 
-// 创建测试数据目录路径
-const TEST_DATA_DIR = path.join(__dirname, 'test-data');
-
-// 确保测试数据目录存在
-async function ensureTestDataDir() {
-  try {
-    await fs.access(TEST_DATA_DIR);
-  } catch {
-    await fs.mkdir(TEST_DATA_DIR, { recursive: true });
-  }
-}
-
 describe('RoomService', () => {
   let lcuClient: LCUClientInterface;
   let roomService: RoomService;
@@ -34,103 +22,48 @@ describe('RoomService', () => {
     });
 
     it('应该能够检查是否在房间中', async () => {
-      if (!lcuClient) return;
+      const isInLobby = await roomService.isInLobby();
+      console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
 
-      console.log('=== 开始测试房间状态检查 ===');
-
-      const isConnected = await lcuClient.isConnected();
-      if (!isConnected) {
-        console.log('⏭️ LOL客户端未连接');
-        return;
-      }
-
-      console.log('🔗 成功连接到LOL客户端');
-
-      try {
-        const isInLobby = await roomService.isInLobby();
-        console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
-
-        expect(typeof isInLobby).toBe('boolean');
-        console.log('✅ 房间状态检查测试通过');
-      } catch (error) {
-        console.log(`ℹ️ 房间状态检查: ${error}`);
-        // 不在房间中是正常情况，不应该抛出错误
-      }
+      expect(typeof isInLobby).toBe('boolean');
+      console.log('✅ 房间状态检查测试通过');
     });
 
     it('应该能够获取房间成员信息', async () => {
-      if (!lcuClient) return;
+      // 首先检查是否在房间中
+      const isInLobby = await roomService.isInLobby();
+      console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
 
-      console.log('=== 开始测试房间成员查询 ===');
-
-      const isConnected = await lcuClient.isConnected();
-      if (!isConnected) {
-        console.log('⏭️ LOL客户端未连接');
+      if (!isInLobby) {
+        console.log('ℹ️ 当前不在房间中，无法获取房间成员');
         return;
       }
 
-      console.log('🔗 成功连接到LOL客户端');
+      // 获取房间信息
+      const lobby = await roomService.getCurrentLobby();
+      console.log('🏠 房间信息获取成功');
+      console.log(`是否可以开启：${lobby.canStartActivity}`);
 
-      try {
-        // 首先检查是否在房间中
-        const isInLobby = await roomService.isInLobby();
-        console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
+      // 获取房间成员
+      const members = await roomService.getLobbyMembers();
+      console.log(`👥 房间成员数量: ${members.length}`);
 
-        if (!isInLobby) {
-          console.log('ℹ️ 当前不在房间中，无法获取房间成员');
-          return;
-        }
+      expect(Array.isArray(members)).toBe(true);
 
-        // 获取房间信息
-        const lobby = await roomService.getCurrentLobby();
-        console.log('🏠 房间信息获取成功');
+      if (members.length > 0) {
+        console.log('\n👥 房间成员列表:');
+        await printLobbyMembersTable(members);
 
-        // 确保测试数据目录存在
-        await ensureTestDataDir();
+        // 获取详细成员信息
+        console.log('\n🔍 获取详细成员信息...');
+        const detailedMembers = await roomService.getDetailedLobbyMembers();
 
-        // 保存房间数据到测试数据文件夹
-        const filename = path.join(TEST_DATA_DIR, 'lobby_info.json');
-        await fs.writeFile(filename, JSON.stringify(lobby, null, 2));
-        console.log(`💾 房间数据已保存到: ${filename}`);
-
-        // 获取房间成员
-        const members = await roomService.getLobbyMembers();
-        console.log(`👥 房间成员数量: ${members.length}`);
-
-        expect(Array.isArray(members)).toBe(true);
-
-        if (members.length > 0) {
-          console.log('\n👥 房间成员列表:');
-          await printLobbyMembersTable(members);
-
-          // 获取详细成员信息
-          console.log('\n🔍 获取详细成员信息...');
-          const detailedMembers = await roomService.getDetailedLobbyMembers();
-
-          // 保存详细成员信息
-          const detailedFilename = path.join(
-            TEST_DATA_DIR,
-            'detailed_lobby_members.json'
-          );
-          await fs.writeFile(
-            detailedFilename,
-            JSON.stringify(detailedMembers, null, 2)
-          );
-          console.log(`💾 详细成员数据已保存到: ${detailedFilename}`);
-
-          await printDetailedMembersTable(detailedMembers);
-        } else {
-          console.log('ℹ️ 房间中没有其他成员');
-        }
-
-        console.log('✅ 房间成员查询测试通过');
-      } catch (error: any) {
-        console.log(`❌ 房间成员查询失败: ${error}`);
-        // 如果不在房间中，这是正常情况
-        if (error.toString().includes('获取当前房间信息失败')) {
-          console.log('ℹ️ 这通常表示当前不在房间中');
-        }
+        await printDetailedMembersTable(detailedMembers);
+      } else {
+        console.log('ℹ️ 房间中没有其他成员');
       }
+
+      console.log('✅ 房间成员查询测试通过');
     });
 
     it('应该能够获取房间游戏配置', async () => {
@@ -159,12 +92,6 @@ describe('RoomService', () => {
           console.log(`   - 队列ID: ${gameConfig.queueId || '未知'}`);
           console.log(`   - 地图ID: ${gameConfig.mapId || '未知'}`);
           console.log(`   - 最大队伍大小: ${gameConfig.maxTeamSize || '未知'}`);
-
-          // 保存游戏配置
-          await ensureTestDataDir();
-          const filename = path.join(TEST_DATA_DIR, 'game_config.json');
-          await fs.writeFile(filename, JSON.stringify(gameConfig, null, 2));
-          console.log(`💾 游戏配置已保存到: ${filename}`);
         } else {
           console.log('   - 无游戏配置信息');
         }
@@ -176,48 +103,26 @@ describe('RoomService', () => {
     });
 
     it('应该能够获取房间邀请信息', async () => {
-      if (!lcuClient) return;
+      const invitations = await roomService.getLobbyInvitations();
+      console.log(`📨 房间邀请数量: ${invitations.length}`);
 
-      console.log('=== 开始测试房间邀请查询 ===');
+      expect(Array.isArray(invitations)).toBe(true);
 
-      const isConnected = await lcuClient.isConnected();
-      if (!isConnected) {
-        console.log('⏭️ LOL客户端未连接');
-        return;
-      }
-
-      try {
-        const invitations = await roomService.getLobbyInvitations();
-        console.log(`📨 房间邀请数量: ${invitations.length}`);
-
-        expect(Array.isArray(invitations)).toBe(true);
-
-        if (invitations.length > 0) {
-          console.log('\n📨 房间邀请列表:');
-          for (let i = 0; i < invitations.length; i++) {
-            const invitation = invitations[i];
-            console.log(
-              `   ${i + 1}. 邀请ID: ${invitation.invitationId || '未知'}`
-            );
-            console.log(`      状态: ${invitation.state || '未知'}`);
-            console.log(
-              `      发送者: ${invitation.fromSummonerName || '未知'}`
-            );
-          }
-
-          // 保存邀请信息
-          await ensureTestDataDir();
-          const filename = path.join(TEST_DATA_DIR, 'lobby_invitations.json');
-          await fs.writeFile(filename, JSON.stringify(invitations, null, 2));
-          console.log(`💾 邀请信息已保存到: ${filename}`);
-        } else {
-          console.log('ℹ️ 当前没有房间邀请');
+      if (invitations.length > 0) {
+        console.log('\n📨 房间邀请列表:');
+        for (let i = 0; i < invitations.length; i++) {
+          const invitation = invitations[i];
+          console.log(
+            `   ${i + 1}. 邀请ID: ${invitation.invitationId || '未知'}`
+          );
+          console.log(`      状态: ${invitation.state || '未知'}`);
+          console.log(`      发送者: ${invitation.fromSummonerName || '未知'}`);
         }
-
-        console.log('✅ 房间邀请查询测试通过');
-      } catch (error) {
-        console.log(`ℹ️ 邀请查询: ${error}`);
+      } else {
+        console.log('ℹ️ 当前没有房间邀请');
       }
+
+      console.log('✅ 房间邀请查询测试通过');
     });
   });
 });

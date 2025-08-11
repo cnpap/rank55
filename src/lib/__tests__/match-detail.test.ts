@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
-import fs from 'fs/promises';
-import path from 'path';
 import { testDataLoader } from '../data-loader';
 import {
   formatGameDuration,
@@ -11,18 +9,6 @@ import {
   getMapName,
   getQueueName,
 } from '../rank-helpers';
-
-// 创建测试数据目录路径
-const TEST_DATA_DIR = path.join(__dirname, 'test-data');
-
-// 确保测试数据目录存在
-async function ensureTestDataDir() {
-  try {
-    await fs.access(TEST_DATA_DIR);
-  } catch {
-    await fs.mkdir(TEST_DATA_DIR, { recursive: true });
-  }
-}
 
 describe('MatchDetail', () => {
   let lcuClient: LCUClientInterface;
@@ -41,18 +27,6 @@ describe('MatchDetail', () => {
     });
 
     it('应该能够获取单局详细数据', async () => {
-      if (!lcuClient) return;
-
-      console.log('=== 开始测试真实LOL客户端单局详细数据查询 ===');
-
-      const isConnected = await lcuClient.isConnected();
-      if (!isConnected) {
-        console.log('⏭️ LOL客户端未连接');
-        return;
-      }
-
-      console.log('🔗 成功连接到LOL客户端');
-
       // 先获取当前召唤师信息
       const summoner = await summonerService.getCurrentSummoner();
       if (!summoner) {
@@ -91,16 +65,6 @@ describe('MatchDetail', () => {
       expect(matchDetail).toBeDefined();
       expect(matchDetail).not.toBeNull();
 
-      // 确保测试数据目录存在
-      await ensureTestDataDir();
-
-      // 保存数据到测试数据文件夹
-      await saveMatchDetailToJSON(
-        matchDetail,
-        path.join(TEST_DATA_DIR, 'match_detail.json')
-      );
-      console.log('💾 详细数据已保存到 test-data/match_detail.json');
-
       // 显示详细的对战信息
       await printMatchDetailInfo(matchDetail, summoner, summonerService);
 
@@ -108,18 +72,6 @@ describe('MatchDetail', () => {
     });
   });
 });
-
-// 保存单局详细数据到JSON文件
-async function saveMatchDetailToJSON(
-  matchDetail: any,
-  filename: string
-): Promise<void> {
-  try {
-    await fs.writeFile(filename, JSON.stringify(matchDetail, null, 2));
-  } catch (error) {
-    throw new Error(`保存文件失败: ${error}`);
-  }
-}
 
 // 打印单局详细对战信息
 async function printMatchDetailInfo(
@@ -271,7 +223,6 @@ async function printMatchDetailInfo(
   const championNames = await testDataLoader.getChampionNames(
     Array.from(allChampionIds)
   );
-  const itemNames = await testDataLoader.getItemNames(Array.from(allItemIds));
 
   // 批量获取所有玩家的段位信息
   const playerRanks = new Map<string, [string, string, number]>();

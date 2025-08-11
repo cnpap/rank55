@@ -27,7 +27,7 @@ export interface BanAction {
   isAllyAction: boolean;
   isInProgress: boolean;
   pickTurn: number;
-  type: string;
+  type: 'ban' | 'pick';
   isLocalPlayer: boolean;
 }
 
@@ -39,5 +39,5 @@ export interface AllAction {
   isAllyAction: boolean;
   isInProgress: boolean;
   pickTurn: number;
-  type: string;
+  type: 'ban' | 'pick';
 }

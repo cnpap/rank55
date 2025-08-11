@@ -1,7 +1,6 @@
-import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { GameflowPhaseEnum, GameflowSession } from '@/types/gameflow-session';
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
-import { GameflowSession } from '@/types/game-phase-info';
 
 // Ready Check 数据
 export interface ReadyCheckState {
@@ -24,107 +23,53 @@ export class GameflowService extends BaseService {
 
   // 获取当前游戏流程会话
   async getGameflowSession(): Promise<GameflowSession> {
-    try {
-      const data = await this.makeRequest('GET', '/lol-gameflow/v1/session');
-      return data;
-    } catch (error) {
-      throw new Error(`获取游戏流程会话失败: ${error}`);
-    }
+    return this.makeRequest('GET', '/lol-gameflow/v1/session');
   }
 
   // 获取当前游戏流程阶段
   async getGameflowPhase(): Promise<GameflowPhaseEnum> {
-    try {
-      const phase = await this.makeRequest(
-        'GET',
-        '/lol-gameflow/v1/gameflow-phase'
-      );
-      return phase as GameflowPhaseEnum;
-    } catch (error) {
-      throw new Error(`获取游戏流程阶段失败: ${error}`);
-    }
+    return this.makeRequest('GET', '/lol-gameflow/v1/gameflow-phase');
   }
 
   // 获取 Ready Check 状态
   async getReadyCheckState(): Promise<ReadyCheckState> {
-    try {
-      const data = await this.makeRequest(
-        'GET',
-        '/lol-matchmaking/v1/ready-check'
-      );
-      return data;
-    } catch (error) {
-      throw new Error(`获取 Ready Check 状态失败: ${error}`);
-    }
+    return this.makeRequest('GET', '/lol-matchmaking/v1/ready-check');
   }
 
   // 接受 Ready Check
   async acceptReadyCheck(): Promise<void> {
-    try {
-      await this.makeRequest('POST', '/lol-matchmaking/v1/ready-check/accept');
-      console.log('成功接受 Ready Check');
-    } catch (error) {
-      throw new Error(`接受 Ready Check 失败: ${error}`);
-    }
+    await this.makeRequest('POST', '/lol-matchmaking/v1/ready-check/accept');
   }
 
   // 拒绝 Ready Check
   async declineReadyCheck(): Promise<void> {
-    try {
-      await this.makeRequest('POST', '/lol-matchmaking/v1/ready-check/decline');
-      console.log('成功拒绝 Ready Check');
-    } catch (error) {
-      throw new Error(`拒绝 Ready Check 失败: ${error}`);
-    }
+    await this.makeRequest('POST', '/lol-matchmaking/v1/ready-check/decline');
   }
 
   // 检查是否有待接受的对局
   async hasReadyCheck(): Promise<boolean> {
-    try {
-      const phase = await this.getGameflowPhase();
-      if (phase !== GameflowPhaseEnum.ReadyCheck) {
-        return false;
-      }
-
-      const readyCheckState = await this.getReadyCheckState();
-      return (
-        readyCheckState.state === 'InProgress' &&
-        readyCheckState.playerResponse === 'None'
-      );
-    } catch (error) {
-      // 如果获取失败，可能是没有 Ready Check 或者不在相应阶段
-      console.warn('检查 Ready Check 状态失败:', error);
+    const phase = await this.getGameflowPhase();
+    if (phase !== GameflowPhaseEnum.ReadyCheck) {
       return false;
     }
-  }
-
-  // 检查是否在匹配中
-  async isInMatchmaking(): Promise<boolean> {
-    try {
-      const phase = await this.getGameflowPhase();
-      return phase === GameflowPhaseEnum.Matchmaking;
-    } catch (error) {
-      console.warn('检查匹配状态失败:', error);
-      return false;
-    }
+    const readyCheckState = await this.getReadyCheckState();
+    return (
+      readyCheckState.state === 'InProgress' &&
+      readyCheckState.playerResponse === 'None'
+    );
   }
 
   // 检查是否在游戏中
   async isInGame(): Promise<boolean> {
-    try {
-      const phase = await this.getGameflowPhase();
-      return [
-        GameflowPhaseEnum.ChampSelect,
-        GameflowPhaseEnum.GameStart,
-        GameflowPhaseEnum.InProgress,
-        GameflowPhaseEnum.Reconnect,
-        GameflowPhaseEnum.WaitingForStats,
-        GameflowPhaseEnum.PreEndOfGame,
-        GameflowPhaseEnum.EndOfGame,
-      ].includes(phase);
-    } catch (error) {
-      console.warn('检查游戏状态失败:', error);
-      return false;
-    }
+    const phase = await this.getGameflowPhase();
+    return [
+      GameflowPhaseEnum.ChampSelect,
+      GameflowPhaseEnum.GameStart,
+      GameflowPhaseEnum.InProgress,
+      GameflowPhaseEnum.Reconnect,
+      GameflowPhaseEnum.WaitingForStats,
+      GameflowPhaseEnum.PreEndOfGame,
+      GameflowPhaseEnum.EndOfGame,
+    ].includes(phase);
   }
 }

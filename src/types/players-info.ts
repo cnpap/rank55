@@ -8,8 +8,15 @@ export interface PlaysInfo {
   detailedPlayersInfo: DetailedPlayersInfo;
 }
 
+export type AssignedPosition =
+  | 'bottom'
+  | 'top'
+  | 'middle'
+  | 'jungle'
+  | 'support';
+
 export interface RankTeam {
-  assignedPosition: 'bottom' | 'top' | 'middle' | 'jungle' | 'support';
+  assignedPosition: AssignedPosition;
   cellId: number;
   championId: number;
   championPickIntent: number;

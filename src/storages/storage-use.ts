@@ -1,4 +1,5 @@
 // session
+import { AssignedPosition } from '@/types/players-info';
 import { TypedStorageService } from './storage';
 
 type $SessionStorage = {};
@@ -13,7 +14,7 @@ export interface PositionSetting {
   pickChampions: string[];
 }
 
-export type PositionSettings = Record<string, PositionSetting>;
+export type PositionSettings = Record<AssignedPosition, PositionSetting>;
 
 type $LocalStorage = {
   uid: string;

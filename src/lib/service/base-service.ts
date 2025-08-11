@@ -1,4 +1,6 @@
 import { LCUClientInterface } from '../client/interface';
+// import { readdir, writeFile, mkdir, appendFile } from 'fs/promises';
+// import { join } from 'path';
 
 /**
  * 基础服务类
@@ -6,9 +8,137 @@ import { LCUClientInterface } from '../client/interface';
  */
 export abstract class BaseService {
   protected client?: LCUClientInterface;
+  private static requestSequence: number = 0;
+  private static readonly LOG_DIR = 'logs/requests';
+  private static readonly SUMMARY_LOG_PATH = 'logs/requests-summary.log';
 
   constructor(client?: LCUClientInterface) {
     this.client = client;
+  }
+
+  /**
+   * 获取下一个请求序号
+   */
+  private static async getNextSequence(): Promise<number> {
+    const fs = await import('fs/promises');
+    if (BaseService.requestSequence === 0) {
+      // 初始化序号，检查日志文件夹
+      try {
+        // 确保日志目录存在
+        await fs.mkdir(BaseService.LOG_DIR, { recursive: true });
+
+        const fileUtil = await import('../../utils/file-utils');
+        // 检查是否有现有的日志文件
+        if (await fileUtil.fileExists(BaseService.LOG_DIR)) {
+          const files = await fs.readdir(BaseService.LOG_DIR);
+          const logFiles = files.filter(file => file.match(/^\d{8}\.log$/));
+
+          if (logFiles.length > 0) {
+            // 找到最大的序号
+            const maxSequence = Math.max(
+              ...logFiles.map(file => parseInt(file.substring(0, 8), 10))
+            );
+            BaseService.requestSequence = maxSequence + 1;
+          } else {
+            // 没有日志文件，从1开始
+            BaseService.requestSequence = 1;
+          }
+        } else {
+          BaseService.requestSequence = 1;
+        }
+      } catch (error) {
+        console.error('初始化请求序号失败:', error);
+        BaseService.requestSequence = 1;
+      }
+    } else {
+      BaseService.requestSequence++;
+    }
+
+    return BaseService.requestSequence;
+  }
+
+  /**
+   * 格式化时间为 YYYY-MM-DD HH-mm-ss 格式
+   */
+  private static formatDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}-${minutes}-${seconds}`;
+  }
+
+  /**
+   * 记录汇总日志
+   */
+  private static async logSummary(
+    sequence: number,
+    method: string,
+    endpoint: string
+  ): Promise<void> {
+    try {
+      const fs = await import('fs/promises');
+      // 确保日志目录存在
+      await fs.mkdir(BaseService.LOG_DIR, { recursive: true });
+
+      const now = new Date();
+      const timeStr = BaseService.formatDateTime(now);
+      const sequenceStr = sequence.toString().padStart(8, '0');
+
+      // 格式：时间 YYYY-MM-DD 时-分-秒 序号 method url
+      const logLine = `${timeStr} ${sequenceStr} ${method} ${endpoint}\n`;
+
+      // 追加到汇总日志文件
+      await fs.appendFile(BaseService.SUMMARY_LOG_PATH, logLine, 'utf-8');
+    } catch (error) {
+      console.error('写入汇总日志失败:', error);
+    }
+  }
+
+  /**
+   * 记录详细请求日志
+   */
+  private static async logRequest(
+    sequence: number,
+    method: string,
+    endpoint: string,
+    response?: any,
+    contentType?: string,
+    statusCode?: number
+  ): Promise<void> {
+    try {
+      const fs = await import('fs/promises');
+      // 确保日志目录存在
+      await fs.mkdir(BaseService.LOG_DIR, { recursive: true });
+
+      // 生成8位序号文件名
+      const sequenceStr = sequence.toString().padStart(8, '0');
+      const logFileName = `${sequenceStr}.log`;
+      const logFilePath = `${BaseService.LOG_DIR}/${logFileName}`;
+
+      // 生成日志内容
+      const logContent = {
+        sequence: sequenceStr,
+        method,
+        url: endpoint,
+        timestamp: new Date().toISOString(),
+        statusCode: statusCode,
+        contentType: contentType,
+        response: response,
+      };
+
+      // 写入详细日志文件
+      await fs.writeFile(
+        logFilePath,
+        JSON.stringify(logContent, null, 2),
+        'utf-8'
+      );
+    } catch (error) {
+      console.error('写入请求日志失败:', error);
+    }
   }
 
   /**
@@ -18,26 +148,94 @@ export abstract class BaseService {
    * @param body 请求体（可选）
    * @returns Promise<any>
    */
-  protected async makeRequest(
+  protected async makeRequest<T = unknown>(
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
     body?: any
-  ): Promise<any> {
+  ): Promise<T> {
     if (this.client) {
       // 使用传入的 LCUClient（测试环境）
-      switch (method) {
-        case 'GET':
-          return this.client.get(endpoint);
-        case 'POST':
-          return this.client.post(endpoint, body);
-        case 'PATCH':
-          return this.client.patch(endpoint, body);
-        case 'PUT':
-          return this.client.put(endpoint, body);
-        case 'DELETE':
-          return this.client.delete(endpoint);
-        default:
-          throw new Error(`不支持的 HTTP 方法: ${method}`);
+      let response: any;
+      let sequence: number;
+
+      try {
+        // 获取序号
+        sequence = await BaseService.getNextSequence();
+
+        // 记录汇总日志（在请求前记录）
+        await BaseService.logSummary(sequence, method, endpoint);
+
+        // 执行请求
+        switch (method) {
+          case 'GET':
+            response = await this.client.get(endpoint);
+            break;
+          case 'POST':
+            response = await this.client.post(endpoint, body);
+            break;
+          case 'PATCH':
+            response = await this.client.patch(endpoint, body);
+            break;
+          case 'PUT':
+            response = await this.client.put(endpoint, body);
+            break;
+          case 'DELETE':
+            response = await this.client.delete(endpoint);
+            break;
+          default:
+            throw new Error(`不支持的 HTTP 方法: ${method}`);
+        }
+
+        // 推断 Content-Type（基于响应内容）
+        let contentType = 'application/json'; // 默认值
+        let statusCode: number | undefined;
+
+        // 检查响应类型并推断 Content-Type
+        if (response === null || response === undefined) {
+          contentType = 'application/json';
+        } else if (typeof response === 'string') {
+          contentType = 'text/plain';
+        } else if (typeof response === 'object') {
+          contentType = 'application/json';
+        }
+
+        // 如果响应包含元数据（未来扩展）
+        if (
+          response &&
+          typeof response === 'object' &&
+          response.hasOwnProperty('data') &&
+          response.hasOwnProperty('headers')
+        ) {
+          contentType = response.headers?.['content-type'] || contentType;
+          statusCode = response.statusCode;
+          response = response.data;
+        }
+
+        // 记录详细日志
+        await BaseService.logRequest(
+          sequence,
+          method,
+          endpoint,
+          response,
+          contentType,
+          statusCode
+        );
+
+        return response;
+      } catch (error: any) {
+        // 即使请求失败也要记录详细日志
+        if (sequence!) {
+          await BaseService.logRequest(
+            sequence,
+            method,
+            endpoint,
+            {
+              error: error.message,
+            },
+            'application/json'
+          );
+        }
+        throw error;
       }
     } else {
       // 使用 electronAPI（前端环境）

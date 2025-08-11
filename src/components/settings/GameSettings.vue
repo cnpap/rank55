@@ -2,37 +2,20 @@
 import { ref, onMounted, watch } from 'vue';
 import { $local } from '@/storages/storage-use';
 import { toast } from 'vue-sonner';
-import { eventBus } from '@/lib/event-bus';
 import { RotateCcw } from 'lucide-vue-next';
 
 const autoAcceptGame = ref(false);
 
 // 加载设置
 function loadSettings() {
-  try {
-    const savedAutoAccept = $local.getItem('autoAcceptGame');
-    autoAcceptGame.value = savedAutoAccept || false;
-  } catch (error) {
-    console.error('加载游戏设置失败:', error);
-  }
+  const savedAutoAccept = $local.getItem('autoAcceptGame');
+  autoAcceptGame.value = savedAutoAccept || false;
 }
 
 // 保存设置
 function saveSettings() {
-  try {
-    $local.setItem('autoAcceptGame', autoAcceptGame.value);
-    toast.success('游戏设置已保存');
-
-    // 发送事件通知
-    if (autoAcceptGame.value) {
-      eventBus.emit('auto-accept:enable');
-    } else {
-      eventBus.emit('auto-accept:disable');
-    }
-  } catch (error) {
-    console.error('保存游戏设置失败:', error);
-    toast.error('保存游戏设置失败');
-  }
+  $local.setItem('autoAcceptGame', autoAcceptGame.value);
+  toast.success('游戏设置已保存');
 }
 
 // 监听设置变化并自动保存
@@ -49,11 +32,6 @@ function resetSettings() {
 
 onMounted(() => {
   loadSettings();
-
-  // 如果已经开启自动接受，发送启用事件
-  if (autoAcceptGame.value) {
-    eventBus.emit('auto-accept:enable');
-  }
 });
 
 // 暴露方法给父组件

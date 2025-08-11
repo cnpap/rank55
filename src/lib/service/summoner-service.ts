@@ -11,34 +11,25 @@ export class SummonerService extends BaseService {
 
   // 获取比赛详细数据
   async getMatchDetail(gameID: number): Promise<Game> {
-    try {
-      const endpoint = `/lol-match-history/v1/games/${gameID}`;
-      const data = await this.makeRequest('GET', endpoint);
-      console.log('getMatchDetail', data);
-      return data;
-    } catch (error) {
-      throw new Error(`获取比赛详细数据失败: ${error}`);
-    }
+    const endpoint = `/lol-match-history/v1/games/${gameID}`;
+    const data = await this.makeRequest<Game>('GET', endpoint);
+    return data;
   }
 
   // 获取当前召唤师信息
   async getCurrentSummoner(): Promise<SummonerData> {
-    try {
-      const data = await this.makeRequest(
-        'GET',
-        '/lol-summoner/v1/current-summoner'
-      );
-      return data;
-    } catch (error) {
-      throw new Error(`获取当前召唤师失败: ${error}`);
-    }
+    const data = await this.makeRequest<SummonerData>(
+      'GET',
+      '/lol-summoner/v1/current-summoner'
+    );
+    return data;
   }
 
   // 根据名称获取召唤师信息
   async getSummonerByName(name: string): Promise<SummonerData> {
     try {
       const endpoint = `/lol-summoner/v1/summoners?name=${encodeURIComponent(name)}`;
-      const data = await this.makeRequest('GET', endpoint);
+      const data = await this.makeRequest<SummonerData>('GET', endpoint);
       return data;
     } catch (error: any) {
       if (error.message.includes('404')) {
@@ -55,14 +46,10 @@ export class SummonerService extends BaseService {
   }
 
   // 通过召唤师ID获取召唤师信息
-  async getSummonerByID(summonerID: number): Promise<any> {
-    try {
-      const endpoint = `/lol-summoner/v1/summoners/${summonerID}`;
-      const data = await this.makeRequest('GET', endpoint);
-      return data;
-    } catch (error) {
-      throw new Error(`根据ID获取召唤师失败: ${error}`);
-    }
+  async getSummonerByID(summonerID: number): Promise<SummonerData> {
+    const endpoint = `/lol-summoner/v1/summoners/${summonerID}`;
+    const data = await this.makeRequest<SummonerData>('GET', endpoint);
+    return data;
   }
 
   // 获取比赛历史 - 使用PUUID
@@ -74,7 +61,7 @@ export class SummonerService extends BaseService {
     try {
       console.log('getMatchHistory', puuid, beginIndex, endIndex);
       const endpoint = `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=${beginIndex}&endIndex=${endIndex}`;
-      const data = await this.makeRequest('GET', endpoint);
+      const data = await this.makeRequest<MatchHistory>('GET', endpoint);
       return data;
     } catch (error) {
       throw new Error(`获取比赛历史失败: ${error}`);
@@ -83,13 +70,9 @@ export class SummonerService extends BaseService {
 
   // 获取排位统计
   async getRankedStats(puuid: string): Promise<RankedStats> {
-    try {
-      const endpoint = `/lol-ranked/v1/ranked-stats/${puuid}`;
-      const data = await this.makeRequest('GET', endpoint);
-      return data;
-    } catch (error) {
-      throw new Error(`获取排位统计失败: ${error}`);
-    }
+    const endpoint = `/lol-ranked/v1/ranked-stats/${puuid}`;
+    const data = await this.makeRequest<RankedStats>('GET', endpoint);
+    return data;
   }
 
   // 获取指定玩家的排位统计（通过PUUID）

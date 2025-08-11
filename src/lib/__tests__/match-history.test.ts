@@ -2,26 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
-import fs from 'fs/promises';
-import path from 'path';
 import { testDataLoader } from '../data-loader';
 import {
   formatGameDuration,
   formatNumber,
   getQueueName,
 } from '../rank-helpers';
-
-// 创建测试数据目录路径
-const TEST_DATA_DIR = path.join(__dirname, 'test-data');
-
-// 确保测试数据目录存在
-async function ensureTestDataDir() {
-  try {
-    await fs.access(TEST_DATA_DIR);
-  } catch {
-    await fs.mkdir(TEST_DATA_DIR, { recursive: true });
-  }
-}
 
 describe('MatchHistory', () => {
   let lcuClient: LCUClientInterface;
@@ -40,18 +26,6 @@ describe('MatchHistory', () => {
     });
 
     it('应该能够获取战绩历史', async () => {
-      if (!lcuClient) return;
-
-      console.log('=== 开始测试真实LOL客户端战绩查询 ===');
-
-      const isConnected = await lcuClient.isConnected();
-      if (!isConnected) {
-        console.log('⏭️ LOL客户端未连接');
-        return;
-      }
-
-      console.log('🔗 成功连接到LOL客户端');
-
       // 先获取当前召唤师信息
       const summoner = await summonerService.getCurrentSummoner();
       if (!summoner) {
@@ -88,14 +62,6 @@ describe('MatchHistory', () => {
         ) {
           console.log('ℹ️ 当前召唤师没有游戏记录');
         } else {
-          // 确保测试数据目录存在
-          await ensureTestDataDir();
-
-          // 保存战绩数据到测试数据文件夹
-          const filename = path.join(TEST_DATA_DIR, 'match_history.json');
-          await fs.writeFile(filename, JSON.stringify(matchHistory, null, 2));
-          console.log(`💾 战绩数据已保存到: ${filename}`);
-
           // 显示详细的中文战绩表格
           await printMatchHistoryTable(matchHistory, summoner);
         }

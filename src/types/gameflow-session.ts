@@ -1,4 +1,4 @@
-export interface GameflowSession {
+export interface GameflowSessionResponse {
   timestamp: string;
   gameflowPhase: string;
   isInMatchmaking: boolean;

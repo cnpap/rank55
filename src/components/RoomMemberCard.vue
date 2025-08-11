@@ -11,7 +11,7 @@ import {
   copyToClipboard,
 } from '@/lib/player-helpers';
 import { getRankMiniImageUrl } from '@/lib/rank-helpers';
-import { gameAssets } from '@/assets/data-assets';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
   member: MemberWithDetails;
@@ -158,7 +158,7 @@ const handleKick = () => {
 
             <!-- 头像 -->
             <img
-              :src="gameAssets.getProfileIcon(`${member.summonerIconId}`)"
+              :src="staticAssets.getProfileIcon(`${member.summonerIconId}`)"
               :alt="displayName"
               class="relative h-11 w-11 object-cover"
             />

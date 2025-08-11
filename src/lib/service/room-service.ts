@@ -13,73 +13,54 @@ export class RoomService extends BaseService {
 
   // 获取当前房间信息
   async getCurrentLobby(): Promise<Room> {
-    try {
-      const data = await this.makeRequest('GET', '/lol-lobby/v2/lobby');
-      return data;
-    } catch (error) {
-      throw new Error(`获取当前房间信息失败: ${error}`);
-    }
+    return this.makeRequest<Room>('GET', '/lol-lobby/v2/lobby');
   }
 
   // 获取房间成员列表
   async getLobbyMembers(): Promise<Member[]> {
-    try {
-      const lobby = await this.getCurrentLobby();
-
-      if (!lobby || !lobby.members) {
-        return [];
-      }
-
-      console.log('getLobbyMembers', lobby.members);
-      return lobby.members;
-    } catch (error) {
-      throw new Error(`获取房间成员失败: ${error}`);
-    }
+    const lobby = await this.getCurrentLobby();
+    return lobby.members;
   }
 
   // 获取详细的房间成员信息（包含召唤师详情）
   async getDetailedLobbyMembers(): Promise<Member[]> {
-    try {
-      const members = await this.getLobbyMembers();
-      const detailedMembers = [];
+    const members = await this.getLobbyMembers();
+    const detailedMembers = [];
 
-      for (const member of members) {
-        try {
-          // 获取召唤师详细信息
-          let summonerInfo = null;
-          if (member.summonerId) {
-            try {
-              summonerInfo = await this.summonerService.getSummonerByID(
-                member.summonerId
-              );
-            } catch (error) {
-              console.warn(
-                `无法获取召唤师 ${member.summonerId} 的详细信息:`,
-                error
-              );
-            }
+    for (const member of members) {
+      try {
+        // 获取召唤师详细信息
+        let summonerInfo = null;
+        if (member.summonerId) {
+          try {
+            summonerInfo = await this.summonerService.getSummonerByID(
+              member.summonerId
+            );
+          } catch (error) {
+            console.warn(
+              `无法获取召唤师 ${member.summonerId} 的详细信息:`,
+              error
+            );
           }
-
-          detailedMembers.push({
-            ...member,
-            summonerInfo,
-          });
-        } catch (error) {
-          console.warn('处理成员信息时出错:', error);
-          detailedMembers.push(member);
         }
-      }
 
-      return detailedMembers;
-    } catch (error) {
-      throw new Error(`获取详细房间成员信息失败: ${error}`);
+        detailedMembers.push({
+          ...member,
+          summonerInfo,
+        });
+      } catch (error) {
+        console.warn('处理成员信息时出错:', error);
+        detailedMembers.push(member);
+      }
     }
+
+    return detailedMembers;
   }
 
   // 获取房间邀请列表
   async getLobbyInvitations(): Promise<any[]> {
     try {
-      const data = await this.makeRequest(
+      const data = await this.makeRequest<any[]>(
         'GET',
         '/lol-lobby/v2/lobby/invitations'
       );
