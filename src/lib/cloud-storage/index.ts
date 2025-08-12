@@ -23,3 +23,4 @@ export const ucloudService = getCloudStorageService('ucloud');
 export const aliyunOssClient = getS3Client('aliyun');
 export const s3Client = getS3Client('cloudflare');
 export const ucloudUs3Client = getS3Client('ucloud');
+export const ucloudDomainClient = getS3Client('ucloud-domain');

@@ -1,5 +1,9 @@
 // 云存储提供商类型
-export type CloudProvider = 'aliyun' | 'cloudflare' | 'ucloud';
+export type CloudProvider =
+  | 'aliyun'
+  | 'cloudflare'
+  | 'ucloud'
+  | 'ucloud-domain';
 
 // S3 客户端配置接口
 export interface S3ClientConfig {

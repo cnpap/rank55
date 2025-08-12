@@ -3,7 +3,7 @@ import { resolve, join } from 'path';
 import { readdir, readFile, stat, writeFile } from 'fs/promises';
 import { Upload } from '@aws-sdk/lib-storage';
 import { envConfig } from '@/env';
-import { ucloudUs3Client } from '@/lib/cloud-storage';
+import { ucloudDomainClient, ucloudUs3Client } from '@/lib/cloud-storage';
 import { generateUcloudPublicUrl } from '@/lib/ucloud-us3';
 
 interface UploadOptions {
@@ -45,7 +45,8 @@ function formatBytes(bytes: number): string {
 async function uploadFile(
   filePath: string,
   key: string,
-  bucketName: string
+  bucketName: string,
+  isVersionFile: boolean = false
 ): Promise<void> {
   try {
     const fileContent = await readFile(filePath);
@@ -53,10 +54,14 @@ async function uploadFile(
 
     console.log(`开始上传: ${key} (${formatBytes(fileSize)})`);
 
+    // 根据文件类型选择不同的客户端
+    const client = isVersionFile ? ucloudDomainClient : ucloudUs3Client;
+    const bucket = isVersionFile ? 'rankpub' : bucketName;
+
     const upload = new Upload({
-      client: ucloudUs3Client,
+      client: client,
       params: {
-        Bucket: bucketName,
+        Bucket: bucket,
         Key: key,
         Body: fileContent,
         ACL: 'public-read',
@@ -239,7 +244,7 @@ export const uploadReleaseCommand = new Command('upload-release')
       for (const file of normalFiles) {
         const filePath = join(releaseDir, file);
         const key = `downloads/v${version}/${file}`;
-        await uploadFile(filePath, key, bucketName);
+        await uploadFile(filePath, key, bucketName, false); // 使用 ucloudUs3Client
       }
 
       // 最后上传 latest 文件（确保其他文件都已上传完成）
@@ -249,7 +254,7 @@ export const uploadReleaseCommand = new Command('upload-release')
         // latest 文件上传到两个位置
         // 1. 版本目录
         const versionKey = `downloads/v${version}/${file}`;
-        await uploadFile(filePath, versionKey, bucketName);
+        await uploadFile(filePath, versionKey, bucketName, true); // 使用 ucloudDomainClient
 
         // 2. 根目录（用于自动更新检查）
         if (file === 'latest.yml') {
@@ -267,7 +272,7 @@ export const uploadReleaseCommand = new Command('upload-release')
               ) {
                 return match;
               }
-              return `path: downloads/v${version}/${cleanValue}`;
+              return `path: https://rank55.cn-wlcb.ufileos.com/downloads/v${version}/${cleanValue}`;
             }
           );
 
@@ -282,16 +287,16 @@ export const uploadReleaseCommand = new Command('upload-release')
               ) {
                 return match;
               }
-              return `${indent}- url: downloads/v${version}/${cleanValue}`;
+              return `${indent}- url: https://rank55.cn-wlcb.ufileos.com/downloads/v${version}/${cleanValue}`;
             }
           );
 
           // 上传修改后的 latest.yml 到根目录
           const rootKey = file;
           const upload = new Upload({
-            client: ucloudUs3Client,
+            client: ucloudDomainClient, // 使用 ucloudDomainClient
             params: {
-              Bucket: bucketName,
+              Bucket: 'rankpub',
               Key: rootKey,
               Body: Buffer.from(yamlContent, 'utf-8'),
               ACL: 'public-read',
@@ -302,7 +307,7 @@ export const uploadReleaseCommand = new Command('upload-release')
         } else {
           // 其他 latest 文件直接上传
           const rootKey = file;
-          await uploadFile(filePath, rootKey, bucketName);
+          await uploadFile(filePath, rootKey, bucketName); // 使用 ucloudDomainClient
         }
       }
 

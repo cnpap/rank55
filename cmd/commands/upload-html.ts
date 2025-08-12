@@ -2,8 +2,7 @@ import { Command } from 'commander';
 import { resolve, join, extname } from 'path';
 import { readdir, readFile, stat } from 'fs/promises';
 import { Upload } from '@aws-sdk/lib-storage';
-import { envConfig } from '@/env';
-import { ucloudUs3Client } from '@/lib/cloud-storage';
+import { ucloudDomainClient } from '@/lib/cloud-storage';
 
 interface UploadHtmlOptions {
   htmlDir?: string;
@@ -59,7 +58,7 @@ async function uploadFileToS3(
     console.log(`开始上传: ${key} (${formatBytes(fileSize)})`);
 
     const upload = new Upload({
-      client: ucloudUs3Client,
+      client: ucloudDomainClient,
       params: {
         Bucket: bucketName,
         Key: key,
@@ -174,15 +173,7 @@ export const uploadHtmlCommand = new Command('upload-html')
       }
 
       // 获取存储桶名称，优先使用命令行参数，然后是环境变量
-      let bucketName: string;
-      try {
-        bucketName = options.bucket || envConfig.ucloud.us3.bucket();
-      } catch {
-        throw new Error(
-          '未配置存储桶名称，请在 .env 文件中设置 STORAGE_BUCKET_NAME 或使用 -b 参数指定'
-        );
-      }
-
+      let bucketName: string = 'rankpub';
       const prefix = options.prefix || '';
       console.log(`存储桶: ${bucketName}`);
       if (prefix) {
@@ -202,13 +193,7 @@ export const uploadHtmlCommand = new Command('upload-html')
       }
 
       console.log('\n🎉 上传完成!');
-      if (prefix) {
-        console.log(`网站访问地址: https://lol.opss.dev/${prefix}/index.html`);
-        console.log(`所有文件都已上传到: https://lol.opss.dev/${prefix}/`);
-      } else {
-        console.log(`网站访问地址: https://lol.opss.dev/index.html`);
-        console.log(`所有文件都已上传到: https://lol.opss.dev/`);
-      }
+      console.log(`网站访问地址: https://rank55.com`);
     } catch (error) {
       console.error(
         '上传 HTML 文件失败:',

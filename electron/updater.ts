@@ -214,7 +214,7 @@ export class UpdateManager {
     // 配置自动更新器 - 使用 US3
     autoUpdater.setFeedURL({
       provider: 'generic',
-      url: 'rank55.com',
+      url: 'https://rank55.com/',
       channel: 'latest',
       updaterCacheDirName: 'lol-frontend-updater',
     });

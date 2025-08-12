@@ -41,7 +41,16 @@ function getProviderConfig(provider: CloudProvider): S3ClientConfig {
         },
         forcePathStyle: true, // UCloud US3 使用路径样式
       };
-
+    case 'ucloud-domain':
+      return {
+        region: 's3-hk',
+        endpoint: `https://s3-hk.ufileos.com`,
+        credentials: {
+          accessKeyId: envConfig.ucloud.publicKey(),
+          secretAccessKey: envConfig.ucloud.privateKey(),
+        },
+        forcePathStyle: true, // UCloud US3 使用路径样式
+      };
     default:
       throw new Error(`不支持的云存储提供商: ${provider}`);
   }
