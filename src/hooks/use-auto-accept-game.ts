@@ -1,295 +1,133 @@
 import { ref, onMounted, onUnmounted } from 'vue';
-import { GameflowService } from '@/lib/service/gameflow-service';
-import { $local, PositionSetting } from '@/storages/storage-use';
-import { toast } from 'vue-sonner';
-import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { GamePhaseManager } from '@/lib/service/game-phase-manager';
+import { AutoActionService } from '@/lib/service/auto-action-service';
 import { BanPickService } from '@/lib/service/ban-pick-service';
+import { $local } from '@/storages/storage-use';
+import { GameflowPhaseEnum } from '@/types/gameflow-session';
 
 export function useAutoAcceptGame() {
   const gamePhaseTimer = ref<NodeJS.Timeout | null>(null);
-  const lastGamePhase = ref<GameflowPhaseEnum | null>(null);
-
-  // 新增：跟踪操作开始时间和状态
-  const actionStartTime = ref<number | null>(null);
-  const currentActionType = ref<'ban' | 'pick' | null>(null);
-  const actionExecuted = ref<boolean>(false);
-
+  const gamePhaseManager = new GamePhaseManager();
+  const autoActionService = new AutoActionService();
   const banpickService = new BanPickService();
-  const gameflowService = new GameflowService();
 
-  // 重置操作状态
-  const resetActionState = () => {
-    actionStartTime.value = null;
-    currentActionType.value = null;
-    actionExecuted.value = false;
-  };
-
-  // 检查游戏阶段并执行相应操作
   const checkGamePhaseAndExecute = async (): Promise<void> => {
-    // 获取当前游戏阶段
-    const phase = await gameflowService.getGameflowPhase();
-    console.log(`当前游戏阶段: ${phase}`);
+    try {
+      const phase = await gamePhaseManager.getCurrentPhase();
+      console.log(`当前游戏阶段: ${phase}`);
 
-    // 场景 1
-    if (phase === GameflowPhaseEnum.ReadyCheck) {
-      console.log('当前游戏阶段: 准备检查');
-      // 检查本地存储中是否开启了自动接受对局
-      const autoAcceptEnabled = $local.getItem('autoAcceptGame');
-      if (!autoAcceptEnabled) {
-        return;
-      }
-      // 检查是否有待接受的对局
-      const hasReadyCheck = await gameflowService.hasReadyCheck();
-      if (hasReadyCheck) {
-        console.log('检测到待接受的对局，正在自动接受...');
-        await gameflowService.acceptReadyCheck();
-
-        toast.success('已自动接受对局');
-        console.log('✅ 自动接受对局成功');
-        return;
-      }
-    }
-
-    // 场景 2
-    if (phase === GameflowPhaseEnum.ChampSelect) {
-      const session = await banpickService.getChampSelectSession();
-      const flatActions = session.actions.flat();
-      const action = flatActions.find(
-        a => a.isInProgress && a.actorCellId === session.localPlayerCellId
-      );
-
-      if (
-        !action ||
-        action.isInProgress !== true ||
-        action.actorCellId !== session.localPlayerCellId
-      ) {
-        console.log(`当前位置未开始选择，等待中...`);
-        // 如果没有进行中的操作，重置状态
-        resetActionState();
+      // 场景 1: 准备检查阶段
+      if (phase === GameflowPhaseEnum.ReadyCheck) {
+        await autoActionService.executeReadyCheckAction();
         return;
       }
 
-      const myPosition = session.myTeam.filter(
-        item => item.cellId === session.localPlayerCellId
-      )[0].assignedPosition;
-
-      const positionSettings = $local.getItem('positionSettings');
-      if (!positionSettings) {
-        console.log('未配置位置设置');
-        return;
+      // 场景 2: 英雄选择阶段
+      if (phase === GameflowPhaseEnum.ChampSelect) {
+        await handleChampSelectPhase();
+      } else {
+        // 如果不在 ChampSelect 阶段，重置操作状态
+        gamePhaseManager.resetActionState();
       }
 
-      console.log(`当前位置: ${myPosition}`);
-      const myPositionInfo = positionSettings[myPosition];
-      if (!myPositionInfo) {
-        console.log(`未配置当前位置的设置`);
-        return;
+      // 记录阶段变化
+      const { currentPhase, lastPhase } = gamePhaseManager.currentState;
+      if (lastPhase !== currentPhase) {
+        console.log(`游戏阶段变化: ${lastPhase} -> ${currentPhase}`);
       }
-
-      console.log(`当前位置设置: ${JSON.stringify(myPositionInfo)}`);
-      const type = action.type as 'ban' | 'pick';
-
-      // 检查是否是新的操作阶段
-      if (currentActionType.value !== type || actionExecuted.value) {
-        // 新的操作阶段，重置状态并记录开始时间
-        actionStartTime.value = Date.now();
-        currentActionType.value = type;
-        actionExecuted.value = false;
-        console.log(`🕐 开始 ${type} 阶段倒计时`);
-      }
-
-      // 获取对应的倒计时设置
-      const countdownKey =
-        type === 'ban' ? 'autoBanCountdown' : 'autoPickCountdown';
-      const countdown = $local.getItem(countdownKey) || 5;
-
-      // 检查是否已经过了倒计时时间
-      const elapsed = Date.now() - (actionStartTime.value || 0);
-      const remainingTime = Math.max(0, countdown * 1000 - elapsed);
-
-      if (remainingTime > 0) {
-        const remainingSeconds = Math.ceil(remainingTime / 1000);
-        console.log(`⏳ ${type} 操作倒计时中，还剩 ${remainingSeconds} 秒`);
-        return;
-      }
-
-      // 倒计时结束，执行操作
-      if (!actionExecuted.value) {
-        console.log(`⏰ ${type} 倒计时结束，开始执行操作`);
-        actionExecuted.value = true;
-
-        if (type === 'ban') {
-          await executeBanAction(flatActions, myPositionInfo);
-        } else if (type === 'pick') {
-          await executePickAction(flatActions, myPositionInfo);
-        }
-      }
-    } else {
-      // 如果不在 ChampSelect 阶段，重置操作状态
-      resetActionState();
-    }
-
-    // 如果阶段发生变化，记录日志
-    if (lastGamePhase.value !== phase) {
-      console.log(`游戏阶段变化: ${lastGamePhase.value} -> ${phase}`);
-      lastGamePhase.value = phase;
+    } catch (error) {
+      console.error('游戏阶段轮询出错:', error);
     }
   };
 
-  // 执行禁用操作
-  const executeBanAction = async (
-    flatActions: any[],
-    myPositionInfo: PositionSetting
-  ) => {
-    const autoBanEnabled = $local.getItem('autoBanEnabled');
-    console.log(`自动禁用开关状态: ${autoBanEnabled}`);
-    console.log(
-      `当前位置禁用英雄列表: ${JSON.stringify(myPositionInfo.banChampions)}`
+  const handleChampSelectPhase = async (): Promise<void> => {
+    const session = await banpickService.getChampSelectSession();
+    const { actions, myTeam, localPlayerCellId } = session;
+    const flatActions = actions.flat();
+    const positionSettings = $local.getItem('positionSettings');
+
+    if (!positionSettings) {
+      console.log('未配置位置设置');
+      return;
+    }
+
+    // 检查是否是预选阶段
+    if (flatActions.every(a => !a.isInProgress)) {
+      await autoActionService.executePrePickAction(session);
+      return;
+    }
+
+    // 检查游戏是否即将开始
+    const gameWillStart = await gamePhaseManager.checkGameStartCondition();
+    if (gameWillStart) {
+      console.log('🎮 游戏即将开始，session 已持久化');
+      return;
+    }
+
+    // 处理当前进行中的操作
+    const action = flatActions.find(
+      a => a.isInProgress && a.actorCellId === localPlayerCellId
     );
 
-    if (!autoBanEnabled || myPositionInfo.banChampions.length === 0) {
-      console.log('未配置自动禁用英雄或开关未开启');
+    if (!action) {
+      console.log('当前位置未开始选择，等待中...');
+      gamePhaseManager.resetActionState();
       return;
     }
 
-    // 获取当前会话信息
-    const session = await banpickService.getChampSelectSession();
-
-    // 获取所有已禁用的英雄
-    const banedChampions = flatActions
-      .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
-      .map(a => a.championId);
-    console.log(`已禁用的英雄: ${banedChampions}`);
-
-    // 获取所有预选的英雄（包括我方和敌方）
-    const prePickedChampions = [
-      ...session.myTeam
-        .filter(player => player.championPickIntent !== 0)
-        .map(player => player.championPickIntent),
-      ...session.theirTeam
-        .filter(player => player.championPickIntent !== 0)
-        .map(player => player.championPickIntent),
-    ];
-    console.log(`预选的英雄: ${prePickedChampions}`);
-
-    for (const championId of myPositionInfo.banChampions) {
-      console.log(`当前禁用英雄: ${championId}`);
-      const championIdNum = parseInt(championId);
-      console.log(`尝试禁用英雄: ${championIdNum}`);
-
-      if (banedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被禁用，跳过`);
-        continue;
-      }
-
-      // 检查是否有人预选了这个英雄
-      if (prePickedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被预选，不能禁用，跳过`);
-        continue;
-      }
-
-      console.log(`正在禁用英雄: ${championIdNum}`);
-      await banpickService.banChampion(championIdNum);
-      toast.success(`已自动禁用英雄: ${championId}`);
-      console.log(`✅ 自动禁用英雄成功: ${championId}`);
+    const myPosition = myTeam.find(
+      item => item.cellId === localPlayerCellId
+    )?.assignedPosition;
+    if (!myPosition) {
+      console.log('无法获取当前位置');
       return;
     }
-    console.log('⚠️ 所有预设的禁用英雄都已被禁用或被预选');
+
+    const myPositionInfo = positionSettings[myPosition];
+    if (!myPositionInfo) {
+      console.log('未配置当前位置的设置');
+      return;
+    }
+
+    const type = action.type as 'ban' | 'pick';
+    gamePhaseManager.setActionState(type);
+
+    // 获取倒计时设置
+    const countdownKey =
+      type === 'ban' ? 'autoBanCountdown' : 'autoPickCountdown';
+    const countdown = $local.getItem(countdownKey) || 5;
+    const remainingTime = gamePhaseManager.getRemainingTime(countdown);
+
+    if (remainingTime > 0) {
+      const remainingSeconds = Math.ceil(remainingTime / 1000);
+      console.log(`⏳ ${type} 操作倒计时中，还剩 ${remainingSeconds} 秒`);
+      return;
+    }
+
+    // 倒计时结束，执行操作
+    if (!gamePhaseManager.currentState.actionExecuted) {
+      console.log(`⏰ ${type} 倒计时结束，开始执行操作`);
+      gamePhaseManager.markActionExecuted();
+
+      if (type === 'ban') {
+        await autoActionService.executeBanAction(flatActions, myPositionInfo);
+      } else if (type === 'pick') {
+        await autoActionService.executePickAction(flatActions, myPositionInfo);
+      }
+    }
   };
 
-  // 执行选择操作
-  const executePickAction = async (flatActions: any[], myPositionInfo: any) => {
-    const autoPickEnabled = $local.getItem('autoPickEnabled');
-    console.log(`自动选择开关状态: ${autoPickEnabled}`);
-    console.log(
-      `当前位置选择英雄列表: ${JSON.stringify(myPositionInfo.pickChampions)}`
-    );
-
-    if (!autoPickEnabled || myPositionInfo.pickChampions.length === 0) {
-      console.log('未配置自动选择英雄或开关未开启');
-      return;
-    }
-
-    // 获取当前会话信息
-    const session = await banpickService.getChampSelectSession();
-
-    // 获取所有已禁用的英雄
-    const banedChampions = flatActions
-      .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
-      .map(a => a.championId);
-
-    // 获取所有已选择的英雄（从 actions 中获取）
-    const pickedChampionsFromActions = flatActions
-      .filter(a => a.type === 'pick' && a.completed && a.championId !== 0)
-      .map(a => a.championId);
-
-    // 获取所有已选择的英雄（从队伍成员中获取，包括我方和敌方）
-    const pickedChampionsFromTeams = [
-      ...session.myTeam
-        .filter(player => player.championId !== 0)
-        .map(player => player.championId),
-      ...session.theirTeam
-        .filter(player => player.championId !== 0)
-        .map(player => player.championId),
-    ];
-
-    // 合并所有已选择的英雄
-    const allPickedChampions = [
-      ...new Set([...pickedChampionsFromActions, ...pickedChampionsFromTeams]),
-    ];
-
-    console.log(`已禁用的英雄: ${banedChampions}`);
-    console.log(`已选择的英雄: ${allPickedChampions}`);
-
-    for (const championId of myPositionInfo.pickChampions) {
-      console.log(`当前选择英雄: ${championId}`);
-      const championIdNum = parseInt(championId);
-      console.log(`尝试选择英雄: ${championIdNum}`);
-
-      // 跳过已被禁用的英雄
-      if (banedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被禁用，跳过`);
-        continue;
-      }
-
-      // 跳过已被选择的英雄
-      if (allPickedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被选择，跳过`);
-        continue;
-      }
-
-      console.log(`正在选择英雄: ${championIdNum}`);
-      await banpickService.pickChampion(championIdNum);
-      toast.success('已自动选择英雄');
-      console.log(`✅ 自动选择英雄成功: ${championId}`);
-      return;
-    }
-
-    // 如果所有预设英雄都不可用，记录日志
-    console.log('⚠️ 所有预设的选择英雄都不可用（已被禁用或选择）');
-  };
-
-  // 开始游戏阶段轮询
-  const startGamePhasePolling = () => {
+  const startGamePhasePolling = (): void => {
     console.log('🎮 开始游戏阶段轮询');
-    // 设置定时器，每1秒检查一次游戏阶段
-    gamePhaseTimer.value = setInterval(async () => {
-      try {
-        await checkGamePhaseAndExecute();
-      } catch (error) {
-        console.error('游戏阶段轮询出错:', error);
-      }
-    }, 2000); // 改为1秒检查一次，以便更精确的倒计时
+    gamePhaseTimer.value = setInterval(checkGamePhaseAndExecute, 2000);
   };
 
-  // 停止游戏阶段轮询
-  const stopGamePhasePolling = () => {
+  const stopGamePhasePolling = (): void => {
     if (gamePhaseTimer.value) {
       clearInterval(gamePhaseTimer.value);
       gamePhaseTimer.value = null;
     }
-    lastGamePhase.value = null;
-    resetActionState();
+    gamePhaseManager.resetActionState();
     console.log('🛑 停止游戏阶段轮询');
   };
 
@@ -300,4 +138,11 @@ export function useAutoAcceptGame() {
   onUnmounted(() => {
     stopGamePhasePolling();
   });
+
+  return {
+    gamePhaseManager,
+    autoActionService,
+    startGamePhasePolling,
+    stopGamePhasePolling,
+  };
 }
