@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
-import { gameAssets } from '@/assets/data-assets';
 import type { ChampionCnData } from '@/types/champion-cn';
+import { versionedAssets } from '@/assets/versioned-assets';
 
 interface Props {
   championId: string;
@@ -107,7 +107,10 @@ function canLevelUpSkill(skillIndex: number): boolean {
 // 获取技能图标URL
 function getSkillImageUrl(skillIndex: number): string {
   const skillNames = ['Q', 'W', 'E', 'R'];
-  return gameAssets.getSkillIcon(props.championKey, skillNames[skillIndex]);
+  return versionedAssets.getSkillIcon(
+    props.championKey,
+    skillNames[skillIndex]
+  );
 }
 
 // 获取技能按键
@@ -117,7 +120,7 @@ function getSkillKey(index: number): string {
 
 // 获取被动技能图标URL
 function getPassiveImageUrl(): string {
-  return gameAssets.getPassiveIcon(props.championKey);
+  return versionedAssets.getPassiveIcon(props.championKey);
 }
 
 // 获取技能名称

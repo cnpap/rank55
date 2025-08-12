@@ -40,9 +40,9 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * 上传文件到阿里云OSS (带进度显示)
+ * 上传文件到 UCloud US3 (带进度显示)
  */
-async function uploadFileToAliyunOSS(
+async function uploadFile(
   filePath: string,
   key: string,
   bucketName: string
@@ -61,6 +61,10 @@ async function uploadFileToAliyunOSS(
         Body: fileContent,
         ACL: 'public-read',
       },
+      // 添加分片上传配置
+      partSize: 1024 * 1024 * 8, // 10MB 分片大小
+      queueSize: 1, // 减少并发数，避免冲突
+      leavePartsOnError: false, // 出错时自动清理分片
     });
 
     // 监听上传进度
@@ -160,12 +164,12 @@ export const uploadReleaseCommand = new Command('upload-release')
   )
   .option('-r, --release-dir <path>', '指定发布文件目录', 'release')
   .option(
-    '-b, --bucket <n>',
-    '指定阿里云OSS存储桶名称（可选，默认使用环境变量）'
+    '-b, --bucket <name>',
+    '指定 UCloud US3 存储桶名称（可选，默认使用环境变量）'
   )
   .action(async (options: UploadOptions) => {
     try {
-      console.log('开始上传发布文件到阿里云OSS...');
+      console.log('开始上传发布文件到 UCloud US3 ...');
 
       // 获取版本号
       const version = options.version || (await getCurrentVersion());
@@ -185,10 +189,10 @@ export const uploadReleaseCommand = new Command('upload-release')
       // 获取存储桶名称，优先使用命令行参数，然后是环境变量
       let bucketName: string;
       try {
-        bucketName = options.bucket || envConfig.aliyun.oss.bucketName();
+        bucketName = options.bucket || envConfig.ucloud.us3.bucket();
       } catch {
         throw new Error(
-          '未配置存储桶名称，请在 .env 文件中设置 ALIYUN_BUCKET_NAME 或使用 -b 参数指定'
+          '未配置 UCloud US3 存储桶名称，请在 .env 文件中设置 UCLOUD_US3_BUCKET_NAME 或使用 -b 参数指定'
         );
       }
 
@@ -235,7 +239,7 @@ export const uploadReleaseCommand = new Command('upload-release')
       for (const file of normalFiles) {
         const filePath = join(releaseDir, file);
         const key = `downloads/v${version}/${file}`;
-        await uploadFileToAliyunOSS(filePath, key, bucketName);
+        await uploadFile(filePath, key, bucketName);
       }
 
       // 最后上传 latest 文件（确保其他文件都已上传完成）
@@ -245,7 +249,7 @@ export const uploadReleaseCommand = new Command('upload-release')
         // latest 文件上传到两个位置
         // 1. 版本目录
         const versionKey = `downloads/v${version}/${file}`;
-        await uploadFileToAliyunOSS(filePath, versionKey, bucketName);
+        await uploadFile(filePath, versionKey, bucketName);
 
         // 2. 根目录（用于自动更新检查）
         if (file === 'latest.yml') {
@@ -298,12 +302,12 @@ export const uploadReleaseCommand = new Command('upload-release')
         } else {
           // 其他 latest 文件直接上传
           const rootKey = file;
-          await uploadFileToAliyunOSS(filePath, rootKey, bucketName);
+          await uploadFile(filePath, rootKey, bucketName);
         }
       }
 
       // 生成阿里云OSS的公共访问URL
-      const ossEndpoint = envConfig.aliyun.oss.endpoint();
+      const ossEndpoint = envConfig.ucloud.us3.endpoint();
       const baseUrl = `https://${bucketName}.${ossEndpoint}`;
 
       console.log('\n🎉 上传完成!');

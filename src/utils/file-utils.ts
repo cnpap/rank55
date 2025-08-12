@@ -1,14 +1,25 @@
-import { access, readFile, writeFile } from 'fs/promises';
-import { constants } from 'fs';
-import { join } from 'path';
 import { Champion } from '@/types/champion';
+
+// 动态导入 Node.js 模块
+async function getNodeModules() {
+  if (typeof window !== 'undefined') {
+    throw new Error('File operations are not available in browser environment');
+  }
+
+  const fs = await import('fs/promises');
+  const fsSync = await import('fs');
+  const path = await import('path');
+
+  return { fs, fsSync, path };
+}
 
 /**
  * 检查文件是否存在
  */
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
-    await access(filePath, constants.F_OK);
+    const { fs, fsSync } = await getNodeModules();
+    await fs.access(filePath, fsSync.constants.F_OK);
     return true;
   } catch {
     return false;
@@ -22,13 +33,15 @@ export async function downloadImage(
   url: string,
   savePath: string
 ): Promise<void> {
+  const { fs } = await getNodeModules();
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`下载图片失败: HTTP ${response.status}`);
   }
 
   const buffer = await response.arrayBuffer();
-  await writeFile(savePath, new Uint8Array(buffer));
+  await fs.writeFile(savePath, new Uint8Array(buffer));
 }
 
 /**
@@ -38,10 +51,12 @@ export async function getChampionList(
   version: string,
   dataDir: string
 ): Promise<Champion> {
-  const localPath = join(dataDir, 'champion.json');
+  const { fs, path } = await getNodeModules();
+
+  const localPath = path.join(dataDir, 'champion.json');
   if (await fileExists(localPath)) {
     console.log('从本地读取英雄列表...');
-    const data = await readFile(localPath, 'utf-8');
+    const data = await fs.readFile(localPath, 'utf-8');
     return JSON.parse(data);
   }
 

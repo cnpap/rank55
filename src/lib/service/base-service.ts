@@ -1,6 +1,4 @@
 import { LCUClientInterface } from '../client/interface';
-// import { readdir, writeFile, mkdir, appendFile } from 'fs/promises';
-// import { join } from 'path';
 
 /**
  * 基础服务类
@@ -20,38 +18,41 @@ export abstract class BaseService {
    * 获取下一个请求序号
    */
   private static async getNextSequence(): Promise<number> {
-    const fs = await import('fs/promises');
-    if (BaseService.requestSequence === 0) {
-      // 初始化序号，检查日志文件夹
-      try {
-        // 确保日志目录存在
-        await fs.mkdir(BaseService.LOG_DIR, { recursive: true });
+    // 只在 Node.js 环境中执行文件操作
+    if (typeof window === 'undefined' && typeof process !== 'undefined') {
+      const fs = await import('fs/promises');
+      if (BaseService.requestSequence === 0) {
+        // 初始化序号，检查日志文件夹
+        try {
+          // 确保日志目录存在
+          await fs.mkdir(BaseService.LOG_DIR, { recursive: true });
 
-        const fileUtil = await import('../../utils/file-utils');
-        // 检查是否有现有的日志文件
-        if (await fileUtil.fileExists(BaseService.LOG_DIR)) {
-          const files = await fs.readdir(BaseService.LOG_DIR);
-          const logFiles = files.filter(file => file.match(/^\d{8}\.log$/));
+          const fileUtil = await import('../../utils/file-utils');
+          // 检查是否有现有的日志文件
+          if (await fileUtil.fileExists(BaseService.LOG_DIR)) {
+            const files = await fs.readdir(BaseService.LOG_DIR);
+            const logFiles = files.filter(file => file.match(/^\d{8}\.log$/));
 
-          if (logFiles.length > 0) {
-            // 找到最大的序号
-            const maxSequence = Math.max(
-              ...logFiles.map(file => parseInt(file.substring(0, 8), 10))
-            );
-            BaseService.requestSequence = maxSequence + 1;
+            if (logFiles.length > 0) {
+              // 找到最大的序号
+              const maxSequence = Math.max(
+                ...logFiles.map(file => parseInt(file.substring(0, 8), 10))
+              );
+              BaseService.requestSequence = maxSequence + 1;
+            } else {
+              // 没有日志文件，从1开始
+              BaseService.requestSequence = 1;
+            }
           } else {
-            // 没有日志文件，从1开始
             BaseService.requestSequence = 1;
           }
-        } else {
+        } catch (error) {
+          console.error('初始化请求序号失败:', error);
           BaseService.requestSequence = 1;
         }
-      } catch (error) {
-        console.error('初始化请求序号失败:', error);
-        BaseService.requestSequence = 1;
+      } else {
+        BaseService.requestSequence++;
       }
-    } else {
-      BaseService.requestSequence++;
     }
 
     return BaseService.requestSequence;
@@ -79,6 +80,9 @@ export abstract class BaseService {
     method: string,
     endpoint: string
   ): Promise<void> {
+    // 只在 Node.js 环境中执行文件操作
+    if (typeof window !== 'undefined') return;
+
     try {
       const fs = await import('fs/promises');
       // 确保日志目录存在
@@ -94,7 +98,7 @@ export abstract class BaseService {
       // 追加到汇总日志文件
       await fs.appendFile(BaseService.SUMMARY_LOG_PATH, logLine, 'utf-8');
     } catch (error) {
-      console.error('写入汇总日志失败:', error);
+      console.warn('Failed to log summary:', error);
     }
   }
 
@@ -109,6 +113,9 @@ export abstract class BaseService {
     contentType?: string,
     statusCode?: number
   ): Promise<void> {
+    // 只在 Node.js 环境中执行文件操作
+    if (typeof window !== 'undefined') return;
+
     try {
       const fs = await import('fs/promises');
       // 确保日志目录存在
@@ -137,7 +144,7 @@ export abstract class BaseService {
         'utf-8'
       );
     } catch (error) {
-      console.error('写入请求日志失败:', error);
+      console.warn('Failed to log request:', error);
     }
   }
 

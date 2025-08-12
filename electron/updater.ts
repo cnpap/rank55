@@ -1,8 +1,7 @@
-import { app, BrowserWindow, dialog, session } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
 import log from 'electron-log';
-import { envConfig } from '../src/env';
 
 export interface UpdateInfo {
   version: string;
@@ -212,15 +211,10 @@ export class UpdateManager {
   private setupAutoUpdater() {
     if (this.isDev) return;
 
-    // 获取阿里云OSS的更新服务器URL
-    const bucketName = envConfig.aliyun.oss.bucketName();
-    const ossEndpoint = envConfig.aliyun.oss.endpoint();
-    const updateServerUrl = `https://${bucketName}.${ossEndpoint}`;
-
-    // 配置自动更新器 - 使用阿里云OSS
+    // 配置自动更新器 - 使用 US3
     autoUpdater.setFeedURL({
       provider: 'generic',
-      url: updateServerUrl,
+      url: 'rank55.com',
       channel: 'latest',
       updaterCacheDirName: 'lol-frontend-updater',
     });
@@ -283,19 +277,19 @@ export class UpdateManager {
         err.message.includes('ECONNREFUSED')
       ) {
         errorMessage = '网络连接失败';
-        errorDetail = '无法连接到阿里云OSS更新服务器，请检查网络连接';
+        errorDetail = '无法连接到 UCloud US3 更新服务器，请检查网络连接';
       } else if (err.message.includes('ETIMEDOUT')) {
         errorMessage = '连接超时';
-        errorDetail = '连接阿里云OSS更新服务器超时，请稍后重试';
+        errorDetail = '连接 UCloud US3 更新服务器超时，请稍后重试';
       } else if (err.message.includes('CERT') || err.message.includes('SSL')) {
         errorMessage = 'SSL证书错误';
-        errorDetail = '阿里云OSS服务器证书验证失败';
+        errorDetail = 'UCloud US3 服务器证书验证失败';
       } else if (err.message.includes('404')) {
         errorMessage = '更新文件不存在';
-        errorDetail = '阿里云OSS服务器上找不到更新文件';
+        errorDetail = 'UCloud US3 服务器上找不到更新文件';
       } else if (err.message.includes('403')) {
         errorMessage = '访问被拒绝';
-        errorDetail = '没有权限访问阿里云OSS更新服务器';
+        errorDetail = '没有权限访问 UCloud US3 更新服务器';
       }
 
       // 更新失败时，强制退出应用

@@ -38,6 +38,34 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      rollupOptions: {
+        external: [
+          'fs',
+          'fs/promises',
+          'path',
+          'os',
+          'crypto',
+          'stream',
+          'util',
+          'url',
+          'child_process',
+          'electron',
+        ],
+        output: {
+          globals: {
+            fs: 'require("fs")',
+            'fs/promises': 'require("fs/promises")',
+            path: 'require("path")',
+            os: 'require("os")',
+            crypto: 'require("crypto")',
+            stream: 'require("stream")',
+            util: 'require("util")',
+            url: 'require("url")',
+            child_process: 'require("child_process")',
+            electron: 'require("electron")',
+          },
+        },
+      },
     },
     server: {
       port: 3000,

@@ -14,8 +14,8 @@ const autoFunctionSettings = ref({
   autoPickCountdown: 5,
 });
 
-// 位置设置
-const positionSettings = reactive<PositionSettings>({
+// 位置设置 - 改为 ref 而不是 reactive
+const positionSettings = ref<PositionSettings>({
   top: { banChampions: [], pickChampions: [] },
   jungle: { banChampions: [], pickChampions: [] },
   middle: { banChampions: [], pickChampions: [] },
