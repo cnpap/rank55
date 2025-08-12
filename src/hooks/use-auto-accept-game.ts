@@ -152,11 +152,25 @@ export function useAutoAcceptGame() {
       return;
     }
 
+    // 获取当前会话信息
+    const session = await banpickService.getChampSelectSession();
+
     // 获取所有已禁用的英雄
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
       .map(a => a.championId);
     console.log(`已禁用的英雄: ${banedChampions}`);
+
+    // 获取所有预选的英雄（包括我方和敌方）
+    const prePickedChampions = [
+      ...session.myTeam
+        .filter(player => player.championPickIntent !== 0)
+        .map(player => player.championPickIntent),
+      ...session.theirTeam
+        .filter(player => player.championPickIntent !== 0)
+        .map(player => player.championPickIntent),
+    ];
+    console.log(`预选的英雄: ${prePickedChampions}`);
 
     for (const championId of myPositionInfo.banChampions) {
       console.log(`当前禁用英雄: ${championId}`);
@@ -168,13 +182,19 @@ export function useAutoAcceptGame() {
         continue;
       }
 
+      // 检查是否有人预选了这个英雄
+      if (prePickedChampions.includes(championIdNum)) {
+        console.log(`英雄 ${championIdNum} 已被预选，不能禁用，跳过`);
+        continue;
+      }
+
       console.log(`正在禁用英雄: ${championIdNum}`);
       await banpickService.banChampion(championIdNum);
       toast.success(`已自动禁用英雄: ${championId}`);
       console.log(`✅ 自动禁用英雄成功: ${championId}`);
       return;
     }
-    console.log('⚠️ 所有预设的禁用英雄都已被禁用');
+    console.log('⚠️ 所有预设的禁用英雄都已被禁用或被预选');
   };
 
   // 执行选择操作
@@ -190,31 +210,50 @@ export function useAutoAcceptGame() {
       return;
     }
 
+    // 获取当前会话信息
+    const session = await banpickService.getChampSelectSession();
+
     // 获取所有已禁用的英雄
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
       .map(a => a.championId);
 
-    // 获取所有已选择的英雄
-    const pickedChampions = flatActions
+    // 获取所有已选择的英雄（从 actions 中获取）
+    const pickedChampionsFromActions = flatActions
       .filter(a => a.type === 'pick' && a.completed && a.championId !== 0)
       .map(a => a.championId);
 
+    // 获取所有已选择的英雄（从队伍成员中获取，包括我方和敌方）
+    const pickedChampionsFromTeams = [
+      ...session.myTeam
+        .filter(player => player.championId !== 0)
+        .map(player => player.championId),
+      ...session.theirTeam
+        .filter(player => player.championId !== 0)
+        .map(player => player.championId),
+    ];
+
+    // 合并所有已选择的英雄
+    const allPickedChampions = [
+      ...new Set([...pickedChampionsFromActions, ...pickedChampionsFromTeams]),
+    ];
+
     console.log(`已禁用的英雄: ${banedChampions}`);
-    console.log(`已选择的英雄: ${pickedChampions}`);
+    console.log(`已选择的英雄: ${allPickedChampions}`);
 
     for (const championId of myPositionInfo.pickChampions) {
       console.log(`当前选择英雄: ${championId}`);
       const championIdNum = parseInt(championId);
       console.log(`尝试选择英雄: ${championIdNum}`);
 
-      // 跳过已被禁用或已被选择的英雄
+      // 跳过已被禁用的英雄
       if (banedChampions.includes(championIdNum)) {
         console.log(`英雄 ${championIdNum} 已被禁用，跳过`);
         continue;
       }
 
-      if (pickedChampions.includes(championIdNum)) {
+      // 跳过已被选择的英雄
+      if (allPickedChampions.includes(championIdNum)) {
         console.log(`英雄 ${championIdNum} 已被选择，跳过`);
         continue;
       }
