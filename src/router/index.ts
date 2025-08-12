@@ -10,6 +10,7 @@ import Home from '@/views/Home.vue';
 import Equipment from '@/views/Equipment.vue';
 import Champion from '@/views/Champion.vue';
 import BanPick from '@/views/BanPick.vue';
+import Match from '@/views/Match.vue';
 import RoomManagement from '@/views/RoomManagement.vue';
 import Settings from '@/views/Settings.vue';
 
@@ -51,6 +52,16 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '禁/选',
       icon: '🚫',
+      keepAlive: true,
+    },
+  },
+  {
+    path: '/match',
+    name: 'Match',
+    component: Match,
+    meta: {
+      title: '对局',
+      icon: '⚡',
       keepAlive: true,
     },
   },

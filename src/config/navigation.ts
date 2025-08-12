@@ -37,6 +37,12 @@ export const navigationItems: NavigationItem[] = [
     icon: '🏠',
   },
   {
+    name: 'Match',
+    path: '/match',
+    title: '对局',
+    icon: '⚡',
+  },
+  {
     name: 'Settings',
     path: '/settings',
     title: '设置',
