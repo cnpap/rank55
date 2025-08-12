@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import SummonerProfileComponent from './SummonerProfile.vue';
 import MatchHistoryContainer from './MatchHistoryContainer.vue';
+import Loading from './Loading.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 
 // 使用 Pinia store
@@ -14,27 +15,31 @@ const matchHistory = computed(() => matchHistoryStore.matchHistory);
 const errorMessage = computed(() => matchHistoryStore.errorMessage);
 const hasAnyData = computed(() => matchHistoryStore.hasAnyData);
 const showMatchHistory = computed(() => matchHistoryStore.showMatchHistory);
+const isSearching = computed(() => matchHistoryStore.isSearching);
+
+// 组件挂载时自动查询当前登录的召唤师
+onMounted(async () => {
+  // 如果还没有任何数据，则自动查询当前召唤师
+  if (!hasAnyData.value) {
+    await matchHistoryStore.searchCurrentSummoner();
+  }
+});
 </script>
 
 <template>
   <div class="flex h-full flex-col">
-    <!-- 欢迎信息（当没有搜索结果时显示） -->
-    <div v-if="!hasAnyData" class="flex flex-1 items-center justify-center">
-      <div class="max-w-lg space-y-6 text-center">
-        <!-- 主标题 -->
-        <h1 class="text-foreground text-5xl font-light tracking-wide">
-          战绩查询
-        </h1>
-
-        <!-- 简洁提示 -->
-        <div class="text-muted-foreground space-y-4">
-          <p class="text-sm">点击顶部"我"按钮查看当前账号</p>
-          <p class="text-sm">或在搜索框输入：召唤师名#标签</p>
-        </div>
+    <!-- 加载状态 -->
+    <div
+      v-if="isSearching && !hasAnyData"
+      class="flex flex-1 items-center justify-center"
+    >
+      <div class="flex flex-col items-center space-y-4">
+        <Loading size="lg" />
+        <p class="text-muted-foreground text-sm">正在获取当前账号信息...</p>
       </div>
     </div>
 
-    <!-- 有数据时的内容区域 -->
+    <!-- 内容区域 -->
     <div v-else class="space-y-4">
       <!-- 错误信息 -->
       <div
