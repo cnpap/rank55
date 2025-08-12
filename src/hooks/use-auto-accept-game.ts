@@ -279,7 +279,7 @@ export function useAutoAcceptGame() {
       } catch (error) {
         console.error('游戏阶段轮询出错:', error);
       }
-    }, 1000); // 改为1秒检查一次，以便更精确的倒计时
+    }, 2000); // 改为1秒检查一次，以便更精确的倒计时
   };
 
   // 停止游戏阶段轮询

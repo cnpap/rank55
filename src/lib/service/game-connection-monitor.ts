@@ -28,7 +28,7 @@ export class GameConnectionMonitor {
 
   // 配置
   private readonly CHECK_INTERVAL = 5000; // 5秒检查一次
-  private readonly MIN_CHECK_INTERVAL = 2000; // 最小检查间隔2秒
+  private readonly MIN_CHECK_INTERVAL = 3000; // 最小检查间隔2秒
 
   // 服务实例
   private summonerService = new SummonerService();
