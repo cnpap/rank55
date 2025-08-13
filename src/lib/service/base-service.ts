@@ -14,7 +14,7 @@ export abstract class BaseService {
   private static requestQueue: Array<() => Promise<any>> = [];
   private static isProcessingQueue: boolean = false;
   private static lastRequestTime: number = 0;
-  private static readonly MIN_REQUEST_INTERVAL = 500; // 最小请求间隔 500ms
+  private static readonly MIN_REQUEST_INTERVAL = 300; // 最小请求间隔 300ms
 
   // 连接状态缓存相关
   private static connectionCache: {

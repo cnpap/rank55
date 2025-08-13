@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { GameModesFilter, ProcessedMatch } from '@/types/match-history-ui';
-import GameModeFilter from './GameModeFilter.vue';
+import MatchHistoryHeader from './MatchHistoryHeader.vue';
 import MatchList from './MatchList.vue';
 
 interface Props {
@@ -10,23 +10,39 @@ interface Props {
   isLoading: boolean;
   hasData: boolean;
   hasSummoner: boolean;
+  currentPage?: number;
+  pageSize?: number;
+  totalMatches?: number;
 }
 
 interface Emits {
   (e: 'update:gameModesFilter', value: GameModesFilter): void;
   (e: 'toggleMatchDetail', gameId: number): void;
+  (e: 'update:currentPage', page: number): void;
+  (e: 'update:pageSize', size: number): void;
 }
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  currentPage: 1,
+  pageSize: 20,
+  totalMatches: 0,
+});
+
 defineEmits<Emits>();
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- 游戏模式过滤器 -->
-    <GameModeFilter
+    <!-- 新的战绩头部组件 -->
+    <MatchHistoryHeader
       :model-value="gameModesFilter"
+      :matches="filteredMatches"
+      :current-page="currentPage"
+      :page-size="pageSize"
+      :total-matches="totalMatches"
       @update:model-value="$emit('update:gameModesFilter', $event)"
+      @update:current-page="$emit('update:currentPage', $event)"
+      @update:page-size="$emit('update:pageSize', $event)"
     />
 
     <!-- 对局列表 -->

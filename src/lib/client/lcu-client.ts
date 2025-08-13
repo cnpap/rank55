@@ -89,6 +89,7 @@ export class LCUClient implements LCUClientInterface {
         throw new Error('解析端口号失败');
       }
 
+      console.log('获取到的端口号:', port);
       return {
         port,
         token: tokenMatch[1],

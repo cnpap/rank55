@@ -19,10 +19,12 @@ const isSearching = computed(() => matchHistoryStore.isSearching);
 
 // 组件挂载时自动查询当前登录的召唤师
 onMounted(async () => {
-  // 如果还没有任何数据，则自动查询当前召唤师
-  if (!hasAnyData.value) {
-    await matchHistoryStore.searchCurrentSummoner();
-  }
+  // 延迟 500 ms，等待数据加载完成
+  setTimeout(async () => {
+    if (!hasAnyData.value) {
+      await matchHistoryStore.searchCurrentSummoner();
+    }
+  }, 500);
 });
 </script>
 
