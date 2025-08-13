@@ -1,4 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { GamePhaseManager } from '@/lib/service/game-phase-manager';
 import { AutoActionService } from '@/lib/service/auto-action-service';
 import { BanPickService } from '@/lib/service/ban-pick-service';
@@ -11,22 +12,41 @@ export function useAutoAcceptGame() {
   const autoActionService = new AutoActionService();
   const banpickService = new BanPickService();
 
+  // 创建防抖的准备检查操作，3秒内只执行一次
+  const debouncedReadyCheckAction = useDebounceFn(async () => {
+    await autoActionService.executeReadyCheckAction();
+  }, 7000);
+
   const checkGamePhaseAndExecute = async (): Promise<void> => {
     try {
       const phase = await gamePhaseManager.getCurrentPhase();
       console.log(`当前游戏阶段: ${phase}`);
 
-      // 场景 1: 准备检查阶段
+      // 场景 1: 准备检查阶段 - 使用防抖
       if (phase === GameflowPhaseEnum.ReadyCheck) {
-        await autoActionService.executeReadyCheckAction();
+        debouncedReadyCheckAction();
         return;
       }
 
       // 场景 2: 英雄选择阶段
       if (phase === GameflowPhaseEnum.ChampSelect) {
         await handleChampSelectPhase();
-      } else {
-        // 如果不在 ChampSelect 阶段，重置操作状态
+      }
+
+      // 场景 3: 游戏开始阶段 - 新增
+      if (phase === GameflowPhaseEnum.GameStart) {
+        const gameStarted = await gamePhaseManager.checkGameStartCondition();
+        if (gameStarted) {
+          console.log('🎮 游戏已开始，session 已持久化');
+        }
+      }
+
+      // 如果不在相关阶段，重置操作状态
+      if (
+        ![GameflowPhaseEnum.ChampSelect, GameflowPhaseEnum.GameStart].includes(
+          phase
+        )
+      ) {
         gamePhaseManager.resetActionState();
       }
 

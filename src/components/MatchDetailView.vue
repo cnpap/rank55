@@ -84,35 +84,46 @@ const loadMatchDetail = async () => {
     championNames.value = champNames;
     itemNames.value = itemNamesMap;
 
-    // 批量获取所有玩家的段位信息
-    console.log('🔍 正在获取所有玩家段位信息...');
+    // 先设置加载完成状态，让页面显示基本信息
+    isLoading.value = false;
 
-    if (detail.participantIdentities) {
-      for (const identity of detail.participantIdentities) {
-        if (identity.player?.puuid) {
-          try {
-            const rankInfo = await summonerService.getPlayerRankedInfo(
-              identity.player.puuid
-            );
-            playerRanks.value.set(identity.player.puuid, rankInfo);
-          } catch (error) {
-            console.log(
-              `⚠️ 获取玩家 ${identity.player.summonerName || identity.player.gameName} 段位失败: ${error}`
-            );
-            playerRanks.value.set(identity.player.puuid, [
-              '段位获取失败',
-              '',
-              0,
-            ]);
-          }
-        }
-      }
-    }
+    // 异步获取所有玩家的段位信息（不阻塞页面显示）
+    loadPlayerRanks(detail);
   } catch (err: any) {
     console.error('获取比赛详情失败:', err);
     error.value = err.message || '获取比赛详情失败';
-  } finally {
     isLoading.value = false;
+  }
+};
+
+// 异步加载玩家段位信息
+const loadPlayerRanks = async (detail: Game) => {
+  console.log('🔍 正在异步获取所有玩家段位信息...');
+
+  if (detail.participantIdentities) {
+    // 使用 Promise.allSettled 并发获取所有玩家段位，避免单个失败影响其他
+    const rankPromises = detail.participantIdentities
+      .filter(identity => identity.player?.puuid)
+      .map(async identity => {
+        const puuid = identity.player!.puuid;
+        const playerName =
+          identity.player!.summonerName ||
+          identity.player!.gameName ||
+          '未知玩家';
+
+        try {
+          const rankInfo = await summonerService.getPlayerRankedInfo(puuid);
+          playerRanks.value.set(puuid, rankInfo);
+          console.log(`✅ 获取玩家 ${playerName} 段位成功`);
+        } catch (error) {
+          console.log(`⚠️ 获取玩家 ${playerName} 段位失败: ${error}`);
+          playerRanks.value.set(puuid, ['段位获取失败', '', 0]);
+        }
+      });
+
+    // 等待所有段位信息获取完成
+    await Promise.allSettled(rankPromises);
+    console.log('🎉 所有玩家段位信息获取完成');
   }
 };
 
@@ -391,19 +402,43 @@ const searchPlayerHistory = async (playerName: string) => {
                       <img
                         v-if="
                           player.rankInfo &&
-                          !player.rankInfo.includes('未定级') &&
-                          !player.rankInfo.includes('获取失败')
+                          !player.rankInfo[0].includes('未定级') &&
+                          !player.rankInfo[0].includes('获取失败') &&
+                          !player.rankInfo[0].includes('加载中')
                         "
                         :src="getRankMiniImageUrl(player.rankInfo[0] || '')"
                         :alt="`段位图标 ${player.rankInfo[0]}`"
                         class="h-4 w-4 object-contain"
                       />
+                      <!-- 加载中的小图标 -->
+                      <Loader2
+                        v-else-if="
+                          player.rankInfo &&
+                          player.rankInfo[0].includes('加载中')
+                        "
+                        class="text-muted-foreground h-3 w-3 animate-spin"
+                      />
                       <span
                         class="font-tektur-numbers text-muted-foreground text-xs"
+                        :class="{
+                          'text-muted-foreground/60':
+                            player.rankInfo &&
+                            player.rankInfo[0].includes('加载中'),
+                        }"
                       >
-                        {{ getTierName(player.rankInfo[0]) }}
-                        {{ player.rankInfo[1] }}
-                        {{ player.rankInfo[2] }}LP
+                        <template
+                          v-if="
+                            player.rankInfo &&
+                            player.rankInfo[0].includes('加载中')
+                          "
+                        >
+                          加载中...
+                        </template>
+                        <template v-else>
+                          {{ getTierName(player.rankInfo[0]) }}
+                          {{ player.rankInfo[1] }}
+                          {{ player.rankInfo[2] }}LP
+                        </template>
                       </span>
                     </div>
                   </div>

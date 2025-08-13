@@ -16,13 +16,11 @@ export interface GamePhaseState {
 
 export class GamePhaseManager {
   private gameflowService: GameflowService;
-  private banpickService: BanPickService;
   private sessionStorage: SessionStorageService;
   private state: Ref<GamePhaseState>;
 
   constructor() {
     this.gameflowService = new GameflowService();
-    this.banpickService = new BanPickService();
     this.sessionStorage = new SessionStorageService();
     this.state = ref({
       currentPhase: null,
@@ -51,32 +49,22 @@ export class GamePhaseManager {
   }
 
   async checkGameStartCondition(): Promise<boolean> {
-    try {
-      const session = await this.banpickService.getChampSelectSession();
-      const { actions, myTeam, theirTeam } = session;
-      const flatActions = actions.flat();
+    // 直接检查游戏阶段是否为 GameStart
+    const currentPhase = await this.gameflowService.getGameflowPhase();
 
-      // 检查所有操作是否都完成了
-      const allActionsCompleted = flatActions.every(a => a.completed);
-      if (!allActionsCompleted) {
-        return false;
-      }
+    if (currentPhase === GameflowPhaseEnum.GameStart) {
+      console.log('🎮 检测到游戏开始阶段，正在获取完整的游戏会话信息...');
 
-      // 检查是否等待到玩家信息了
-      const rankTeams: RankTeam[] = myTeam.concat(theirTeam);
-      const allPlayersReady = rankTeams.every(man => man.summonerId !== 0);
+      // 使用 gameflowService 获取完整的游戏会话信息
+      const gameflowSession = await this.gameflowService.getGameflowSession();
 
-      if (allActionsCompleted && allPlayersReady) {
-        console.log('🎮 检测到游戏即将开始，正在持久化 session...');
-        await this.sessionStorage.saveSession(session);
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('检查游戏开始条件时出错:', error);
-      return false;
+      // 从 gameflowSession 中提取需要的信息来构建 ChampSelectSession
+      // 或者直接保存 gameflowSession
+      await this.sessionStorage.saveGameflowSession(gameflowSession);
+      return true;
     }
+
+    return false;
   }
 
   setActionState(type: 'ban' | 'pick'): void {

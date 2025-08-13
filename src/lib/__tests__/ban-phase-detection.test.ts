@@ -118,5 +118,127 @@ describe('ChampSelectPhaseDetection', () => {
       expect(session).toBeTruthy();
       console.log('✅ 当前阶段时间信息获取测试完成');
     });
+
+    it('应该能够获取游戏流程会话信息', async () => {
+      const gameflowSession = await gameflowService.getGameflowSession();
+
+      console.log('\n🎮 游戏流程会话信息:');
+      console.log(`   - 当前阶段: ${gameflowSession.phase}`);
+
+      // 验证 GameflowSession 的基本结构
+      expect(gameflowSession).toBeTruthy();
+      expect(gameflowSession.phase).toBeDefined();
+      expect(typeof gameflowSession.phase).toBe('string');
+
+      // 验证 gameClient 信息
+      if (gameflowSession.gameClient) {
+        console.log('\n🖥️ 游戏客户端信息:');
+        console.log(
+          `   - 服务器IP: ${gameflowSession.gameClient.serverIp || '未知'}`
+        );
+        console.log(
+          `   - 服务器端口: ${gameflowSession.gameClient.serverPort || '未知'}`
+        );
+        console.log(
+          `   - 客户端运行状态: ${gameflowSession.gameClient.running ? '运行中' : '未运行'}`
+        );
+        console.log(
+          `   - 客户端可见性: ${gameflowSession.gameClient.visible ? '可见' : '不可见'}`
+        );
+
+        expect(gameflowSession.gameClient).toHaveProperty('serverIp');
+        expect(gameflowSession.gameClient).toHaveProperty('serverPort');
+        expect(typeof gameflowSession.gameClient.running).toBe('boolean');
+        expect(typeof gameflowSession.gameClient.visible).toBe('boolean');
+      }
+
+      // 验证 gameData 信息
+      if (gameflowSession.gameData) {
+        console.log('\n📊 游戏数据信息:');
+        console.log(
+          `   - 游戏ID: ${gameflowSession.gameData.gameId || '未知'}`
+        );
+        console.log(
+          `   - 游戏名称: ${gameflowSession.gameData.gameName || '未知'}`
+        );
+        console.log(
+          `   - 是否自定义游戏: ${gameflowSession.gameData.isCustomGame ? '是' : '否'}`
+        );
+        console.log(
+          `   - 是否允许观战: ${gameflowSession.gameData.spectatorsAllowed ? '是' : '否'}`
+        );
+
+        expect(gameflowSession.gameData).toHaveProperty('gameId');
+        expect(gameflowSession.gameData).toHaveProperty('gameName');
+        expect(typeof gameflowSession.gameData.isCustomGame).toBe('boolean');
+        expect(typeof gameflowSession.gameData.spectatorsAllowed).toBe(
+          'boolean'
+        );
+
+        // 验证队伍信息
+        if (
+          gameflowSession.gameData.teamOne &&
+          gameflowSession.gameData.teamTwo
+        ) {
+          console.log(
+            `   - 队伍一人数: ${gameflowSession.gameData.teamOne.length}`
+          );
+          console.log(
+            `   - 队伍二人数: ${gameflowSession.gameData.teamTwo.length}`
+          );
+          expect(Array.isArray(gameflowSession.gameData.teamOne)).toBe(true);
+          expect(Array.isArray(gameflowSession.gameData.teamTwo)).toBe(true);
+        }
+
+        // 验证队列信息
+        if (gameflowSession.gameData.queue) {
+          console.log(`   - 队列ID: ${gameflowSession.gameData.queue.id}`);
+          console.log(`   - 队列名称: ${gameflowSession.gameData.queue.name}`);
+          console.log(
+            `   - 游戏模式: ${gameflowSession.gameData.queue.gameMode}`
+          );
+          console.log(
+            `   - 是否排位: ${gameflowSession.gameData.queue.isRanked ? '是' : '否'}`
+          );
+
+          expect(gameflowSession.gameData.queue).toHaveProperty('id');
+          expect(gameflowSession.gameData.queue).toHaveProperty('name');
+          expect(gameflowSession.gameData.queue).toHaveProperty('gameMode');
+          expect(typeof gameflowSession.gameData.queue.isRanked).toBe(
+            'boolean'
+          );
+        }
+      }
+
+      // 验证地图信息
+      if (gameflowSession.map) {
+        console.log('\n🗺️ 地图信息:');
+        console.log(`   - 地图ID: ${gameflowSession.map.id}`);
+        console.log(`   - 地图名称: ${gameflowSession.map.name}`);
+        console.log(`   - 游戏模式: ${gameflowSession.map.gameMode}`);
+        console.log(`   - 平台ID: ${gameflowSession.map.platformId}`);
+
+        expect(gameflowSession.map).toHaveProperty('id');
+        expect(gameflowSession.map).toHaveProperty('name');
+        expect(gameflowSession.map).toHaveProperty('gameMode');
+        expect(typeof gameflowSession.map.id).toBe('number');
+      }
+
+      // 验证游戏躲避信息
+      if (gameflowSession.gameDodge) {
+        console.log('\n🚪 游戏躲避信息:');
+        console.log(`   - 躲避阶段: ${gameflowSession.gameDodge.phase}`);
+        console.log(`   - 躲避状态: ${gameflowSession.gameDodge.state}`);
+        console.log(
+          `   - 躲避ID数量: ${gameflowSession.gameDodge.dodgeIds?.length || 0}`
+        );
+
+        expect(gameflowSession.gameDodge).toHaveProperty('phase');
+        expect(gameflowSession.gameDodge).toHaveProperty('state');
+        expect(Array.isArray(gameflowSession.gameDodge.dodgeIds)).toBe(true);
+      }
+
+      console.log('✅ 游戏流程会话信息获取测试完成');
+    });
   });
 });

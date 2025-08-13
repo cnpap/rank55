@@ -1,14 +1,16 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { ChampSelectSession } from '@/types/champ-select-session';
+import type { GameflowSession } from '@/types/gameflow-session';
 
 interface SessionDB extends DBSchema {
-  sessions: {
+  gameflowSessions: {
     key: string;
     value: {
       id: string;
-      session: ChampSelectSession;
+      gameflowSession: GameflowSession;
       timestamp: number;
-      gameStarted: boolean;
+    };
+    indexes: {
+      timestamp: 'timestamp';
     };
   };
 }
@@ -16,79 +18,82 @@ interface SessionDB extends DBSchema {
 export class SessionStorageService {
   private db: IDBPDatabase<SessionDB> | null = null;
   private readonly DB_NAME = 'lol-sessions';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 2;
 
   async init(): Promise<void> {
     if (this.db) return;
 
     this.db = await openDB<SessionDB>(this.DB_NAME, this.DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains('sessions')) {
-          const store = db.createObjectStore('sessions', { keyPath: 'id' });
-          store.createIndex('timestamp', 'timestamp');
-          store.createIndex('gameStarted', 'gameStarted');
+        // 创建或重建 gameflowSessions 存储
+        if (db.objectStoreNames.contains('gameflowSessions')) {
+          db.deleteObjectStore('gameflowSessions');
         }
+
+        const gameflowStore = db.createObjectStore('gameflowSessions', {
+          keyPath: 'id',
+        });
+        gameflowStore.createIndex('timestamp', 'timestamp');
       },
     });
   }
 
-  async saveSession(session: ChampSelectSession): Promise<void> {
+  async saveGameflowSession(gameflowSession: GameflowSession): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
     const sessionData = {
-      id: session.id,
-      session,
+      id: gameflowSession.gameData?.gameId?.toString() || Date.now().toString(),
+      gameflowSession,
       timestamp: Date.now(),
-      gameStarted: true, // 标记为游戏已开始
     };
 
-    await this.db.put('sessions', sessionData);
-    console.log(`✅ Session ${session.id} 已持久化到 IDB`);
+    await this.db.put('gameflowSessions', sessionData);
+    console.log(`✅ GameflowSession ${sessionData.id} 已持久化到 IDB`);
   }
 
-  async getSession(sessionId: string): Promise<ChampSelectSession | null> {
+  async getGameflowSession(sessionId: string): Promise<GameflowSession | null> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    const sessionData = await this.db.get('sessions', sessionId);
-    return sessionData?.session || null;
+    const sessionData = await this.db.get('gameflowSessions', sessionId);
+    return sessionData?.gameflowSession || null;
   }
 
-  async getLatestSession(): Promise<ChampSelectSession | null> {
+  async getLatestGameflowSession(): Promise<GameflowSession | null> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    const tx = this.db.transaction('sessions', 'readonly');
+    const tx = this.db.transaction('gameflowSessions', 'readonly');
     const index = tx.store.index('timestamp');
     const cursor = await index.openCursor(null, 'prev');
 
-    return cursor?.value?.session || null;
+    return cursor?.value?.gameflowSession || null;
   }
 
-  async getAllSessions(): Promise<ChampSelectSession[]> {
+  async getAllGameflowSessions(): Promise<GameflowSession[]> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    const sessions = await this.db.getAll('sessions');
-    return sessions.map(s => s.session);
+    const sessions = await this.db.getAll('gameflowSessions');
+    return sessions.map(s => s.gameflowSession);
   }
 
-  async deleteSession(sessionId: string): Promise<void> {
+  async deleteGameflowSession(sessionId: string): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    await this.db.delete('sessions', sessionId);
+    await this.db.delete('gameflowSessions', sessionId);
   }
 
-  async clearOldSessions(
+  async clearOldGameflowSessions(
     maxAge: number = 7 * 24 * 60 * 60 * 1000
   ): Promise<void> {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
     const cutoffTime = Date.now() - maxAge;
-    const tx = this.db.transaction('sessions', 'readwrite');
+    const tx = this.db.transaction('gameflowSessions', 'readwrite');
     const index = tx.store.index('timestamp');
     const range = IDBKeyRange.upperBound(cutoffTime);
 
