@@ -8,12 +8,10 @@ import { useRoute } from 'vue-router';
 import { eventBus } from '@/lib/event-bus';
 import { watch } from 'vue';
 import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
-import { useUserStore } from '@/stores/user';
 import { versionUtils } from '@/assets/versioned-assets';
 import Button from './components/ui/button/Button.vue';
 
 const route = useRoute();
-const userStore = useUserStore();
 
 // 版本初始化状态
 const isVersionsLoaded = ref(false);
@@ -59,13 +57,6 @@ onMounted(async () => {
     // 初始化版本信息
     const versionsInitialized = await versionUtils.initializeVersions();
     isVersionsLoaded.value = versionsInitialized;
-
-    if (versionsInitialized) {
-      // 版本初始化成功后，初始化用户信息
-      await userStore.initializeUser();
-    } else {
-      console.error('版本信息初始化失败，无法加载应用');
-    }
   } catch (error) {
     console.error('应用初始化失败:', error);
     isVersionsLoaded.value = false;

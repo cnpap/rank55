@@ -1,153 +1,128 @@
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
-import { GamePhaseManager } from '@/lib/service/game-phase-manager';
-import { AutoActionService } from '@/lib/service/auto-action-service';
-import { BanPickService } from '@/lib/service/ban-pick-service';
-import { $local } from '@/storages/storage-use';
+import { useRoute } from 'vue-router';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { useGameConnection } from './useGameConnection';
+import { useRoomManager } from './useRoomManager';
+import { useGamePhaseHandler } from './useGamePhaseHandler';
 
 export function useAutoAcceptGame() {
   const gamePhaseTimer = ref<NodeJS.Timeout | null>(null);
-  const gamePhaseManager = new GamePhaseManager();
-  const autoActionService = new AutoActionService();
-  const banpickService = new BanPickService();
+  const isPolling = ref(false); // 添加轮询状态标记
+  const route = useRoute();
 
-  // 创建防抖的准备检查操作，3秒内只执行一次
-  const debouncedReadyCheckAction = useDebounceFn(async () => {
-    await autoActionService.executeReadyCheckAction();
-  }, 7000);
+  // 使用拆分后的 hooks
+  const connection = useGameConnection();
+  const roomManager = useRoomManager();
+  const phaseHandler = useGamePhaseHandler();
 
   const checkGamePhaseAndExecute = async (): Promise<void> => {
-    try {
-      const phase = await gamePhaseManager.getCurrentPhase();
-      console.log(`当前游戏阶段: ${phase}`);
+    // 防止重复执行
+    if (isPolling.value) {
+      return;
+    }
 
-      // 场景 1: 准备检查阶段 - 使用防抖
-      if (phase === GameflowPhaseEnum.ReadyCheck) {
-        debouncedReadyCheckAction();
+    try {
+      isPolling.value = true;
+
+      // 检查连接状态
+      const connected = await connection.checkConnection();
+
+      if (!connected) {
+        roomManager.resetRoom();
+        roomManager.errorMessage.value = '游戏客户端连接断开';
+        return;
+      } else {
+        roomManager.clearError();
+      }
+
+      const phase = await phaseHandler.gamePhaseManager.getCurrentPhase();
+
+      // 阶段变化日志
+      if (phaseHandler.lastPhase.value !== phase) {
+        console.log(
+          `游戏阶段变化: ${phaseHandler.lastPhase.value} -> ${phase}`
+        );
+        phaseHandler.lastPhase.value = phase;
+      }
+
+      // 场景 0: None 状态 - 获取用户信息
+      if (phase === GameflowPhaseEnum.None) {
+        await connection.fetchCurrentUser();
         return;
       }
 
-      // 场景 2: 英雄选择阶段
-      if (phase === GameflowPhaseEnum.ChampSelect) {
-        await handleChampSelectPhase();
-      }
-
-      // 场景 3: 游戏开始阶段 - 新增
-      if (phase === GameflowPhaseEnum.GameStart) {
-        const gameStarted = await gamePhaseManager.checkGameStartCondition();
-        if (gameStarted) {
-          console.log('🎮 游戏已开始，session 已持久化');
+      // 场景 1: 房间阶段 - 只有在房间管理页面时才执行房间逻辑
+      if (phase === GameflowPhaseEnum.Lobby) {
+        // 检查当前是否在房间管理页面
+        if (route.name === 'RoomManagement') {
+          await roomManager.updateRoom();
+        } else {
+          // 如果不在房间管理页面，重置房间状态但不显示错误
+          roomManager.resetRoom();
         }
+        return;
       }
 
-      // 如果不在相关阶段，重置操作状态
+      // 场景 2: 准备检查阶段
+      if (phase === GameflowPhaseEnum.ReadyCheck) {
+        phaseHandler.debouncedReadyCheckAction();
+        return;
+      }
+
+      // 场景 3: 英雄选择阶段
+      if (phase === GameflowPhaseEnum.ChampSelect) {
+        await phaseHandler.handleChampSelectPhase();
+        return;
+      }
+
+      // 场景 4: 游戏开始阶段
+      if (phase === GameflowPhaseEnum.GameStart) {
+        await phaseHandler.handleGameStartPhase();
+        return;
+      }
+
+      // 其他阶段重置相关状态
       if (
-        ![GameflowPhaseEnum.ChampSelect, GameflowPhaseEnum.GameStart].includes(
-          phase
-        )
+        ![
+          GameflowPhaseEnum.None,
+          GameflowPhaseEnum.Lobby,
+          GameflowPhaseEnum.ChampSelect,
+          GameflowPhaseEnum.GameStart,
+        ].includes(phase)
       ) {
-        gamePhaseManager.resetActionState();
-      }
-
-      // 记录阶段变化
-      const { currentPhase, lastPhase } = gamePhaseManager.currentState;
-      if (lastPhase !== currentPhase) {
-        console.log(`游戏阶段变化: ${lastPhase} -> ${currentPhase}`);
+        phaseHandler.resetPhaseState();
+        roomManager.resetRoom();
       }
     } catch (error) {
       console.error('游戏阶段轮询出错:', error);
+      roomManager.errorMessage.value = '检查游戏状态失败';
+    } finally {
+      isPolling.value = false;
+      // 安排下一次执行
+      scheduleNextPoll();
     }
   };
 
-  const handleChampSelectPhase = async (): Promise<void> => {
-    const session = await banpickService.getChampSelectSession();
-    const { actions, myTeam, localPlayerCellId } = session;
-    const flatActions = actions.flat();
-    const positionSettings = $local.getItem('positionSettings');
-
-    if (!positionSettings) {
-      console.log('未配置位置设置');
-      return;
-    }
-
-    // 检查是否是预选阶段
-    if (flatActions.every(a => !a.isInProgress)) {
-      await autoActionService.executePrePickAction(session);
-      return;
-    }
-
-    // 检查游戏是否即将开始
-    const gameWillStart = await gamePhaseManager.checkGameStartCondition();
-    if (gameWillStart) {
-      console.log('🎮 游戏即将开始，session 已持久化');
-      return;
-    }
-
-    // 处理当前进行中的操作
-    const action = flatActions.find(
-      a => a.isInProgress && a.actorCellId === localPlayerCellId
-    );
-
-    if (!action) {
-      console.log('当前位置未开始选择，等待中...');
-      gamePhaseManager.resetActionState();
-      return;
-    }
-
-    const myPosition = myTeam.find(
-      item => item.cellId === localPlayerCellId
-    )?.assignedPosition;
-    if (!myPosition) {
-      console.log('无法获取当前位置');
-      return;
-    }
-
-    const myPositionInfo = positionSettings[myPosition];
-    if (!myPositionInfo) {
-      console.log('未配置当前位置的设置');
-      return;
-    }
-
-    const type = action.type as 'ban' | 'pick';
-    gamePhaseManager.setActionState(type);
-
-    // 获取倒计时设置
-    const countdownKey =
-      type === 'ban' ? 'autoBanCountdown' : 'autoPickCountdown';
-    const countdown = $local.getItem(countdownKey) || 5;
-    const remainingTime = gamePhaseManager.getRemainingTime(countdown);
-
-    if (remainingTime > 0) {
-      const remainingSeconds = Math.ceil(remainingTime / 1000);
-      console.log(`⏳ ${type} 操作倒计时中，还剩 ${remainingSeconds} 秒`);
-      return;
-    }
-
-    // 倒计时结束，执行操作
-    if (!gamePhaseManager.currentState.actionExecuted) {
-      console.log(`⏰ ${type} 倒计时结束，开始执行操作`);
-      gamePhaseManager.markActionExecuted();
-
-      if (type === 'ban') {
-        await autoActionService.executeBanAction(flatActions, myPositionInfo);
-      } else if (type === 'pick') {
-        await autoActionService.executePickAction(flatActions, myPositionInfo);
-      }
+  const scheduleNextPoll = (): void => {
+    if (gamePhaseTimer.value) {
+      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 3000);
     }
   };
 
   const startGamePhasePolling = (): void => {
     console.log('🎮 开始游戏阶段轮询');
-    gamePhaseTimer.value = setInterval(checkGamePhaseAndExecute, 2000);
+    gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 0); // 立即开始第一次
   };
 
   const stopGamePhasePolling = (): void => {
     if (gamePhaseTimer.value) {
-      clearInterval(gamePhaseTimer.value);
+      clearTimeout(gamePhaseTimer.value);
       gamePhaseTimer.value = null;
     }
-    gamePhaseManager.resetActionState();
+    isPolling.value = false;
+    phaseHandler.resetPhaseState();
+    roomManager.resetRoom();
+    connection.resetConnection();
     console.log('🛑 停止游戏阶段轮询');
   };
 
@@ -160,8 +135,28 @@ export function useAutoAcceptGame() {
   });
 
   return {
-    gamePhaseManager,
-    autoActionService,
+    // 连接相关
+    isConnected: connection.isConnected,
+    currentUser: connection.currentUser,
+
+    // 房间相关
+    currentRoom: roomManager.currentRoom,
+    roomMembers: roomManager.roomMembers,
+    isLoadingRoom: roomManager.isLoadingRoom,
+    isLoadingMembers: roomManager.isLoadingMembers,
+    isLoading: roomManager.isLoading,
+    isInRoom: roomManager.isInRoom,
+    roomLeader: roomManager.roomLeader,
+    otherMembers: roomManager.otherMembers,
+    errorMessage: roomManager.errorMessage,
+    kickMember: roomManager.kickMember,
+    clearError: roomManager.clearError,
+
+    // 游戏阶段相关
+    gamePhaseManager: phaseHandler.gamePhaseManager,
+    autoActionService: phaseHandler.autoActionService,
+
+    // 控制方法
     startGamePhasePolling,
     stopGamePhasePolling,
   };

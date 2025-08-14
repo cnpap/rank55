@@ -1,75 +1,31 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { Wifi, WifiOff, User } from 'lucide-vue-next';
+import { User } from 'lucide-vue-next';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import AppNavigation from '@/components/AppNavigation.vue';
 import WindowControls from '@/components/WindowControls.vue';
-import { useRoomManagementStore } from '@/stores/room-management';
-import { useUserStore } from '@/stores/user';
-import { gameAssets } from '@/assets/data-assets';
+import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
+import { staticAssets } from '@/assets/data-assets';
 
 // 检查是否在 Electron 环境中
 const isElectron = ref(false);
 
-// 房间管理store
-const roomStore = useRoomManagementStore();
+// 使用 auto-accept-game hook 获取用户信息
+const { currentUser, isConnected, errorMessage } = useAutoAcceptGame();
 
-// 用户store
-const userStore = useUserStore();
-
-// 监控状态
-const isMonitoring = computed(() => roomStore.isPolling);
-const hasRoomError = computed(() => roomStore.hasError);
-const appHasFocus = computed(() => roomStore.appHasFocus);
-const isOnRoomPage = computed(() => roomStore.isOnRoomPage);
-const shouldMonitor = computed(() => roomStore.shouldMonitor);
-
-// 用户信息
-const isLoggedIn = computed(() => userStore.isLoggedIn);
-const displayName = computed(() => userStore.displayName);
-const profileIconId = computed(() => userStore.profileIconId);
-const summonerLevel = computed(() => userStore.summonerLevel);
-const isLoadingUser = computed(() => userStore.isLoadingUser);
-const hasUserError = computed(() => userStore.hasError);
-
-// 监控状态文本
-const monitoringStatusText = computed(() => {
-  if (!appHasFocus.value) {
-    return '应用未激活';
-  }
-  if (!isOnRoomPage.value) {
-    return '非房间页面';
-  }
-  if (isMonitoring.value) {
-    return hasRoomError.value ? '监控异常' : '实时监控';
-  }
-  return '监控停止';
+// 用户信息计算属性
+const isLoggedIn = computed(() => !!currentUser.value && isConnected.value);
+const displayName = computed(() => {
+  if (!currentUser.value) return '';
+  return currentUser.value.displayName || currentUser.value.gameName || '';
 });
-
-// 监控状态颜色
-const monitoringStatusColor = computed(() => {
-  if (!appHasFocus.value || !isOnRoomPage.value) {
-    return 'text-gray-400';
-  }
-  if (isMonitoring.value) {
-    return hasRoomError.value ? 'text-orange-500' : 'text-green-500';
-  }
-  return 'text-gray-400';
-});
-
-const monitoringStatusTextColor = computed(() => {
-  if (!appHasFocus.value || !isOnRoomPage.value) {
-    return 'text-gray-500';
-  }
-  if (isMonitoring.value) {
-    return hasRoomError.value ? 'text-orange-600' : 'text-green-600';
-  }
-  return 'text-gray-500';
-});
+const profileIconId = computed(() => currentUser.value?.profileIconId || 0);
+const summonerLevel = computed(() => currentUser.value?.summonerLevel || 0);
+const hasUserError = computed(() => !!errorMessage.value || !isConnected.value);
 
 // 获取召唤师头像URL
 const profileIconUrl = computed(() => {
-  return gameAssets.getProfileIcon(String(profileIconId.value));
+  return staticAssets.getProfileIcon(String(profileIconId.value));
 });
 
 onMounted(async () => {
@@ -121,27 +77,11 @@ const handleDoubleClick = () => {
         class="flex h-full items-center gap-2"
         style="-webkit-app-region: no-drag"
       >
-        <!-- 实时监控状态指示器 -->
-        <div class="flex items-center gap-1.5 px-2">
-          <component
-            :is="shouldMonitor && isMonitoring ? Wifi : WifiOff"
-            :class="['h-3.5 w-3.5 transition-colors', monitoringStatusColor]"
-          />
-          <span
-            :class="[
-              'text-xs font-medium transition-colors',
-              monitoringStatusTextColor,
-            ]"
-          >
-            {{ monitoringStatusText }}
-          </span>
-        </div>
-
         <!-- 用户信息区域 -->
         <div class="flex items-center gap-2 px-2">
           <!-- 用户头像和信息 -->
           <div
-            v-if="isLoggedIn && !isLoadingUser"
+            v-if="isLoggedIn"
             class="flex items-center gap-2 px-2 py-1"
             :title="`等级: ${summonerLevel}\n名称: ${displayName}`"
           >
@@ -174,15 +114,6 @@ const handleDoubleClick = () => {
             >
               {{ displayName }}
             </span>
-          </div>
-
-          <!-- 加载状态 -->
-          <div
-            v-else-if="isLoadingUser"
-            class="flex items-center gap-2 px-2 py-1"
-          >
-            <div class="bg-muted h-6 w-6 animate-pulse rounded-full"></div>
-            <span class="text-muted-foreground text-xs">加载中...</span>
           </div>
 
           <!-- 错误状态 -->

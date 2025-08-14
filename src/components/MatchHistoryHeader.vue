@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Filter, BarChart3 } from 'lucide-vue-next';
 import type { GameModesFilter, ProcessedMatch } from '@/types/match-history-ui';
+import { AcceptableValue } from 'reka-ui';
 
 interface Props {
   modelValue: GameModesFilter;
@@ -79,8 +80,8 @@ const recentChampions = computed(() => {
 });
 
 // 处理游戏模式变更
-function handleGameModeChange(value: string) {
-  selectedGameMode.value = value;
+function handleGameModeChange(value: AcceptableValue) {
+  selectedGameMode.value = value as string;
 
   const newFilter: GameModesFilter = {
     showSolo: value === 'all' || value === 'solo',
@@ -102,7 +103,7 @@ function goToPage(page: number) {
   }
 }
 
-function handlePageSizeChange(size: string) {
+function handlePageSizeChange(size: AcceptableValue) {
   emit('update:pageSize', Number(size));
   emit('update:currentPage', 1);
 }

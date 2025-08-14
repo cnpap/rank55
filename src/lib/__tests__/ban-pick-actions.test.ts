@@ -2,20 +2,28 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { BanPickService } from '../service/ban-pick-service';
 import { LCUClientInterface } from '../client/interface';
+import { GameflowService } from '../service/gameflow-service';
 
 describe('BanPickActions', () => {
   let lcuClient: LCUClientInterface;
   let banPickService: BanPickService;
+  let gameflowService: GameflowService;
 
   describe('Ban/Pick 英雄操作 - 真实LOL测试', () => {
     beforeEach(async () => {
       try {
         lcuClient = await LCUClient.create();
         banPickService = new BanPickService(lcuClient);
+        gameflowService = new GameflowService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过真实LOL测试: ${error}`);
         return;
       }
+    });
+
+    it('应该能够获得当前游戏状态', async () => {
+      const gameflowPhase = await gameflowService.getGameflowPhase();
+      console.log('✅ 当前游戏状态:', gameflowPhase);
     });
 
     it('应该能够 Ban 英雄 76', async () => {

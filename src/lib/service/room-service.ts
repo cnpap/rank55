@@ -72,13 +72,8 @@ export class RoomService extends BaseService {
 
   // 检查是否在房间中
   async isInLobby(): Promise<boolean> {
-    try {
-      const lobby = await this.getCurrentLobby();
-      return lobby && lobby.gameConfig && Boolean(lobby.gameConfig.gameMode);
-    } catch (error) {
-      // 如果获取房间信息失败，通常意味着不在房间中
-      return false;
-    }
+    const lobby = await this.getCurrentLobby();
+    return lobby && lobby.gameConfig && Boolean(lobby.gameConfig.gameMode);
   }
 
   // 获取房间游戏配置

@@ -1,31 +1,32 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed } from 'vue';
-import { useRoomManagementStore } from '@/stores/room-management';
+import { computed } from 'vue';
+import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
 import RoomMemberCard from '@/components/RoomMemberCard.vue';
 import RoomEmptySlot from '@/components/RoomEmptySlot.vue';
 import RoomEmptyState from '@/components/RoomEmptyState.vue';
-import { eventBus } from '@/lib/event-bus';
 
-const roomStore = useRoomManagementStore();
-
-// 计算属性
-const isLoading = computed(
-  () => roomStore.isLoadingRoom || roomStore.isLoadingMembers
-);
-const isInRoom = computed(() => roomStore.isInRoom);
+const {
+  isLoading,
+  isInRoom,
+  roomLeader,
+  otherMembers,
+  kickMember,
+  errorMessage,
+  clearError,
+} = useAutoAcceptGame();
 
 // 创建5个位置的数组，房主在第一个位置，其他成员按顺序填充，空位用null表示
 const roomSlots = computed(() => {
   const slots = Array(5).fill(null);
 
-  if (roomStore.roomLeader) {
-    slots[0] = roomStore.roomLeader;
+  if (roomLeader.value) {
+    slots[0] = roomLeader.value;
   }
 
   // 填充其他成员到剩余位置
-  const otherMembers = roomStore.otherMembers;
-  for (let i = 0; i < Math.min(otherMembers.length, 4); i++) {
-    slots[i + 1] = otherMembers[i];
+  const otherMembersList = otherMembers.value;
+  for (let i = 0; i < Math.min(otherMembersList.length, 4); i++) {
+    slots[i + 1] = otherMembersList[i];
   }
 
   return slots;
@@ -34,31 +35,14 @@ const roomSlots = computed(() => {
 // 踢出成员
 const handleKickMember = async (summonerId: number) => {
   if (confirm('确定要踢出这个成员吗？')) {
-    await roomStore.kickMember(summonerId);
+    await kickMember(summonerId);
   }
 };
 
-// 组件挂载时初始化房间管理
-onMounted(async () => {
-  // 手动设置当前页面状态为房间管理页面
-  roomStore.isOnRoomPage = true;
-
-  // 手动触发页面切换事件，确保状态正确
-  eventBus.emit('page:change', 'RoomManagement');
-
-  // 初始化房间管理（包括设置事件监听器和获取房间信息）
-  await roomStore.initializeRoomManagement();
-});
-
-// 组件卸载时清理资源
-onUnmounted(() => {
-  // 手动设置当前页面状态为非房间管理页面
-  roomStore.isOnRoomPage = false;
-
-  // 移除事件监听器和停止轮询
-  roomStore.removeEventListeners();
-  roomStore.stopPolling();
-});
+// 清除错误信息
+const handleClearError = () => {
+  clearError();
+};
 </script>
 
 <template>
@@ -66,6 +50,22 @@ onUnmounted(() => {
   <main
     class="from-background via-background to-muted/30 relative flex h-[calc(100vh-40px)] flex-col overflow-hidden bg-gradient-to-br"
   >
+    <!-- 错误提示 -->
+    <div
+      v-if="errorMessage"
+      class="bg-destructive/10 border-destructive/20 text-destructive mx-4 mt-4 rounded-lg border p-3 text-sm"
+    >
+      <div class="flex items-center justify-between">
+        <span>{{ errorMessage }}</span>
+        <button
+          @click="handleClearError"
+          class="hover:bg-destructive/20 ml-2 rounded px-2 py-1 text-xs transition-colors"
+        >
+          关闭
+        </button>
+      </div>
+    </div>
+
     <!-- 初始加载状态 - 优雅的加载界面 -->
     <div
       v-if="isLoading && !isInRoom"
