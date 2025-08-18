@@ -13,5 +13,6 @@ src/lib/__tests__/test-data
 demo*
 
 logs/*
+match_history*.json
 
 release

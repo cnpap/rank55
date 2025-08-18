@@ -1,31 +1,67 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
+import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
+import { LCUClient } from '@/lib/client/lcu-client';
 import { SummonerService } from '@/lib/service/summoner-service';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
-import type { MatchHistory as MatchHistoryType } from '@/types/match-history';
+import type { Game } from '@/types/match-history-sgp';
+import serverConfig from '../../public/config/league-servers.json';
 
-export interface SearchResult {
+// SGP API 搜索结果接口
+export interface SgpSearchResult {
   summoner: SummonerData | null;
   rankedStats: RankedStats | null;
-  matchHistory: MatchHistoryType | null;
+  matchHistory: Game[] | null;
+  serverId: string | null;
+  totalCount: number;
   error: string | null;
+}
+
+// 服务器选项接口
+export interface ServerOption {
+  id: string;
+  name: string;
 }
 
 export const useMatchHistoryStore = defineStore('matchHistory', () => {
   // 状态
-  const searchResult = ref<SearchResult>({
+  const searchResult = ref<SgpSearchResult>({
     summoner: null,
     rankedStats: null,
     matchHistory: null,
+    serverId: null,
+    totalCount: 0,
     error: null,
   });
   const isSearching = ref(false);
   const searchHistory = ref<string[]>([]);
-  const pageSize = 20; // 修改为20条
+  const selectedServerId = ref<string>('TENCENT_HN1');
 
-  // 服务实例
-  let summonerService = new SummonerService();
+  // 添加分页状态
+  const currentPage = ref(1);
+  const pageSize = ref(20);
+
+  // 服务实例 - 移除 lcuClient 变量
+  let summonerService: SummonerService | null = null;
+  let sgpApi: SimpleSgpApi | null = null;
+  let sgpMatchService: SgpMatchService | null = null;
+
+  // 初始化服务
+  const initializeServices = async () => {
+    try {
+      if (!summonerService) {
+        // 不传入 client 参数，让 BaseService 自动处理环境检测
+        summonerService = new SummonerService();
+        sgpApi = new SimpleSgpApi();
+        sgpMatchService = new SgpMatchService(sgpApi); // 不传入 lcuClient
+      }
+    } catch (error) {
+      console.warn('初始化服务失败:', error);
+      throw error;
+    }
+  };
 
   // 计算属性
   const currentSummoner = computed(() => searchResult.value.summoner);
@@ -37,6 +73,35 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   );
   const showMatchHistory = computed(() => {
     return !!(currentSummoner.value && rankedStats.value && matchHistory.value);
+  });
+
+  // 获取可用服务器列表
+  const availableServers = computed((): ServerOption[] => {
+    const servers: ServerOption[] = [];
+    const serverNames = (serverConfig as any).serverNames['zh-CN'];
+
+    // 只显示腾讯服务器
+    const tencentServers = [
+      'TENCENT_HN1',
+      'TENCENT_HN10',
+      'TENCENT_TJ100',
+      'TENCENT_TJ101',
+      'TENCENT_NJ100',
+      'TENCENT_GZ100',
+      'TENCENT_CQ100',
+      'TENCENT_BGP2',
+    ];
+
+    tencentServers.forEach(serverId => {
+      if (serverNames[serverId]) {
+        servers.push({
+          id: serverId,
+          name: serverNames[serverId],
+        });
+      }
+    });
+
+    return servers;
   });
 
   // 验证用户ID格式
@@ -51,6 +116,8 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       summoner: null,
       rankedStats: null,
       matchHistory: null,
+      serverId: null,
+      totalCount: 0,
       error: null,
     };
   };
@@ -61,13 +128,20 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       summoner: null,
       rankedStats: null,
       matchHistory: null,
+      serverId: null,
+      totalCount: 0,
       error,
     };
   };
 
   // 设置搜索结果
-  const setSearchResult = (result: SearchResult) => {
+  const setSearchResult = (result: SgpSearchResult) => {
     searchResult.value = result;
+  };
+
+  // 设置选中的服务器
+  const setSelectedServerId = (serverId: string) => {
+    selectedServerId.value = serverId;
   };
 
   // 搜索当前登录的召唤师
@@ -78,6 +152,12 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     clearSearchResult();
 
     try {
+      await initializeServices();
+
+      if (!summonerService || !sgpMatchService) {
+        throw new Error('服务初始化失败');
+      }
+
       // 检查 LCU 连接状态
       const isConnected = await summonerService.isConnected();
       if (!isConnected) {
@@ -87,8 +167,8 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       // 获取当前召唤师
       const summoner = await summonerService.getCurrentSummoner();
 
-      // 执行搜索
-      await performSearch(summoner);
+      // 执行搜索（当前用户自动推断服务器）
+      await performCurrentUserSearch(summoner);
     } catch (error: any) {
       console.error('获取当前召唤师失败:', error);
       setError(error.message || '获取当前召唤师失败，请检查客户端连接');
@@ -97,8 +177,11 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     }
   };
 
-  // 根据召唤师名称搜索
-  const searchSummonerByName = async (summonerName: string): Promise<void> => {
+  // 根据召唤师名称搜索（需要指定服务器）
+  const searchSummonerByName = async (
+    summonerName: string,
+    serverId?: string
+  ): Promise<void> => {
     if (isSearching.value || !summonerName.trim()) return;
 
     // 验证用户ID格式
@@ -109,10 +192,23 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       return;
     }
 
+    // 使用指定的服务器ID或当前选中的服务器ID
+    const targetServerId = serverId || selectedServerId.value;
+    if (!targetServerId) {
+      setError('请选择服务器');
+      return;
+    }
+
     isSearching.value = true;
     clearSearchResult();
 
     try {
+      await initializeServices();
+
+      if (!summonerService || !sgpMatchService) {
+        throw new Error('服务初始化失败');
+      }
+
       // 检查 LCU 连接状态
       const isConnected = await summonerService.isConnected();
       if (!isConnected) {
@@ -124,17 +220,17 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         summonerName.trim()
       );
 
-      // 执行搜索
-      await performSearch(summoner);
+      // 执行搜索（指定服务器）
+      await performServerSearch(summoner, targetServerId);
 
       // 添加到搜索历史（避免重复）
       const trimmedName = summonerName.trim();
       if (!searchHistory.value.includes(trimmedName)) {
         searchHistory.value.unshift(trimmedName);
-        // 限制历史记录数量
-        // if (searchHistory.value.length > 5) {
-        //   searchHistory.value = searchHistory.value.slice(0, 5);
-        // }
+        // 限制历史记录数量为10条
+        if (searchHistory.value.length > 10) {
+          searchHistory.value = searchHistory.value.slice(0, 10);
+        }
       }
     } catch (error: any) {
       console.error('搜索召唤师失败:', error);
@@ -144,35 +240,142 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     }
   };
 
-  // 执行搜索逻辑
-  const performSearch = async (summoner: SummonerData): Promise<void> => {
+  const setCurrentPage = (page: number) => {
+    currentPage.value = page;
+  };
+
+  const setPageSize = (size: number) => {
+    pageSize.value = size;
+    currentPage.value = 1; // 重置到第一页
+  };
+
+  // 修改搜索方法以支持分页和tag过滤
+  const loadMatchHistoryPage = async (
+    page: number,
+    size?: number,
+    tag?: string
+  ): Promise<void> => {
+    if (isSearching.value || !searchResult.value.summoner) return;
+
+    const targetPageSize = size || pageSize.value;
+    const startIndex = (page - 1) * targetPageSize;
+
+    isSearching.value = true;
+
     try {
-      // 获取排位统计
+      await initializeServices();
+
+      if (!summonerService || !sgpMatchService) {
+        throw new Error('服务未初始化');
+      }
+
+      let sgpResult;
+      if (searchResult.value.serverId) {
+        // 使用指定服务器搜索
+        sgpResult = await sgpMatchService.getServerMatchHistory(
+          searchResult.value.serverId,
+          searchResult.value.summoner.puuid,
+          startIndex,
+          targetPageSize,
+          tag // 传递tag参数
+        );
+      } else {
+        // 使用当前用户搜索
+        sgpResult = await sgpMatchService.getCurrentUserMatchHistory(
+          searchResult.value.summoner.puuid,
+          startIndex,
+          targetPageSize,
+          tag // 传递tag参数
+        );
+      }
+
+      // 更新搜索结果
+      searchResult.value = {
+        ...searchResult.value,
+        matchHistory: sgpResult.games,
+        totalCount: sgpResult.totalCount,
+      };
+
+      currentPage.value = page;
+      if (size) {
+        pageSize.value = size;
+      }
+    } catch (error: any) {
+      console.error('加载分页数据失败:', error);
+      setError(error.message || '加载数据失败');
+    } finally {
+      isSearching.value = false;
+    }
+  };
+
+  // 修改现有搜索方法，使用第一页数据
+  const performCurrentUserSearch = async (
+    summoner: SummonerData
+  ): Promise<void> => {
+    try {
+      if (!summonerService || !sgpMatchService) {
+        throw new Error('服务未初始化');
+      }
+
       const stats = await summonerService.getRankedStats(summoner.puuid);
-
-      const startIndex = 0; // 从0开始
-      const endIndex = pageSize - 1; // 一次性加载20条：0-19
-
-      // 获取比赛历史（最近20场）
-      const history = await summonerService.getMatchHistory(
+      const sgpResult = await sgpMatchService.getCurrentUserMatchHistory(
         summoner.puuid,
-        startIndex,
-        endIndex
+        0,
+        pageSize.value
       );
-      console.log('搜索 history:', history);
-      console.log('索引范围:', { startIndex, endIndex });
 
-      // 设置搜索结果
       setSearchResult({
         summoner,
         rankedStats: stats,
-        matchHistory: history,
+        matchHistory: sgpResult.games,
+        serverId: sgpResult.serverId,
+        totalCount: sgpResult.totalCount,
         error: null,
       });
 
+      currentPage.value = 1;
+
+      console.log(
+        '搜索当前召唤师成功:',
+        summoner.displayName || summoner.gameName
+      );
+    } catch (error: any) {
+      console.error('获取当前用户数据失败:', error);
+      throw error;
+    }
+  };
+
+  const performServerSearch = async (
+    summoner: SummonerData,
+    serverId: string
+  ): Promise<void> => {
+    try {
+      if (!summonerService || !sgpMatchService) {
+        throw new Error('服务未初始化');
+      }
+
+      const stats = await summonerService.getRankedStats(summoner.puuid);
+      const sgpResult = await sgpMatchService.getServerMatchHistory(
+        serverId,
+        summoner.puuid,
+        0,
+        pageSize.value
+      );
+
+      setSearchResult({
+        summoner,
+        rankedStats: stats,
+        matchHistory: sgpResult.games,
+        serverId: sgpResult.serverId,
+        totalCount: sgpResult.totalCount,
+        error: null,
+      });
+
+      currentPage.value = 1;
+
       console.log('搜索召唤师成功:', summoner.displayName || summoner.gameName);
     } catch (error: any) {
-      console.error('获取召唤师数据失败:', error);
+      console.error('获取指定服务器数据失败:', error);
       throw error;
     }
   };
@@ -182,11 +385,22 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     await searchSummonerByName(name);
   };
 
+  // 获取可用服务器列表
+  const getAvailableServers = (): string[] => {
+    if (sgpApi) {
+      return sgpApi.getAvailableServers();
+    }
+    return [];
+  };
+
   return {
     // 状态
     searchResult,
     isSearching,
     searchHistory,
+    selectedServerId,
+    currentPage,
+    pageSize,
 
     // 计算属性
     currentSummoner,
@@ -195,14 +409,20 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     errorMessage,
     hasAnyData,
     showMatchHistory,
+    availableServers,
 
     // 方法
     clearSearchResult,
     setError,
     setSearchResult,
+    setSelectedServerId,
+    setCurrentPage,
+    setPageSize,
     searchCurrentSummoner,
     searchSummonerByName,
     searchFromHistory,
+    loadMatchHistoryPage,
     validateUserIdFormat,
+    getAvailableServers,
   };
 });

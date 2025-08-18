@@ -2,33 +2,37 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import https from 'https';
 import { LCUClientInterface } from './interface';
+import { LCUCredentials } from '@/types/lcu';
 
 const execAsync = promisify(exec);
-
-// LCU凭据接口
-interface LCUCredentials {
-  port: number;
-  token: string;
-}
 
 // LCU客户端实现
 export class LCUClient implements LCUClientInterface {
   private baseURL: string;
   private authToken: string;
   private port: number;
-  private maxRetries: number = 2; // 最大重试次数
-  private retryDelay: number = 1000; // 重试延迟（毫秒）
+  private maxRetries: number = 2;
+  private retryDelay: number = 1000;
+  // 新增服务器参数缓存
+  private region?: string;
+  private rsoPlatformId?: string;
+  private locale?: string;
+  private serverHost?: string;
 
-  constructor(port: number, token: string) {
-    this.port = port;
-    this.authToken = token;
-    this.baseURL = `https://127.0.0.1:${port}`;
+  constructor(credentials: LCUCredentials) {
+    this.port = credentials.port;
+    this.authToken = credentials.token;
+    this.baseURL = `https://127.0.0.1:${credentials.port}`;
+    this.region = credentials.region;
+    this.rsoPlatformId = credentials.rsoPlatformId;
+    this.locale = credentials.locale;
+    this.serverHost = credentials.serverHost;
   }
 
   // 创建新的LCU客户端
   static async create(): Promise<LCUClient> {
     const credentials = await this.getLCUCredentials();
-    return new LCUClient(credentials.port, credentials.token);
+    return new LCUClient(credentials);
   }
 
   // 刷新LCU凭据
@@ -38,6 +42,10 @@ export class LCUClient implements LCUClientInterface {
       this.port = credentials.port;
       this.authToken = credentials.token;
       this.baseURL = `https://127.0.0.1:${credentials.port}`;
+      this.region = credentials.region;
+      this.rsoPlatformId = credentials.rsoPlatformId;
+      this.locale = credentials.locale;
+      this.serverHost = credentials.serverHost;
     } catch (error) {
       throw new Error(`刷新凭据失败: ${error}`);
     }
@@ -71,12 +79,22 @@ export class LCUClient implements LCUClientInterface {
         throw new Error('LOL客户端未运行或无法找到LeagueClientUx.exe进程');
       }
 
-      // 解析命令行参数获取端口和token
+      // 解析命令行参数
       const portRegex = /--app-port=(\d+)/;
       const tokenRegex = /--remoting-auth-token=([\w-]+)/;
+      const regionRegex = /--region=([\w_]+)/;
+      const rsoPlatformIdRegex = /--rso_platform_id=([\w_]+)/;
+      const localeRegex = /--locale=([\w_]+)/;
+      const serverHostRegex = /--t\.lcdshost=([\w.-]+)/;
+
+      console.log('命令行参数:', cmdOutput);
 
       const portMatch = cmdOutput.match(portRegex);
       const tokenMatch = cmdOutput.match(tokenRegex);
+      const regionMatch = cmdOutput.match(regionRegex);
+      const rsoPlatformIdMatch = cmdOutput.match(rsoPlatformIdRegex);
+      const localeMatch = cmdOutput.match(localeRegex);
+      const serverHostMatch = cmdOutput.match(serverHostRegex);
 
       if (!portMatch || !tokenMatch) {
         throw new Error(
@@ -89,11 +107,24 @@ export class LCUClient implements LCUClientInterface {
         throw new Error('解析端口号失败');
       }
 
-      console.log('获取到的端口号:', port);
-      return {
+      const credentials: LCUCredentials = {
         port,
         token: tokenMatch[1],
+        region: regionMatch ? regionMatch[1] : undefined,
+        rsoPlatformId: rsoPlatformIdMatch ? rsoPlatformIdMatch[1] : undefined,
+        locale: localeMatch ? localeMatch[1] : undefined,
+        serverHost: serverHostMatch ? serverHostMatch[1] : undefined,
       };
+
+      console.log('提取的服务器参数:', {
+        port: credentials.port,
+        region: credentials.region,
+        rsoPlatformId: credentials.rsoPlatformId,
+        locale: credentials.locale,
+        serverHost: credentials.serverHost,
+      });
+
+      return credentials;
     } catch (error) {
       throw new Error(`获取LCU凭据失败: ${error}`);
     }
@@ -250,10 +281,14 @@ export class LCUClient implements LCUClientInterface {
   }
 
   // 获取当前凭据信息
-  getCredentials(): { port: number; token: string } {
+  getCredentials(): LCUCredentials {
     return {
       port: this.port,
       token: this.authToken,
+      region: this.region,
+      rsoPlatformId: this.rsoPlatformId,
+      locale: this.locale,
+      serverHost: this.serverHost,
     };
   }
 }

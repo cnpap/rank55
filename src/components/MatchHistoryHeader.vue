@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Filter, BarChart3 } from 'lucide-vue-next';
 import type { GameModesFilter, ProcessedMatch } from '@/types/match-history-ui';
 import { AcceptableValue } from 'reka-ui';
+import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 
 interface Props {
   modelValue: GameModesFilter;
@@ -28,17 +29,13 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 游戏模式选项
-const gameModeOptions = [
-  { value: 'all', label: '全部模式' },
-  { value: 'solo', label: '单双排位' },
-  { value: 'flex', label: '灵活排位' },
-  { value: 'normal', label: '普通匹配' },
-  { value: 'aram', label: '大乱斗' },
-  { value: 'arena', label: '斗魂竞技场' },
-  { value: 'training', label: '训练模式' },
-  { value: 'others', label: '其他模式' },
-];
+// 游戏模式选项 - 使用新的tag系统
+const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
+  ([value, label]) => ({
+    value,
+    label,
+  })
+);
 
 // 每页显示数量选项
 const pageSizeOptions = [
@@ -81,16 +78,8 @@ const recentChampions = computed(() => {
 
 // 处理游戏模式变更
 function handleGameModeChange(value: AcceptableValue) {
-  selectedGameMode.value = value as string;
-
   const newFilter: GameModesFilter = {
-    showSolo: value === 'all' || value === 'solo',
-    showFlex: value === 'all' || value === 'flex',
-    showNormal: value === 'all' || value === 'normal',
-    showARAM: value === 'all' || value === 'aram',
-    showArena: value === 'all' || value === 'arena',
-    showTraining: value === 'all' || value === 'training',
-    showOthers: value === 'all' || value === 'others',
+    selectedTag: value as string,
   };
 
   emit('update:modelValue', newFilter);
@@ -148,7 +137,7 @@ function getChampionAvatarUrl(championId: number): string {
           <span class="text-sm font-medium">筛选</span>
         </div>
         <Select
-          :model-value="selectedGameMode"
+          :model-value="modelValue.selectedTag"
           @update:model-value="handleGameModeChange"
         >
           <SelectTrigger

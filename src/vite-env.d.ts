@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import { LCUCredentials } from './types/lcu';
+
 declare global {
   interface Window {
     runtime: {
@@ -20,6 +22,8 @@ declare global {
         body?: any
       ) => Promise<any>;
       lcuIsConnected: () => Promise<boolean>;
+      // 新增：获取 LCU 凭据信息
+      getLcuCredentials: () => Promise<LCUCredentials>;
     };
   }
 }

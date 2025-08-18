@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { Checkbox } from '@/components/ui/checkbox';
-import type { GameModesFilter } from '@/types/match-history-ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { GameModesFilter, GameModeTag } from '@/types/match-history-ui';
+import { GAME_MODE_TAGS } from '@/types/match-history-ui';
+import { AcceptableValue } from 'reka-ui';
 
 interface Props {
   modelValue: GameModesFilter;
@@ -13,50 +21,18 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 过滤器配置
-const filterOptions = [
-  {
-    key: 'showSolo' as keyof GameModesFilter,
-    label: '单双',
-    description: '单双排位赛 (420)',
-  },
-  {
-    key: 'showFlex' as keyof GameModesFilter,
-    label: '灵活',
-    description: '灵活排位赛 (440)',
-  },
-  {
-    key: 'showNormal' as keyof GameModesFilter,
-    label: '匹配',
-    description: '普通匹配 (400, 430)',
-  },
-  {
-    key: 'showARAM' as keyof GameModesFilter,
-    label: '乱斗',
-    description: '大乱斗模式 (450)',
-  },
-  {
-    key: 'showArena' as keyof GameModesFilter,
-    label: '斗魂',
-    description: '斗魂竞技场 (1700)',
-  },
-  {
-    key: 'showTraining' as keyof GameModesFilter,
-    label: '训练',
-    description: '训练模式 (0)',
-  },
-  {
-    key: 'showOthers' as keyof GameModesFilter,
-    label: '其他',
-    description: '其他游戏模式',
-  },
-];
+// 游戏模式选项
+const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
+  ([value, label]) => ({
+    value,
+    label,
+  })
+);
 
 // 更新过滤器状态
-function updateFilter(key: keyof GameModesFilter, value: boolean) {
+function updateFilter(tag: AcceptableValue) {
   emit('update:modelValue', {
-    ...props.modelValue,
-    [key]: value,
+    selectedTag: tag as string,
   });
 }
 </script>
@@ -65,26 +41,23 @@ function updateFilter(key: keyof GameModesFilter, value: boolean) {
   <div
     class="border-border/40 bg-card/70 flex items-center gap-6 rounded border p-3 px-4"
   >
-    <span class="text-foreground text-sm font-medium">筛选:</span>
-    <div class="flex gap-4">
-      <label
-        v-for="option in filterOptions"
-        :key="option.key"
-        class="flex cursor-pointer items-center gap-1.5 transition-opacity"
-        :title="option.description"
-      >
-        <Checkbox
-          :model-value="modelValue[option.key]"
-          @update:model-value="
-            (value: boolean | 'indeterminate') =>
-              updateFilter(
-                option.key,
-                value === 'indeterminate' ? false : value
-              )
-          "
-        />
-        <span class="">{{ option.label }}</span>
-      </label>
-    </div>
+    <span class="text-foreground text-sm font-medium">游戏模式:</span>
+    <Select
+      :model-value="modelValue.selectedTag"
+      @update:model-value="updateFilter"
+    >
+      <SelectTrigger class="w-40">
+        <SelectValue placeholder="选择模式" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem
+          v-for="option in gameModeOptions"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </SelectItem>
+      </SelectContent>
+    </Select>
   </div>
 </template>

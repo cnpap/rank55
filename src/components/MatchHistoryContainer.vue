@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { reactive, computed, onMounted, ref } from 'vue';
 import type { Champion, ChampionData } from '@/types/champion';
-import type {
-  MatchHistory as MatchHistoryType,
-  Participant,
-} from '@/types/match-history';
+import type { Game } from '@/types/match-history-sgp';
 import type { SummonerData } from '@/types/summoner';
 import type {
   GameModesFilter,
@@ -16,9 +13,10 @@ import { formatGameDuration, getQueueName } from '@/lib/rank-helpers';
 import { dataLoader } from '@/lib/data-loader';
 import MatchHistoryView from './MatchHistoryView.vue';
 import { dataUtils } from '@/assets/versioned-assets';
+import { useMatchHistoryStore } from '@/stores/match-history';
 
 const props = defineProps<{
-  matchHistory: MatchHistoryType | null;
+  matchHistory: Game[] | null;
   summoner: SummonerData | null;
   isLoadingMore?: boolean;
   canLoadMore?: boolean;
@@ -28,15 +26,9 @@ const emit = defineEmits<{
   loadMore: [];
 }>();
 
-// 游戏模式过滤选项
+// 游戏模式过滤选项 - 使用新的tag系统
 const gameModesFilter = reactive<GameModesFilter>({
-  showSolo: true, // 单双排位 (420)
-  showFlex: true, // 灵活排位 (440)
-  showNormal: true, // 匹配模式 (400, 430)
-  showARAM: true, // 极地大乱斗 (450)
-  showArena: true, // 斗魂竞技场 (1700)
-  showTraining: true, // 训练模式 (0)
-  showOthers: true, // 其他模式
+  selectedTag: 'all', // 默认显示所有模式
 });
 
 // 英雄数据状态
@@ -49,88 +41,60 @@ const championState = reactive<ChampionState>({
 // 展开状态
 const expandedMatches = ref(new Set<number>());
 
-// 过滤后的战绩数据
+// 过滤后的战绩数据 - 重构以适配SGP数据结构
 const filteredMatchHistory = computed((): ProcessedMatch[] => {
-  if (!props.matchHistory?.games?.games || !props.summoner) {
+  if (!props.matchHistory || !props.summoner) {
     return [];
   }
 
   const processedMatches: ProcessedMatch[] = [];
 
-  for (const game of props.matchHistory.games.games) {
-    // 找到当前玩家的参与者ID
-    let currentParticipantID = 0;
-    if (game.participantIdentities) {
-      for (const identity of game.participantIdentities) {
-        if (identity.player?.summonerId === props.summoner.accountId) {
-          currentParticipantID = identity.participantId;
-          break;
-        }
-      }
-    }
+  for (const game of props.matchHistory) {
+    const gameInfo = game.json;
 
-    // 找到对应的参与者数据
-    let currentPlayer: Participant | null = null;
-    if (game.participants) {
-      for (const participant of game.participants) {
-        if (participant.participantId === currentParticipantID) {
-          currentPlayer = participant;
-          break;
-        }
-      }
-    }
+    // 找到当前玩家的参与者数据
+    const currentPlayer = gameInfo.participants.find(
+      participant => participant.puuid === props.summoner!.puuid
+    );
 
     if (!currentPlayer) continue;
 
-    // 过滤队列类型 - 修改为更灵活的逻辑
-    const shouldShow = (() => {
-      // 如果是已知的队列类型，按过滤器设置
-      if (game.queueId === 420) return gameModesFilter.showSolo;
-      if (game.queueId === 440) return gameModesFilter.showFlex;
-      if (game.queueId === 400 || game.queueId === 430)
-        return gameModesFilter.showNormal;
-      if (game.queueId === 450) return gameModesFilter.showARAM;
-      if (game.queueId === 1700) return gameModesFilter.showArena;
-      if (game.queueId === 0) return gameModesFilter.showTraining;
+    // 不再需要客户端过滤，因为服务端已经根据tag过滤了
 
-      // 对于其他未知的队列类型，使用"其他模式"过滤器
-      return gameModesFilter.showOthers;
-    })();
-
-    if (!shouldShow) continue;
-
-    const kills = currentPlayer.stats?.kills || 0;
-    const deaths = currentPlayer.stats?.deaths || 0;
-    const assists = currentPlayer.stats?.assists || 0;
+    const kills = currentPlayer.kills;
+    const deaths = currentPlayer.deaths;
+    const assists = currentPlayer.assists;
     const kda = (kills + assists) / Math.max(deaths, 1);
 
     const cs =
-      (currentPlayer.stats?.totalMinionsKilled || 0) +
-      (currentPlayer.stats?.neutralMinionsKilled || 0);
+      currentPlayer.totalMinionsKilled +
+      currentPlayer.totalAllyJungleMinionsKilled +
+      currentPlayer.totalEnemyJungleMinionsKilled;
 
     const items = [
-      currentPlayer.stats?.item0,
-      currentPlayer.stats?.item1,
-      currentPlayer.stats?.item2,
-      currentPlayer.stats?.item3,
-      currentPlayer.stats?.item4,
-      currentPlayer.stats?.item5,
-      currentPlayer.stats?.item6,
+      currentPlayer.item0,
+      currentPlayer.item1,
+      currentPlayer.item2,
+      currentPlayer.item3,
+      currentPlayer.item4,
+      currentPlayer.item5,
+      currentPlayer.item6,
     ].filter(item => item && item !== 0) as number[];
 
     const championName =
       championState.championNames.get(String(currentPlayer.championId)) ||
+      currentPlayer.championName ||
       `英雄${currentPlayer.championId}`;
 
     processedMatches.push({
-      gameId: game.gameId,
+      gameId: gameInfo.gameId,
       championId: currentPlayer.championId,
       championName,
-      result: currentPlayer.stats?.win ? 'victory' : 'defeat',
-      queueType: getQueueName(game.queueId),
-      queueId: game.queueId,
-      duration: formatGameDuration(game.gameDuration),
-      createdAt: game.gameCreationDate,
+      result: currentPlayer.win ? 'victory' : 'defeat',
+      queueType: getQueueName(gameInfo.queueId),
+      queueId: gameInfo.queueId,
+      duration: formatGameDuration(gameInfo.gameDuration),
+      createdAt: gameInfo.gameCreation, // SGP使用gameCreation而不是gameCreationDate
       kda: {
         kills,
         deaths,
@@ -139,18 +103,18 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
       },
       stats: {
         cs,
-        gold: currentPlayer.stats?.goldEarned || 0,
-        damage: currentPlayer.stats?.totalDamageDealtToChampions || 0,
-        damageTaken: currentPlayer.stats?.totalDamageTaken || 0,
-        level: currentPlayer.stats?.champLevel || 0,
+        gold: currentPlayer.goldEarned,
+        damage: currentPlayer.totalDamageDealtToChampions,
+        damageTaken: currentPlayer.totalDamageTaken,
+        level: currentPlayer.champLevel,
       },
       items,
       spells: [currentPlayer.spell1Id, currentPlayer.spell2Id],
       runes: [
-        currentPlayer.stats?.perkPrimaryStyle || 0,
-        currentPlayer.stats?.perkSubStyle || 0,
+        currentPlayer.perks?.styles?.[0]?.style || 0, // 主要符文系
+        currentPlayer.perks?.styles?.[1]?.style || 0, // 次要符文系
       ],
-      expanded: expandedMatches.value.has(game.gameId),
+      expanded: expandedMatches.value.has(gameInfo.gameId),
     });
   }
 
@@ -158,13 +122,11 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
 });
 
 // 计算属性：数据状态
-const hasData = computed(() =>
-  Boolean(props.matchHistory?.games?.games?.length)
-);
+const hasData = computed(() => Boolean(props.matchHistory?.length));
 const hasSummoner = computed(() => Boolean(props.summoner));
 const isLoading = computed(() => championState.isLoading);
 
-// 加载英雄数据
+// 加载英雄数据 - 更新以适配SGP数据结构
 async function loadChampionData() {
   championState.isLoading = true;
   try {
@@ -172,13 +134,11 @@ async function loadChampionData() {
     championState.champions = Object.values(championData.data);
 
     // 如果有比赛历史，预加载英雄名称
-    if (props.matchHistory?.games?.games) {
+    if (props.matchHistory) {
       const championIds = new Set<number>();
-      for (const game of props.matchHistory.games.games) {
-        if (game.participants) {
-          for (const participant of game.participants) {
-            championIds.add(participant.championId);
-          }
+      for (const game of props.matchHistory) {
+        for (const participant of game.json.participants) {
+          championIds.add(participant.championId);
         }
       }
 
@@ -210,23 +170,25 @@ function toggleMatchDetail(gameId: number) {
   }
 }
 
-// 获取详细比赛信息
+// 获取详细比赛信息 - 更新以适配SGP数据结构
 function getDetailedMatchInfo(gameId: number): DetailedMatchInfo | null {
-  if (!props.matchHistory?.games?.games) return null;
+  if (!props.matchHistory) return null;
 
-  const game = props.matchHistory.games.games.find(g => g.gameId === gameId);
+  const game = props.matchHistory.find(g => g.json.gameId === gameId);
   if (!game) return null;
 
   return {
     game,
-    allParticipants: game.participants || [],
-    teams: game.teams || [],
+    allParticipants: game.json.participants,
+    teams: game.json.teams,
   };
 }
 
 // 更新游戏模式过滤器
 function updateGameModesFilter(newFilter: GameModesFilter) {
   Object.assign(gameModesFilter, newFilter);
+  // 触发重新加载数据
+  matchHistoryStore.loadMatchHistoryPage(1, undefined, newFilter.selectedTag);
 }
 
 // 暴露给父组件的方法和数据
@@ -243,6 +205,19 @@ defineExpose({
 onMounted(() => {
   loadChampionData();
 });
+
+// 添加 store
+const matchHistoryStore = useMatchHistoryStore();
+
+// 添加分页处理方法
+function handlePageChange(page: number) {
+  matchHistoryStore.loadMatchHistoryPage(page);
+}
+
+function handlePageSizeChange(size: number) {
+  matchHistoryStore.setPageSize(size);
+  matchHistoryStore.loadMatchHistoryPage(1, size);
+}
 </script>
 
 <template>
@@ -255,8 +230,13 @@ onMounted(() => {
     :has-data="hasData"
     :has-summoner="hasSummoner"
     :can-load-more="canLoadMore || false"
+    :current-page="matchHistoryStore.currentPage"
+    :page-size="matchHistoryStore.pageSize"
+    :total-matches="matchHistoryStore.searchResult.totalCount"
     @update:game-modes-filter="updateGameModesFilter"
     @toggle-match-detail="toggleMatchDetail"
+    @update:current-page="handlePageChange"
+    @update:page-size="handlePageSizeChange"
     @load-more="emit('loadMore')"
   />
 </template>

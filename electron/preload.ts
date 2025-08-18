@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   lcuRequest: (method: 'GET' | 'POST', endpoint: string, body?: any) =>
     ipcRenderer.invoke('lcu-request', method, endpoint, body),
   lcuIsConnected: () => ipcRenderer.invoke('lcu-is-connected'),
+
+  // 新增：获取 LCU 凭据信息
+  getLcuCredentials: () => ipcRenderer.invoke('lcu-get-credentials'),
 });
 
 // 类型声明
@@ -33,6 +36,15 @@ declare global {
         body?: any
       ) => Promise<any>;
       lcuIsConnected: () => Promise<boolean>;
+      // 新增类型声明
+      getLcuCredentials: () => Promise<{
+        port: number;
+        token: string;
+        region?: string;
+        rsoPlatformId?: string;
+        locale?: string;
+        serverHost?: string;
+      }>;
     };
   }
 }

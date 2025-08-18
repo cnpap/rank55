@@ -289,3 +289,16 @@ process.on('uncaughtException', error => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+// 在现有的 IPC 处理器后面添加
+
+// LCU 凭据获取处理器
+ipcMain.handle('lcu-get-credentials', async () => {
+  try {
+    const client = await ensureLCUClient();
+    return client.getCredentials();
+  } catch (error) {
+    console.error('获取 LCU 凭据失败:', error);
+    throw error;
+  }
+});
