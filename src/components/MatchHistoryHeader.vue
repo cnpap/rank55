@@ -47,33 +47,55 @@ const pageSizeOptions = [
 // 当前选中的游戏模式
 const selectedGameMode = ref('all');
 
-// 计算总体统计（简化版）
+// 计算总体统计（基于真实数据）
 const overallStats = computed(() => {
-  // 使用假数据，实际应该从props.matches计算
-  const totalGames = 20;
-  const totalWins = 12;
-  const totalLosses = 8;
-  const winRate = Math.round((totalWins / totalGames) * 100);
+  if (!props.matches || props.matches.length === 0) {
+    return {
+      totalGames: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      winRate: 0,
+      avgKDA: 0,
+    };
+  }
+
+  const totalGames = props.matches.length;
+  const totalWins = props.matches.filter(match => match.result === 'victory').length;
+  const totalLosses = totalGames - totalWins;
+  const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+
+  // 计算平均KDA
+  const totalKDA = props.matches.reduce((sum, match) => sum + match.kda.ratio, 0);
+  const avgKDA = totalGames > 0 ? Number((totalKDA / totalGames).toFixed(1)) : 0;
 
   return {
     totalGames,
     totalWins,
     totalLosses,
     winRate,
-    avgKDA: 2.4,
+    avgKDA,
   };
 });
 
-// 最近使用的英雄（只显示头像）
+// 最近使用的英雄（基于真实数据）
 const recentChampions = computed(() => {
-  // 假数据，实际应该从props.matches计算
-  return [
-    { championId: 157, games: 5 }, // 亚索
-    { championId: 64, games: 3 }, // 李青
-    { championId: 238, games: 4 }, // 劫
-    { championId: 91, games: 2 }, // 塔隆
-    { championId: 39, games: 3 }, // 艾瑞莉娅
-  ];
+  if (!props.matches || props.matches.length === 0) {
+    return [];
+  }
+
+  // 统计每个英雄的使用次数
+  const championCount = new Map<number, number>();
+  
+  props.matches.forEach(match => {
+    const count = championCount.get(match.championId) || 0;
+    championCount.set(match.championId, count + 1);
+  });
+
+  // 转换为数组并按使用次数排序，取前5个
+  return Array.from(championCount.entries())
+    .map(([championId, games]) => ({ championId, games }))
+    .sort((a, b) => b.games - a.games)
+    .slice(0, 5);
 });
 
 // 处理游戏模式变更
@@ -112,9 +134,9 @@ function getChampionAvatarUrl(championId: number): string {
       <!-- 左侧：统计信息 -->
       <div class="flex items-center gap-6">
         <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-          <!-- 最近对局 -->
+          最近对局
         </span>
-        <!-- <div class="flex items-center gap-4 text-sm">
+        <div class="flex items-center gap-4 text-sm">
           <span class="font-medium text-emerald-600 dark:text-emerald-400">
             {{ overallStats.totalWins }}胜
           </span>
@@ -127,7 +149,7 @@ function getChampionAvatarUrl(championId: number): string {
           <span class="font-medium text-blue-600 dark:text-blue-400"
             >{{ overallStats.avgKDA }} KDA</span
           >
-        </div> -->
+        </div>
       </div>
 
       <!-- 右侧：筛选器 -->
@@ -163,7 +185,7 @@ function getChampionAvatarUrl(championId: number): string {
       <!-- 左侧：常用英雄头像 -->
       <div class="flex items-center gap-3">
         <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-          <!-- 常用英雄 -->
+          常用英雄
         </span>
         <div class="flex items-center gap-2">
           <div
@@ -171,7 +193,7 @@ function getChampionAvatarUrl(championId: number): string {
             :key="champion.championId"
             class="group relative"
           >
-            <!-- <div class="relative">
+            <div class="relative">
               <img
                 :src="getChampionAvatarUrl(champion.championId)"
                 :alt="`英雄${champion.championId}`"
@@ -182,7 +204,7 @@ function getChampionAvatarUrl(championId: number): string {
               >
                 {{ champion.games }}
               </div>
-            </div> -->
+            </div>
           </div>
         </div>
       </div>

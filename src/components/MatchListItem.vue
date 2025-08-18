@@ -142,7 +142,7 @@ defineEmits<Emits>();
                 {{ match.queueType }}
               </h4>
               <p class="text-muted-foreground text-sm">
-                {{ formatDateToDay(match.createdAt) }}
+                {{ formatDateToDay(match.createdAt as unknown as string) }}
               </p>
             </div>
           </div>
