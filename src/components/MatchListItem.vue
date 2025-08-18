@@ -40,11 +40,11 @@ defineEmits<Emits>();
     />
 
     <!-- 主要信息行 -->
-    <div class="space-y-3 p-4">
+    <div class="space-y-3 px-2 py-0.5">
       <!-- 第一行：当前玩家信息 + 游戏基本信息 -->
       <div class="flex items-center justify-between">
         <!-- 左侧：当前玩家信息 -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-start gap-3">
           <!-- 胜负状态 -->
           <div class="flex flex-col items-center gap-1">
             <Badge
@@ -63,164 +63,175 @@ defineEmits<Emits>();
               {{ match.duration }}
             </span>
           </div>
-
-          <!-- 当前玩家英雄信息 -->
-          <div class="flex items-center gap-2">
-            <!-- 英雄头像 + 等级 -->
-            <div class="relative flex-shrink-0">
-              <img
-                :src="gameAssets.getChampionIcon(`${match.championId}`)"
-                :alt="match.championName"
-                class="ring-border/30 h-12 w-12 rounded object-cover ring-2"
-              />
-              <div
-                class="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white ring-2 ring-white dark:ring-gray-800"
-              >
-                <span class="font-tektur-numbers text-xs font-bold">
-                  {{ match.stats.level }}
-                </span>
-              </div>
-            </div>
-
-            <!-- 召唤师技能 + 天赋 -->
-            <div class="flex items-center gap-1">
-              <!-- 召唤师技能 -->
-              <div class="flex flex-col gap-1">
-                <img
-                  :src="gameAssets.getSpellIcon(`${match.spells[0]}`)"
-                  :alt="`召唤师技能${match.spells[0]}`"
-                  class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
-                />
-                <img
-                  :src="gameAssets.getSpellIcon(`${match.spells[1]}`)"
-                  :alt="`召唤师技能${match.spells[1]}`"
-                  class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
-                />
-              </div>
-
-              <!-- 天赋系 -->
-              <div class="flex flex-col gap-1">
-                <div class="relative h-5 w-5">
-                  <img
-                    v-if="match.runes[0]"
-                    :src="gameAssets.getRuneIcon(`${match.runes[0]}`)"
-                    :alt="`主要天赋系${match.runes[0]}`"
-                    class="border-border/40 h-full w-full rounded object-cover shadow-sm"
-                  />
-                  <div
-                    v-else
-                    class="border-border/20 bg-muted/30 h-full w-full rounded border"
-                  />
-                </div>
-                <div class="relative h-5 w-5">
-                  <img
-                    v-if="match.runes[1]"
-                    :src="gameAssets.getRuneIcon(`${match.runes[1]}`)"
-                    :alt="`次要天赋系${match.runes[1]}`"
-                    class="border-border/40 h-full w-full rounded object-cover shadow-sm"
-                  />
-                  <div
-                    v-else
-                    class="border-border/20 bg-muted/30 h-full w-full rounded border"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 游戏模式和时间 -->
-          <div class="min-w-0">
-            <h4 class="text-foreground text-sm font-semibold">
-              {{ match.queueType }}
-            </h4>
-            <p class="text-muted-foreground text-xs">
-              {{ formatDateToDay(match.createdAt as unknown as string) }}
-            </p>
-          </div>
         </div>
 
         <!-- 右侧：KDA + 统计 + 装备 + 玩家列表 -->
         <div class="flex items-center gap-4">
-          <!-- KDA -->
-          <div class="text-center">
-            <div class="font-tektur-numbers text-foreground font-bold">
-              {{ match.kda.kills }}/{{ match.kda.deaths }}/{{
-                match.kda.assists
-              }}
-            </div>
-            <Badge
-              variant="secondary"
-              class="font-tektur-numbers text-xs font-bold"
-              :class="{
-                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
-                  match.kda.ratio >= 3,
-                'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
-                  match.kda.ratio >= 2 && match.kda.ratio < 3,
-                'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
-                  match.kda.ratio < 2,
-              }"
-            >
-              {{ match.kda.ratio.toFixed(2) }}
-            </Badge>
-          </div>
+          <!-- KDA + 统计数据 + 装备 (分四行显示) -->
+          <div class="flex flex-col gap-1">
+            <!-- 前三行：左右两个容器的布局 -->
+            <div class="flex items-start gap-6">
+              <!-- 左侧容器：英雄信息 + 游戏模式时间 (2行) -->
+              <div class="flex flex-col gap-1">
+                <!-- 第一行：英雄头像 + 召唤师技能 -->
+                <div class="flex items-start gap-2">
+                  <!-- 英雄头像 + 等级 -->
+                  <div class="relative flex-shrink-0">
+                    <img
+                      :src="gameAssets.getChampionIcon(`${match.championId}`)"
+                      :alt="match.championName"
+                      class="ring-border/30 h-12 w-12 rounded object-cover ring-2"
+                    />
+                    <div
+                      class="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white ring-2 ring-white dark:ring-gray-800"
+                    >
+                      <span class="font-tektur-numbers text-xs font-bold">
+                        {{ match.stats.level }}
+                      </span>
+                    </div>
+                  </div>
 
-          <!-- 统计数据 -->
-          <div class="grid grid-cols-2 gap-2 text-center text-xs">
-            <div class="flex items-center gap-1">
-              <Coins class="h-3 w-3 text-amber-500" />
-              <span class="font-tektur-numbers font-semibold">
-                {{ formatNumber(match.stats.gold) }}
-              </span>
-            </div>
-            <div class="font-tektur-numbers font-semibold">
-              {{ match.stats.cs }} CS
-            </div>
-            <div class="flex items-center gap-1">
-              <Sword class="h-3 w-3 text-red-500" />
-              <span class="font-tektur-numbers font-semibold">
-                {{ formatNumber(match.stats.damage) }}
-              </span>
-            </div>
-            <div class="flex items-center gap-1">
-              <Shield class="h-3 w-3 text-blue-500" />
-              <span class="font-tektur-numbers font-semibold">
-                {{ formatNumber(match.stats.damageTaken) }}
-              </span>
-            </div>
-          </div>
+                  <!-- 召唤师技能 + 天赋 -->
+                  <div class="flex items-start gap-1">
+                    <!-- 召唤师技能 -->
+                    <div class="flex flex-col gap-1">
+                      <img
+                        :src="gameAssets.getSpellIcon(`${match.spells[0]}`)"
+                        :alt="`召唤师技能${match.spells[0]}`"
+                        class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+                      />
+                      <img
+                        :src="gameAssets.getSpellIcon(`${match.spells[1]}`)"
+                        :alt="`召唤师技能${match.spells[1]}`"
+                        class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+                      />
+                    </div>
 
-          <!-- 装备 -->
-          <div class="flex gap-1">
-            <div
-              v-for="(itemId, index) in Array.from({ length: 6 })"
-              :key="index"
-              class="relative h-8 w-8"
-            >
-              <img
-                v-if="match.items[index]"
-                :src="gameAssets.getItemIcon(`${match.items[index]}`)"
-                :alt="`装备${match.items[index]}`"
-                class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
-              />
+                    <!-- 天赋系 -->
+                    <div class="flex flex-col gap-1">
+                      <div class="relative h-5 w-5">
+                        <img
+                          v-if="match.runes[0]"
+                          :src="gameAssets.getRuneIcon(`${match.runes[0]}`)"
+                          :alt="`主要天赋系${match.runes[0]}`"
+                          class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+                        />
+                        <div
+                          v-else
+                          class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                        />
+                      </div>
+                      <div class="relative h-5 w-5">
+                        <img
+                          v-if="match.runes[1]"
+                          :src="gameAssets.getRuneIcon(`${match.runes[1]}`)"
+                          :alt="`次要天赋系${match.runes[1]}`"
+                          class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+                        />
+                        <div
+                          v-else
+                          class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 第二行：游戏模式和时间 -->
+                <div class="text-left">
+                  <h4 class="text-foreground text-sm font-semibold">
+                    {{ match.queueType }}
+                  </h4>
+                  <p class="text-muted-foreground text-xs">
+                    {{ formatDateToDay(match.createdAt as unknown as string) }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- 右侧容器：KDA + 经济 + 伤害 (3行) -->
+              <div class="flex flex-col gap-1">
+                <!-- 第一行：KDA -->
+                <div class="text-right">
+                  <div class="font-tektur-numbers text-foreground font-bold">
+                    {{ match.kda.kills }}/{{ match.kda.deaths }}/{{
+                      match.kda.assists
+                    }}
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    class="font-tektur-numbers text-xs font-bold"
+                    :class="{
+                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
+                        match.kda.ratio >= 3,
+                      'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
+                        match.kda.ratio >= 2 && match.kda.ratio < 3,
+                      'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
+                        match.kda.ratio < 2,
+                    }"
+                  >
+                    {{ match.kda.ratio.toFixed(2) }}
+                  </Badge>
+                </div>
+
+                <!-- 第二行：经济 -->
+                <div class="flex items-center justify-end gap-1 text-xs">
+                  <Coins class="h-3 w-3 text-amber-500" />
+                  <span class="font-tektur-numbers font-semibold">
+                    {{ formatNumber(match.stats.gold) }}
+                  </span>
+                  <span class="font-tektur-numbers ml-2 font-semibold">
+                    {{ match.stats.cs }} CS
+                  </span>
+                </div>
+
+                <!-- 第三行：伤害 -->
+                <div class="flex items-center justify-end gap-3 text-xs">
+                  <div class="flex items-center gap-1">
+                    <Sword class="h-3 w-3 text-red-500" />
+                    <span class="font-tektur-numbers font-semibold">
+                      {{ formatNumber(match.stats.damage) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <Shield class="h-3 w-3 text-blue-500" />
+                    <span class="font-tektur-numbers font-semibold">
+                      {{ formatNumber(match.stats.damageTaken) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 第四行：装备 (最下面一行) -->
+            <div class="flex gap-1">
               <div
-                v-else
-                class="border-border/20 bg-muted/30 h-full w-full rounded border"
-              />
+                v-for="(itemId, index) in Array.from({ length: 6 })"
+                :key="index"
+                class="relative h-9 w-9"
+              >
+                <img
+                  v-if="match.items[index]"
+                  :src="gameAssets.getItemIcon(`${match.items[index]}`)"
+                  :alt="`装备${match.items[index]}`"
+                  class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
+                />
+                <div
+                  v-else
+                  class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                />
+              </div>
             </div>
           </div>
 
           <!-- 玩家列表 -->
-          <div class="flex gap-2">
+          <div class="font-tektur-numbers flex gap-1">
             <!-- 蓝色方 -->
-            <div class="w-24">
-              <div class="mb-1 text-center text-xs font-medium text-blue-600">
-                蓝队
-              </div>
-              <div class="space-y-1">
+            <div class="w-28">
+              <div class="space-y-0.5">
                 <div
                   v-for="player in match.teams[0]?.players || []"
                   :key="player.puuid"
-                  class="flex items-center gap-1"
+                  class="flex items-center gap-1 rounded px-1 py-0.5"
                   :class="{
                     'bg-blue-100 dark:bg-blue-900/40': player.isCurrentPlayer,
                   }"
@@ -231,7 +242,7 @@ defineEmits<Emits>();
                     class="h-4 w-4 flex-shrink-0 rounded object-cover"
                   />
                   <div
-                    class="w-16 truncate text-xs"
+                    class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium"
                     :title="player.displayName"
                   >
                     {{ player.displayName }}
@@ -241,15 +252,12 @@ defineEmits<Emits>();
             </div>
 
             <!-- 红色方 -->
-            <div class="w-24">
-              <div class="mb-1 text-center text-xs font-medium text-red-600">
-                红队
-              </div>
-              <div class="space-y-1">
+            <div class="w-28">
+              <div class="space-y-0.5">
                 <div
                   v-for="player in match.teams[1]?.players || []"
                   :key="player.puuid"
-                  class="flex items-center gap-1"
+                  class="flex items-center gap-1 rounded px-1 py-0.5"
                   :class="{
                     'bg-red-100 dark:bg-red-900/40': player.isCurrentPlayer,
                   }"
@@ -260,7 +268,7 @@ defineEmits<Emits>();
                     class="h-4 w-4 flex-shrink-0 rounded object-cover"
                   />
                   <div
-                    class="w-16 truncate text-xs"
+                    class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium"
                     :title="player.displayName"
                   >
                     {{ player.displayName }}
