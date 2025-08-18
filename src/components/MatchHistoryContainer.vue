@@ -8,6 +8,8 @@ import type {
   ProcessedMatch,
   ChampionState,
   DetailedMatchInfo,
+  MatchTeam,
+  MatchPlayer,
 } from '@/types/match-history-ui';
 import { formatGameDuration, getQueueName } from '@/lib/rank-helpers';
 import { dataLoader } from '@/lib/data-loader';
@@ -59,8 +61,6 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
 
     if (!currentPlayer) continue;
 
-    // 不再需要客户端过滤，因为服务端已经根据tag过滤了
-
     const kills = currentPlayer.kills;
     const deaths = currentPlayer.deaths;
     const assists = currentPlayer.assists;
@@ -86,6 +86,86 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
       currentPlayer.championName ||
       `英雄${currentPlayer.championId}`;
 
+    // 处理所有玩家信息
+    const allPlayers: MatchPlayer[] = gameInfo.participants.map(participant => {
+      const playerKills = participant.kills;
+      const playerDeaths = participant.deaths;
+      const playerAssists = participant.assists;
+      const playerKda =
+        (playerKills + playerAssists) / Math.max(playerDeaths, 1);
+
+      const playerCs =
+        participant.totalMinionsKilled +
+        participant.totalAllyJungleMinionsKilled +
+        participant.totalEnemyJungleMinionsKilled;
+
+      const playerItems = [
+        participant.item0,
+        participant.item1,
+        participant.item2,
+        participant.item3,
+        participant.item4,
+        participant.item5,
+        participant.item6,
+      ].filter(item => item && item !== 0) as number[];
+
+      const playerChampionName =
+        championState.championNames.get(String(participant.championId)) ||
+        participant.championName ||
+        `英雄${participant.championId}`;
+
+      const displayName =
+        participant.riotIdGameName && participant.riotIdTagline
+          ? `${participant.riotIdGameName}#${participant.riotIdTagline}`
+          : participant.summonerName || 'Unknown';
+
+      return {
+        puuid: participant.puuid,
+        riotIdGameName: participant.riotIdGameName || '',
+        riotIdTagline: participant.riotIdTagline || '',
+        displayName,
+        championId: participant.championId,
+        championName: playerChampionName,
+        teamId: participant.teamId,
+        teamPosition:
+          participant.teamPosition ||
+          participant.individualPosition ||
+          'UNKNOWN',
+        isCurrentPlayer: participant.puuid === props.summoner!.puuid,
+        kda: {
+          kills: playerKills,
+          deaths: playerDeaths,
+          assists: playerAssists,
+          ratio: playerKda,
+        },
+        stats: {
+          level: participant.champLevel,
+          cs: playerCs,
+          gold: participant.goldEarned,
+          damage: participant.totalDamageDealtToChampions,
+        },
+        items: playerItems,
+        spells: [participant.spell1Id, participant.spell2Id],
+        runes: [
+          participant.perks?.styles?.[0]?.style || 0,
+          participant.perks?.styles?.[1]?.style || 0,
+        ],
+      };
+    });
+
+    // 按队伍分组
+    const blueTeam: MatchTeam = {
+      teamId: 100,
+      win: gameInfo.teams.find(t => t.teamId === 100)?.win || false,
+      players: allPlayers.filter(p => p.teamId === 100),
+    };
+
+    const redTeam: MatchTeam = {
+      teamId: 200,
+      win: gameInfo.teams.find(t => t.teamId === 200)?.win || false,
+      players: allPlayers.filter(p => p.teamId === 200),
+    };
+
     processedMatches.push({
       gameId: gameInfo.gameId,
       championId: currentPlayer.championId,
@@ -94,7 +174,7 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
       queueType: getQueueName(gameInfo.queueId),
       queueId: gameInfo.queueId,
       duration: formatGameDuration(gameInfo.gameDuration),
-      createdAt: gameInfo.gameCreation, // SGP使用gameCreation而不是gameCreationDate
+      createdAt: gameInfo.gameCreation,
       kda: {
         kills,
         deaths,
@@ -111,10 +191,12 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
       items,
       spells: [currentPlayer.spell1Id, currentPlayer.spell2Id],
       runes: [
-        currentPlayer.perks?.styles?.[0]?.style || 0, // 主要符文系
-        currentPlayer.perks?.styles?.[1]?.style || 0, // 次要符文系
+        currentPlayer.perks?.styles?.[0]?.style || 0,
+        currentPlayer.perks?.styles?.[1]?.style || 0,
       ],
       expanded: expandedMatches.value.has(gameInfo.gameId),
+      teams: [blueTeam, redTeam],
+      allPlayers,
     });
   }
 

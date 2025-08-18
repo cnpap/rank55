@@ -23,6 +23,36 @@ export interface GameStats {
   level: number; // 等级
 }
 
+// 玩家信息
+export interface MatchPlayer {
+  puuid: string;
+  riotIdGameName: string;
+  riotIdTagline: string;
+  displayName: string; // 格式化后的名称 "name#tag"
+  championId: number;
+  championName: string;
+  teamId: number; // 100=蓝色方, 200=红色方
+  teamPosition: string; // TOP, JUNGLE, MIDDLE, BOTTOM, UTILITY
+  isCurrentPlayer: boolean;
+  kda: KDAData;
+  stats: {
+    level: number;
+    cs: number;
+    gold: number;
+    damage: number;
+  };
+  items: number[];
+  spells: [number, number];
+  runes: [number, number];
+}
+
+// 队伍信息
+export interface MatchTeam {
+  teamId: number;
+  win: boolean;
+  players: MatchPlayer[];
+}
+
 // 处理后的比赛数据
 export interface ProcessedMatch {
   gameId: number;
@@ -39,6 +69,9 @@ export interface ProcessedMatch {
   spells: [number, number]; // 召唤师技能 [spell1Id, spell2Id]
   runes: [number, number]; // 天赋系 [perkPrimaryStyle, perkSubStyle]
   expanded: boolean;
+  // 新增：所有玩家信息
+  teams: MatchTeam[]; // 蓝色方和红色方
+  allPlayers: MatchPlayer[]; // 所有10个玩家
 }
 
 // 英雄数据状态
