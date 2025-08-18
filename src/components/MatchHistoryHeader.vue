@@ -60,13 +60,20 @@ const overallStats = computed(() => {
   }
 
   const totalGames = props.matches.length;
-  const totalWins = props.matches.filter(match => match.result === 'victory').length;
+  const totalWins = props.matches.filter(
+    match => match.result === 'victory'
+  ).length;
   const totalLosses = totalGames - totalWins;
-  const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+  const winRate =
+    totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
 
   // 计算平均KDA
-  const totalKDA = props.matches.reduce((sum, match) => sum + match.kda.ratio, 0);
-  const avgKDA = totalGames > 0 ? Number((totalKDA / totalGames).toFixed(1)) : 0;
+  const totalKDA = props.matches.reduce(
+    (sum, match) => sum + match.kda.ratio,
+    0
+  );
+  const avgKDA =
+    totalGames > 0 ? Number((totalKDA / totalGames).toFixed(1)) : 0;
 
   return {
     totalGames,
@@ -83,17 +90,35 @@ const recentChampions = computed(() => {
     return [];
   }
 
-  // 统计每个英雄的使用次数
-  const championCount = new Map<number, number>();
-  
+  // 统计每个英雄的使用次数和胜负
+  const championStats = new Map<
+    number,
+    { games: number; wins: number; losses: number; winRate: number }
+  >();
+
   props.matches.forEach(match => {
-    const count = championCount.get(match.championId) || 0;
-    championCount.set(match.championId, count + 1);
+    const existing = championStats.get(match.championId) || {
+      games: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+    };
+    existing.games += 1;
+    if (match.result === 'victory') {
+      existing.wins += 1;
+    } else {
+      existing.losses += 1;
+    }
+    existing.winRate =
+      existing.games > 0
+        ? Math.round((existing.wins / existing.games) * 100)
+        : 0;
+    championStats.set(match.championId, existing);
   });
 
   // 转换为数组并按使用次数排序，取前5个
-  return Array.from(championCount.entries())
-    .map(([championId, games]) => ({ championId, games }))
+  return Array.from(championStats.entries())
+    .map(([championId, stats]) => ({ championId, ...stats }))
     .sort((a, b) => b.games - a.games)
     .slice(0, 5);
 });
@@ -127,16 +152,16 @@ function getChampionAvatarUrl(championId: number): string {
 
 <template>
   <div
-    class="rounded-xl border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-slate-700/60 dark:from-slate-900/80 dark:to-slate-800/80"
+    class="rounded border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-slate-700/60 dark:from-slate-900/80 dark:to-slate-800/80"
   >
     <!-- 第一行：统计信息和筛选器 -->
     <div class="mb-3 flex items-center justify-between">
       <!-- 左侧：统计信息 -->
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
         <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
           最近对局
         </span>
-        <div class="flex items-center gap-4 text-sm">
+        <div class="font-tektur-numbers flex items-center gap-4 text-sm">
           <span class="font-medium text-emerald-600 dark:text-emerald-400">
             {{ overallStats.totalWins }}胜
           </span>
@@ -203,6 +228,29 @@ function getChampionAvatarUrl(championId: number): string {
                 class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white shadow-sm"
               >
                 {{ champion.games }}
+              </div>
+
+              <!-- Tooltip -->
+              <div
+                class="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-slate-800 px-3 py-2 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+              >
+                <div class="font-tektur-numbers whitespace-nowrap">
+                  <div class="mt-1 space-y-0.5">
+                    <div class="flex justify-between gap-2">
+                      <span class="text-emerald-400"
+                        >{{ champion.wins }}胜</span
+                      >
+                      <span class="text-red-400">{{ champion.losses }}负</span>
+                    </div>
+                    <div class="text-center font-medium">
+                      胜率 {{ champion.winRate }}%
+                    </div>
+                  </div>
+                </div>
+                <!-- Tooltip arrow -->
+                <div
+                  class="absolute top-full left-1/2 -translate-x-1/2 transform border-4 border-transparent border-t-slate-800 dark:border-t-slate-700"
+                ></div>
               </div>
             </div>
           </div>
