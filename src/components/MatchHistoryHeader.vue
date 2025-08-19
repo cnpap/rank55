@@ -212,105 +212,98 @@ function getPositionIconUrl(iconName: string): string {
 </script>
 
 <template>
-  <div
-    :class="[
-      // 基础样式
-      'bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-slate-900/80 dark:to-slate-800/80',
-      // 吸附时：占满视口宽度并移除圆角
-      isSticky ? '-mx-[calc(50vw-50%)] w-[100vw] rounded-t' : 'rounded-t',
-    ]"
-  >
-    <div class="mx-auto max-w-4xl p-4">
-      <!-- 整体布局：左侧筛选分页 + 右侧信息统计 -->
-      <div class="flex items-center justify-between gap-6">
-        <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
-        <div class="flex-shrink-0 space-y-3">
-          <!-- 第一行：筛选器 -->
-          <div class="flex items-center gap-3">
-            <div
-              class="flex w-16 items-center gap-2 text-slate-600 dark:text-slate-300"
-            >
-              <Filter class="h-4 w-4" />
-              <span class="text-sm font-medium">筛选</span>
-            </div>
-            <Select
-              :model-value="modelValue.selectedTag"
-              @update:model-value="handleGameModeChange"
-            >
-              <SelectTrigger
-                class="h-8 w-50 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
-              >
-                <SelectValue placeholder="选择模式" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="option in gameModeOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+  <div class="mx-auto max-w-4xl">
+    <!-- 整体布局：左侧筛选分页 + 右侧信息统计 -->
+    <div class="flex h-30 items-center justify-between gap-6">
+      <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
+      <div class="flex-shrink-0 space-y-3 p-4">
+        <!-- 第一行：筛选器 -->
+        <div class="flex items-center gap-3">
+          <div
+            class="flex w-16 items-center gap-2 text-slate-600 dark:text-slate-300"
+          >
+            <Filter class="h-4 w-4" />
+            <span class="text-sm font-medium">筛选</span>
           </div>
-
-          <!-- 第二行：分页控制 -->
-          <div class="flex items-center gap-3">
-            <div class="w-16"></div>
-            <!-- 占位符，与上面的标签区域对齐 -->
-            <!-- 每页显示数量 -->
-            <Select
-              :model-value="String(pageSize)"
-              @update:model-value="handlePageSizeChange"
+          <Select
+            :model-value="modelValue.selectedTag"
+            @update:model-value="handleGameModeChange"
+          >
+            <SelectTrigger
+              class="h-8 w-50 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
             >
-              <SelectTrigger
-                class="h-8 w-20 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
+              <SelectValue placeholder="选择模式" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="option in gameModeOptions"
+                :key="option.value"
+                :value="option.value"
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="option in pageSizeOptions"
-                  :key="option.value"
-                  :value="String(option.value)"
-                >
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <!-- 分页按钮 -->
-            <div class="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-                :disabled="currentPage <= 1"
-                @click="goToPage(currentPage - 1)"
-              >
-                <ChevronLeft class="h-4 w-4" />
-              </Button>
-
-              <div
-                class="rounded-md border border-slate-200 bg-slate-100/80 px-3 py-1 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-700/80 dark:text-slate-300"
-              >
-                {{ currentPage }}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-                @click="goToPage(currentPage + 1)"
-              >
-                <ChevronRight class="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
+        <!-- 第二行：分页控制 -->
+        <div class="flex items-center gap-3">
+          <div class="w-16"></div>
+          <!-- 占位符，与上面的标签区域对齐 -->
+          <!-- 每页显示数量 -->
+          <Select
+            :model-value="String(pageSize)"
+            @update:model-value="handlePageSizeChange"
+          >
+            <SelectTrigger
+              class="h-8 w-20 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="option in pageSizeOptions"
+                :key="option.value"
+                :value="String(option.value)"
+              >
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- 分页按钮 -->
+          <div class="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+              :disabled="currentPage <= 1"
+              @click="goToPage(currentPage - 1)"
+            >
+              <ChevronLeft class="h-4 w-4" />
+            </Button>
+
+            <div
+              class="rounded-md border border-slate-200 bg-slate-100/80 px-3 py-1 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-700/80 dark:text-slate-300"
+            >
+              {{ currentPage }}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+              @click="goToPage(currentPage + 1)"
+            >
+              <ChevronRight class="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex w-128 items-center justify-between">
         <!-- 右侧：统计信息区域（调整为与左侧对齐的两行布局） -->
-        <div class="flex items-start gap-8">
+        <div class="flex w-60 items-start">
           <!-- 左侧：最近对局和常用英雄（调整为与左侧筛选分页对齐） -->
           <div class="flex-shrink-0">
             <!-- 第一行：最近对局统计（与筛选器对齐） -->
@@ -392,73 +385,85 @@ function getPositionIconUrl(iconName: string): string {
               </div>
             </div>
           </div>
-
-          <!-- 右侧：位置统计竖形图 -->
-          <div class="flex-shrink-0">
-            <div class="flex flex-col items-center gap-2">
-              <div class="flex h-18 items-end gap-4">
+        </div>
+        <!-- 右侧：位置统计竖形图 -->
+        <div class="w-40 flex-shrink-0">
+          <div class="flex flex-col items-center gap-2">
+            <!-- 设置固定高度的容器，让柱状图占满高度 -->
+            <div class="flex h-30 items-end">
+              <div
+                v-for="stat in positionStats"
+                :key="stat.position"
+                class="group relative flex h-full flex-col justify-end"
+              >
+                <!-- 柱状图 - 占满容器高度，宽度增加，完全并在一起 -->
                 <div
-                  v-for="stat in positionStats"
-                  :key="stat.position"
-                  class="group relative flex flex-col items-center"
+                  class="relative flex w-8 flex-col justify-end transition-all duration-200"
+                  style="height: 100%"
                 >
-                  <!-- 柱状图 -->
+                  <!-- 整体背景 - 始终占满高度 -->
                   <div
+                    class="absolute inset-0 w-full bg-slate-200 transition-all duration-200 group-hover:bg-slate-300 dark:bg-slate-700 dark:group-hover:bg-slate-600"
+                  />
+
+                  <!-- 数据柱状图 - 叠加在背景之上 -->
+                  <div
+                    v-if="stat.count > 0"
                     :class="[
-                      'w-4 transition-all duration-200',
-                      stat.count > 0
-                        ? 'bg-blue-500 group-hover:bg-blue-600'
-                        : 'bg-slate-300 group-hover:bg-slate-400 dark:bg-slate-600 dark:group-hover:bg-slate-500',
+                      'relative w-full bg-blue-500 transition-all duration-200 group-hover:bg-blue-600',
                     ]"
                     :style="{
-                      height: `${Math.max(stat.count > 0 ? stat.height * 0.5 : 8, 6)}px`,
+                      height: `${stat.height}%`,
                     }"
                   />
 
-                  <!-- 位置图标 -->
-                  <div class="relative mt-1">
-                    <img
-                      :src="getPositionIconUrl(stat.icon)"
-                      :alt="stat.name"
-                      :class="[
-                        'h-5 w-5 object-contain transition-opacity',
-                        stat.count > 0
-                          ? 'opacity-80 group-hover:opacity-100'
-                          : 'opacity-40 group-hover:opacity-60',
-                      ]"
-                    />
-
-                    <!-- 游戏次数标记 -->
-                    <div
-                      :class="[
-                        'absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full text-xs font-medium text-white shadow-sm',
-                        stat.count > 0
-                          ? 'bg-blue-500'
-                          : 'bg-slate-400 dark:bg-slate-500',
-                      ]"
-                    >
-                      <span
-                        class="font-tektur-numbers text-[7px] leading-none"
-                        >{{ stat.count }}</span
-                      >
-                    </div>
-                  </div>
-
-                  <!-- Tooltip -->
+                  <!-- 位置图标 - 放在柱状图底部 -->
                   <div
-                    class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                    class="absolute bottom-1 left-1/2 z-10 -translate-x-1/2 transform"
                   >
-                    <div class="text-center whitespace-nowrap">
-                      <div class="font-medium">{{ stat.name }}</div>
-                      <div class="text-[10px] opacity-90">
-                        {{ stat.count }}场 ({{ stat.percentage }}%)
+                    <div class="relative">
+                      <img
+                        :src="getPositionIconUrl(stat.icon)"
+                        :alt="stat.name"
+                        :class="[
+                          'h-5 w-5 object-contain transition-opacity',
+                          stat.count > 0
+                            ? 'opacity-90 brightness-0 invert group-hover:opacity-100'
+                            : 'opacity-60 group-hover:opacity-80',
+                        ]"
+                      />
+
+                      <!-- 游戏次数标记 -->
+                      <div
+                        v-if="stat.count > 0"
+                        :class="[
+                          'absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full text-xs font-medium text-white shadow-sm',
+                          'bg-white text-blue-500',
+                        ]"
+                      >
+                        <span
+                          class="font-tektur-numbers text-primary text-[7px] leading-none"
+                          >{{ stat.count }}</span
+                        >
                       </div>
                     </div>
-                    <!-- Tooltip arrow -->
-                    <div
-                      class="absolute top-full left-1/2 -translate-x-1/2 transform border-2 border-transparent border-t-slate-800 dark:border-t-slate-700"
-                    ></div>
                   </div>
+                </div>
+
+                <!-- Tooltip -->
+                <div
+                  class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                >
+                  <div class="text-center whitespace-nowrap">
+                    <div class="font-medium">{{ stat.name }}</div>
+                    <div class="text-[10px] opacity-90">
+                      {{ stat.count }}场 ({{ stat.percentage }}%)
+                    </div>
+                  </div>
+                  <!-- Tooltip arrow -->
+                  <div
+                    class="absolute top-full left-1/2 -translate-x-1/2 transform border-2 border-transparent border-t-slate-800 dark:border-t-slate-700"
+                  ></div>
                 </div>
               </div>
             </div>

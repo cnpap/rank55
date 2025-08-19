@@ -85,17 +85,12 @@ const copyPlayerName = async () => {
       </div>
 
       <!-- 排位信息 - 紧凑布局 -->
-      <div class="flex gap-3">
+      <div class="flex w-128 gap-3">
         <div
           v-for="(rankInfo, index) in rankInfos"
           :key="index"
           class="flex items-center gap-2"
         >
-          <img
-            :src="rankInfo.iconUrl"
-            :alt="rankInfo.queueName"
-            class="h-24 w-24 scale-125 transform object-contain"
-          />
           <div class="space-y-0.5">
             <div class="text-muted-foreground text-xs font-medium">
               {{ rankInfo.queueName }}
@@ -120,6 +115,11 @@ const copyPlayerName = async () => {
               <span class="pl-1">{{ rankInfo.winRate }}%</span>
             </div>
           </div>
+          <img
+            :src="rankInfo.iconUrl"
+            :alt="rankInfo.queueName"
+            class="h-24 w-24 scale-125 transform object-contain"
+          />
         </div>
       </div>
     </div>

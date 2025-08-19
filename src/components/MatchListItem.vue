@@ -63,7 +63,7 @@ const searchPlayerHistory = async (playerName: string) => {
   >
     <!-- 胜负状态指示条 -->
     <div
-      class="absolute top-0 left-0 h-full w-1"
+      class="absolute top-0 left-0 h-full w-[1.5px]"
       :class="{
         'bg-emerald-500': match.result === 'victory',
         'bg-red-500': match.result === 'defeat',
