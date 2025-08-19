@@ -25,6 +25,13 @@ export interface ServerOption {
   name: string;
 }
 
+// 搜索历史项接口
+export interface SearchHistoryItem {
+  name: string;
+  serverId: string;
+  serverName: string;
+}
+
 export const useMatchHistoryStore = defineStore('matchHistory', () => {
   // 状态
   const searchResult = ref<SgpSearchResult>({
@@ -36,7 +43,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     error: null,
   });
   const isSearching = ref(false);
-  const searchHistory = ref<string[]>([]);
+  const searchHistory = ref<SearchHistoryItem[]>([]);
   const selectedServerId = ref<string>('TENCENT_HN1');
 
   // 添加分页状态
@@ -225,8 +232,23 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
 
       // 添加到搜索历史（避免重复）
       const trimmedName = summonerName.trim();
-      if (!searchHistory.value.includes(trimmedName)) {
-        searchHistory.value.unshift(trimmedName);
+      const existingIndex = searchHistory.value.findIndex(
+        item => item.name === trimmedName && item.serverId === targetServerId
+      );
+
+      if (existingIndex !== -1) {
+        // 如果已存在，移动到最前面
+        const existingItem = searchHistory.value.splice(existingIndex, 1)[0];
+        searchHistory.value.unshift(existingItem);
+      } else {
+        // 如果不存在，添加新项到最前面
+        searchHistory.value.unshift({
+          name: trimmedName,
+          serverId: targetServerId,
+          serverName:
+            availableServers.value.find(server => server.id === targetServerId)
+              ?.name || '',
+        });
         // 限制历史记录数量为10条
         if (searchHistory.value.length > 10) {
           searchHistory.value = searchHistory.value.slice(0, 10);
@@ -333,6 +355,11 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         error: null,
       });
 
+      // 设置查询成功后的服务器ID
+      if (sgpResult.serverId) {
+        selectedServerId.value = sgpResult.serverId;
+      }
+
       currentPage.value = 1;
 
       console.log(
@@ -371,6 +398,11 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         error: null,
       });
 
+      // 设置查询成功后的服务器ID
+      if (sgpResult.serverId) {
+        selectedServerId.value = sgpResult.serverId;
+      }
+
       currentPage.value = 1;
 
       console.log('搜索召唤师成功:', summoner.displayName || summoner.gameName);
@@ -381,8 +413,10 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   };
 
   // 从搜索历史中搜索
-  const searchFromHistory = async (name: string): Promise<void> => {
-    await searchSummonerByName(name);
+  const searchFromHistory = async (
+    historyItem: SearchHistoryItem
+  ): Promise<void> => {
+    await searchSummonerByName(historyItem.name, historyItem.serverId);
   };
 
   // 获取可用服务器列表

@@ -6,6 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Coins, Sword, Shield } from 'lucide-vue-next';
 import MatchDetailView from './MatchDetailView.vue';
 import { staticAssets } from '@/assets/data-assets';
+// 新增导入
+import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
+import { useMatchHistoryStore } from '@/stores/match-history';
 
 interface Props {
   match: ProcessedMatch;
@@ -18,6 +22,33 @@ interface Emits {
 
 defineProps<Props>();
 defineEmits<Emits>();
+
+// 新增：路由和store
+const router = useRouter();
+const matchHistoryStore = useMatchHistoryStore();
+
+// 新增：搜索玩家战绩函数
+const searchPlayerHistory = async (playerName: string) => {
+  if (!playerName || playerName === '未知玩家') {
+    toast.error('无法查询该玩家的战绩');
+    return;
+  }
+
+  try {
+    // 使用store的搜索功能
+    await matchHistoryStore.searchSummonerByName(playerName);
+
+    // 搜索成功后跳转到首页
+    if (router.currentRoute.value.name !== 'Home') {
+      router.push('/');
+    }
+
+    toast.success(`正在查询 ${playerName} 的战绩`);
+  } catch (error) {
+    console.error('搜索玩家失败:', error);
+    toast.error('搜索玩家失败，请重试');
+  }
+};
 </script>
 
 <template>
@@ -227,7 +258,7 @@ defineEmits<Emits>();
           </div>
 
           <!-- 蓝色方KDA -->
-          <div class="w-18">
+          <div class="w-20">
             <div class="space-y-0.5">
               <div
                 v-for="(player, index) in match.teams[0]?.players || []"
@@ -291,18 +322,23 @@ defineEmits<Emits>();
                   :alt="player.championName"
                   class="h-4 w-4 flex-shrink-0 rounded object-cover"
                 />
-                <div
-                  class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium"
-                  :title="player.displayName"
+                <button
+                  @click="searchPlayerHistory(player.displayName)"
+                  class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
+                  :title="`点击查询 ${player.displayName} 的战绩`"
+                  :disabled="
+                    player.displayName === '未知玩家' ||
+                    matchHistoryStore.isSearching
+                  "
                 >
                   {{ player.displayName }}
-                </div>
+                </button>
               </div>
             </div>
           </div>
 
           <!-- 红色方KDA -->
-          <div class="w-18">
+          <div class="w-20">
             <div class="space-y-0.5">
               <div
                 v-for="(player, index) in match.teams[1]?.players || []"
@@ -351,7 +387,7 @@ defineEmits<Emits>();
           </div>
 
           <!-- 伤害对比列 -->
-          <div class="w-24">
+          <div class="w-22">
             <div class="space-y-0.5">
               <div
                 v-for="(player, index) in match.teams[0]?.players || []"
@@ -414,7 +450,7 @@ defineEmits<Emits>();
           </div>
 
           <!-- 防御对比列 -->
-          <div class="w-24">
+          <div class="w-22">
             <div class="space-y-0.5">
               <div
                 v-for="(player, index) in match.teams[0]?.players || []"

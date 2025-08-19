@@ -4,7 +4,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Loading from '@/components/Loading.vue';
-import { useMatchHistoryStore } from '@/stores/match-history';
+import {
+  SearchHistoryItem,
+  useMatchHistoryStore,
+} from '@/stores/match-history';
 import { navigationItems } from '@/config/navigation';
 
 const route = useRoute();
@@ -17,7 +20,11 @@ const currentRoute = computed(() => route.name);
 const matchHistoryStore = useMatchHistoryStore();
 
 // 本地搜索状态
-const summonerName = ref('');
+const summonerName = ref<SearchHistoryItem>({
+  name: '',
+  serverId: '',
+  serverName: '',
+});
 
 // 计算属性
 const isSearching = computed(() => matchHistoryStore.isSearching);
@@ -30,9 +37,12 @@ const navigateTo = (path: string) => {
 
 // 搜索功能
 const handleSearch = async () => {
-  if (!summonerName.value.trim()) return;
+  if (!summonerName.value.name.trim()) return;
 
-  await matchHistoryStore.searchSummonerByName(summonerName.value);
+  await matchHistoryStore.searchSummonerByName(
+    summonerName.value.name,
+    summonerName.value.serverId
+  );
 
   // 搜索成功后跳转到首页
   if (route.name !== 'Home') {
@@ -51,8 +61,8 @@ const searchCurrentSummoner = async () => {
 };
 
 // 从历史记录搜索
-const searchFromHistory = async (name: string) => {
-  summonerName.value = name;
+const searchFromHistory = async (item: SearchHistoryItem) => {
+  summonerName.value = item;
   await handleSearch();
 };
 </script>
@@ -88,7 +98,7 @@ const searchFromHistory = async (name: string) => {
       <div class="flex items-center space-x-2">
         <div class="relative">
           <Input
-            v-model="summonerName"
+            v-model="summonerName.name"
             placeholder="召唤师名称#00000..."
             class="h-8 w-64 pr-20 pl-10 text-sm"
             @keyup.enter="handleSearch"
@@ -107,7 +117,7 @@ const searchFromHistory = async (name: string) => {
           <!-- 搜索按钮 - 在输入框内部右侧 -->
           <Button
             @click="handleSearch"
-            :disabled="!summonerName.trim() || isSearching"
+            :disabled="!summonerName.name.trim() || isSearching"
             class="absolute top-1/2 right-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
             size="sm"
           >
@@ -134,7 +144,7 @@ const searchFromHistory = async (name: string) => {
             @click="searchFromHistory(item)"
             :disabled="isSearching"
           >
-            {{ item }}
+            {{ item.serverName }} {{ item.name }}
           </button>
           <span
             v-if="searchHistory.length > 3"
