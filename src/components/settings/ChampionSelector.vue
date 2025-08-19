@@ -122,9 +122,7 @@ function handleReorderChampions(champions: ChampionData[]) {
         </div>
 
         <!-- 英雄列表区域 -->
-        <div
-          class="bg-background mx-6 mb-4 flex-1 overflow-hidden rounded border"
-        >
+        <div class="bg-background mx-6 mb-4 flex-1 overflow-hidden border">
           <ChampionList
             :champions="champions"
             :selected-champion-ids="selectedChampionIds"

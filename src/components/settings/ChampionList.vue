@@ -69,7 +69,7 @@ function handleToggleChampion(champion: ChampionData) {
         v-for="champion in filteredChampions"
         :key="champion.id"
         @click="handleToggleChampion(champion)"
-        class="cursor-pointer rounded p-1 transition-colors"
+        class="cursor-pointer p-1 transition-colors"
         :class="
           isChampionSelected(champion.id)
             ? 'bg-blue-100 dark:bg-blue-900/30'
@@ -80,7 +80,7 @@ function handleToggleChampion(champion: ChampionData) {
           :src="getChampionImageUrl(champion.key)"
           :alt="champion.name"
           :title="champion.name"
-          class="rounded border-2 object-cover"
+          class="border-2 object-cover"
           :class="
             isChampionSelected(champion.id)
               ? selectionType === 'ban'

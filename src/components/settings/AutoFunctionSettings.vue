@@ -76,7 +76,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="bg-muted/30 space-y-4 rounded-lg">
+  <div class="space-y-4 rounded-lg">
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
       <!-- 自动禁用英雄 -->
       <div class="space-y-3">

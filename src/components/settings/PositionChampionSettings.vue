@@ -362,7 +362,7 @@ defineExpose({
       <!-- 位置图标 -->
       <div class="flex min-w-[56px] items-center justify-center">
         <div
-          class="bg-muted/50 border-border/50 flex h-[56px] w-[56px] items-center justify-center rounded border p-3"
+          class="bg-muted/50 border-border/50 flex h-[56px] w-[56px] items-center justify-center border p-3"
         >
           <img
             :src="getPositionIconUrl(position.icon)"
@@ -377,7 +377,7 @@ defineExpose({
       <div class="w-[240px]">
         <div class="relative">
           <div
-            class="flex h-[56px] items-center justify-start rounded border-2 border-dashed border-red-200 bg-red-50/30 p-2 dark:border-red-800/50 dark:bg-red-950/20"
+            class="flex h-[56px] items-center justify-start border-2 border-dashed border-red-200 bg-red-50/30 p-2 dark:border-red-800/50 dark:bg-red-950/20"
           >
             <div class="flex w-full gap-1">
               <!-- 用户选择的英雄 - 支持拖拽 -->
@@ -411,15 +411,15 @@ defineExpose({
                     :src="getChampionImageUrl(champion.key)"
                     :alt="champion.name"
                     :title="champion.name"
-                    class="h-8 w-8 cursor-pointer rounded border-2 border-red-500 object-cover"
+                    class="h-8 w-8 cursor-pointer border-2 border-red-500 object-cover"
                   />
 
                   <!-- 拖拽手柄 -->
                   <div
-                    class="drag-handle absolute inset-0 cursor-move rounded opacity-0 transition-opacity group-hover:opacity-100"
+                    class="drag-handle absolute inset-0 cursor-move opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <div
-                      class="absolute inset-0 flex items-center justify-center rounded bg-black/40"
+                      class="absolute inset-0 flex items-center justify-center bg-black/40"
                     >
                       <GripVertical class="h-3 w-3 text-white" />
                     </div>
@@ -446,7 +446,7 @@ defineExpose({
                   :src="getChampionImageUrl(champion.key)"
                   :alt="champion.name"
                   :title="`推荐禁用: ${champion.name}`"
-                  class="h-8 w-8 cursor-pointer rounded border border-red-300 object-cover grayscale transition-all hover:grayscale-0"
+                  class="h-8 w-8 cursor-pointer border border-red-300 object-cover grayscale transition-all hover:grayscale-0"
                   @click="
                     selectRecommendedChampion(position.key, 'ban', champion.key)
                   "
@@ -476,7 +476,7 @@ defineExpose({
       <div class="flex-1">
         <div class="relative">
           <div
-            class="flex h-[56px] items-center justify-start rounded border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-2 dark:border-emerald-800/50 dark:bg-emerald-950/20"
+            class="flex h-[56px] items-center justify-start border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-2 dark:border-emerald-800/50 dark:bg-emerald-950/20"
           >
             <div class="flex w-full gap-1">
               <!-- 用户选择的英雄 - 支持拖拽 -->
@@ -510,15 +510,15 @@ defineExpose({
                     :src="getChampionImageUrl(champion.key)"
                     :alt="champion.name"
                     :title="champion.name"
-                    class="h-8 w-8 cursor-pointer rounded border-2 border-emerald-500 object-cover"
+                    class="h-8 w-8 cursor-pointer border-2 border-emerald-500 object-cover"
                   />
 
                   <!-- 拖拽手柄 -->
                   <div
-                    class="drag-handle absolute inset-0 cursor-move rounded opacity-0 transition-opacity group-hover:opacity-100"
+                    class="drag-handle absolute inset-0 cursor-move opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <div
-                      class="absolute inset-0 flex items-center justify-center rounded bg-black/40"
+                      class="absolute inset-0 flex items-center justify-center bg-black/40"
                     >
                       <GripVertical class="h-3 w-3 text-white" />
                     </div>
@@ -545,7 +545,7 @@ defineExpose({
                   :src="getChampionImageUrl(champion.key)"
                   :alt="champion.name"
                   :title="`推荐选择: ${champion.name}`"
-                  class="h-8 w-8 cursor-pointer rounded border border-emerald-300 object-cover grayscale transition-all hover:grayscale-0"
+                  class="h-8 w-8 cursor-pointer border border-emerald-300 object-cover grayscale transition-all hover:grayscale-0"
                   @click="
                     selectRecommendedChampion(
                       position.key,

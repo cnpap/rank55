@@ -4,11 +4,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Loading from '@/components/Loading.vue';
-import {
-  SearchHistoryItem,
-  useMatchHistoryStore,
-} from '@/stores/match-history';
+import { useMatchHistoryStore } from '@/stores/match-history';
 import { navigationItems } from '@/config/navigation';
+import { SearchHistoryItem } from '@/storages/storage-use';
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +22,7 @@ const summonerName = ref<SearchHistoryItem>({
   name: '',
   serverId: '',
   serverName: '',
+  puuid: '',
 });
 
 // 计算属性
@@ -75,7 +74,7 @@ const searchFromHistory = async (item: SearchHistoryItem) => {
       <button
         v-for="item in navigationItems"
         :key="item.name"
-        class="relative rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200"
+        class="relative px-3 py-1.5 text-sm font-medium transition-all duration-200"
         :class="{
           'bg-primary/10 text-primary': currentRoute === item.name,
           'text-muted-foreground hover:text-foreground hover:bg-muted/50':

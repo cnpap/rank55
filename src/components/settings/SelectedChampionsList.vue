@@ -83,16 +83,16 @@ function onEnd() {
             :src="getChampionImageUrl(champion.key)"
             :alt="champion.name"
             :title="champion.name"
-            class="h-full w-full rounded border-2 object-cover transition-all duration-200 group-hover:scale-105"
+            class="h-full w-full border-2 object-cover transition-all duration-200 group-hover:scale-105"
             :class="type === 'ban' ? 'border-red-500' : 'border-blue-500'"
           />
 
           <!-- 拖拽手柄 -->
           <div
-            class="drag-handle absolute inset-0 cursor-move rounded opacity-0 transition-opacity group-hover:opacity-100"
+            class="drag-handle absolute inset-0 cursor-move opacity-0 transition-opacity group-hover:opacity-100"
           >
             <div
-              class="absolute inset-0 flex items-center justify-center rounded bg-black/40"
+              class="absolute inset-0 flex items-center justify-center bg-black/40"
             >
               <GripVertical class="h-4 w-4 text-white" />
             </div>
@@ -114,7 +114,7 @@ function onEnd() {
     <!-- 当没有选择英雄时显示空占位符 -->
     <div v-else class="grid grid-cols-8 gap-3">
       <div
-        class="aspect-square rounded border-2 border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50"
+        class="aspect-square border-2 border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50"
       >
         <div class="flex h-full w-full items-center justify-center">
           <span class="text-xs text-gray-400 dark:text-gray-500">?</span>
