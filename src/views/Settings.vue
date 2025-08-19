@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { toast } from 'vue-sonner';
-
 // 导入子组件
 import GameSettings from '@/components/settings/GameSettings.vue';
 import PositionSettings from '@/components/settings/PositionSettings.vue';

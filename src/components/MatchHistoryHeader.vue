@@ -284,7 +284,7 @@ function getPositionIconUrl(iconName: string): string {
             </Button>
 
             <div
-              class="rounded-md border border-slate-200 bg-slate-100/80 px-3 py-1 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-700/80 dark:text-slate-300"
+              class="border border-slate-200 bg-slate-100/80 px-3 py-1 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-700/80 dark:text-slate-300"
             >
               {{ currentPage }}
             </div>
@@ -348,7 +348,7 @@ function getPositionIconUrl(iconName: string): string {
                     <img
                       :src="getChampionAvatarUrl(champion.championId)"
                       :alt="`英雄${champion.championId}`"
-                      class="h-8 w-8 rounded-full border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
+                      class="h-8 w-8 rounded border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
                     <div
                       class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white shadow-sm"
@@ -358,7 +358,7 @@ function getPositionIconUrl(iconName: string): string {
 
                     <!-- Tooltip -->
                     <div
-                      class="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-slate-800 px-3 py-2 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                      class="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 transform bg-slate-800 px-3 py-2 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
                     >
                       <div class="font-tektur-numbers whitespace-nowrap">
                         <div class="mt-1 space-y-0.5">
@@ -410,7 +410,7 @@ function getPositionIconUrl(iconName: string): string {
                   <div
                     v-if="stat.count > 0"
                     :class="[
-                      'relative w-full bg-blue-500 transition-all duration-200 group-hover:bg-blue-600',
+                      'relative w-full bg-blue-500 transition-all duration-200 group-hover:bg-blue-600 dark:bg-blue-900 dark:group-hover:bg-blue-600',
                     ]"
                     :style="{
                       height: `${stat.height}%`,

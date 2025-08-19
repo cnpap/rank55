@@ -237,7 +237,7 @@ const searchPlayerHistory = async (playerName: string) => {
               <div
                 v-for="player in match.teams[0]?.players || []"
                 :key="player.puuid"
-                class="flex items-center gap-1 rounded px-1 py-0.5"
+                class="flex items-center gap-1 px-1 py-0.5"
                 :class="{
                   'bg-blue-100 dark:bg-blue-900/40': player.isCurrentPlayer,
                 }"
@@ -245,14 +245,19 @@ const searchPlayerHistory = async (playerName: string) => {
                 <img
                   :src="staticAssets.getChampionIcon(`${player.championId}`)"
                   :alt="player.championName"
-                  class="h-4 w-4 flex-shrink-0 rounded object-cover"
+                  class="h-4 w-4 flex-shrink-0 object-cover"
                 />
-                <div
-                  class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium"
-                  :title="player.displayName"
+                <button
+                  @click="searchPlayerHistory(player.displayName)"
+                  class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
+                  :title="`点击查询 ${player.displayName} 的战绩`"
+                  :disabled="
+                    player.displayName === '未知玩家' ||
+                    matchHistoryStore.isSearching
+                  "
                 >
                   {{ player.displayName }}
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -261,44 +266,23 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-20">
             <div class="space-y-0.5">
               <div
-                v-for="(player, index) in match.teams[0]?.players || []"
+                v-for="player in match.teams[0]?.players || []"
                 :key="`${player.puuid}-kda`"
-                class="flex h-6 items-center justify-center rounded px-1 py-0.5"
+                class="flex h-6 items-center justify-center px-1 py-0.5"
                 :class="{
                   'bg-blue-100 dark:bg-blue-900/40': player.isCurrentPlayer,
                 }"
               >
                 <span class="text-center text-xs font-medium">
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[1]?.players?.[index] &&
-                        player.kda.kills >
-                          match.teams[1].players[index].kda.kills,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.kills }}
                   </span>
                   /
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[1]?.players?.[index] &&
-                        player.kda.deaths <
-                          match.teams[1].players[index].kda.deaths,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.deaths }}
                   </span>
                   /
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[1]?.players?.[index] &&
-                        player.kda.assists >
-                          match.teams[1].players[index].kda.assists,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.assists }}
                   </span>
                 </span>
@@ -312,7 +296,7 @@ const searchPlayerHistory = async (playerName: string) => {
               <div
                 v-for="player in match.teams[1]?.players || []"
                 :key="player.puuid"
-                class="flex items-center gap-1 rounded px-1 py-0.5"
+                class="flex items-center gap-1 px-1 py-0.5"
                 :class="{
                   'bg-red-100 dark:bg-red-900/40': player.isCurrentPlayer,
                 }"
@@ -320,11 +304,11 @@ const searchPlayerHistory = async (playerName: string) => {
                 <img
                   :src="staticAssets.getChampionIcon(`${player.championId}`)"
                   :alt="player.championName"
-                  class="h-4 w-4 flex-shrink-0 rounded object-cover"
+                  class="h-4 w-4 flex-shrink-0 object-cover"
                 />
                 <button
                   @click="searchPlayerHistory(player.displayName)"
-                  class="hover:text-primary w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
+                  class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
                   :title="`点击查询 ${player.displayName} 的战绩`"
                   :disabled="
                     player.displayName === '未知玩家' ||
@@ -341,44 +325,23 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-20">
             <div class="space-y-0.5">
               <div
-                v-for="(player, index) in match.teams[1]?.players || []"
+                v-for="player in match.teams[1]?.players || []"
                 :key="`${player.puuid}-kda`"
-                class="flex h-6 items-center justify-center rounded px-1 py-0.5"
+                class="flex h-6 items-center justify-center px-1 py-0.5"
                 :class="{
                   'bg-red-100 dark:bg-red-900/40': player.isCurrentPlayer,
                 }"
               >
                 <span class="text-center text-xs font-medium">
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[0]?.players?.[index] &&
-                        player.kda.kills >
-                          match.teams[0].players[index].kda.kills,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.kills }}
                   </span>
                   /
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[0]?.players?.[index] &&
-                        player.kda.deaths <
-                          match.teams[0].players[index].kda.deaths,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.deaths }}
                   </span>
                   /
-                  <span
-                    :class="{
-                      'text-primary font-bold':
-                        match.teams[0]?.players?.[index] &&
-                        player.kda.assists >
-                          match.teams[0].players[index].kda.assists,
-                    }"
-                  >
+                  <span>
                     {{ player.kda.assists }}
                   </span>
                 </span>
@@ -416,9 +379,9 @@ const searchPlayerHistory = async (playerName: string) => {
                         "
                       >
                         <!-- 蓝队玩家伤害更高，蓝色背景，粉色进度条表示敌方占比 -->
-                        <div class="h-full bg-blue-500"></div>
+                        <div class="h-full bg-blue-500 dark:bg-blue-900"></div>
                         <div
-                          class="absolute top-0 left-0 h-full bg-pink-600"
+                          class="absolute top-0 left-0 h-full bg-pink-600 dark:bg-pink-900"
                           :style="{
                             width:
                               player.stats.damage > 0
@@ -429,9 +392,9 @@ const searchPlayerHistory = async (playerName: string) => {
                       </template>
                       <template v-else>
                         <!-- 红队玩家伤害更高，粉色背景，蓝色进度条表示我方占比 -->
-                        <div class="h-full bg-pink-600"></div>
+                        <div class="h-full bg-pink-600 dark:bg-pink-900"></div>
                         <div
-                          class="absolute top-0 left-0 h-full bg-blue-500"
+                          class="absolute top-0 left-0 h-full bg-blue-500 dark:bg-blue-900"
                           :style="{
                             width:
                               match.teams[1].players[index].stats.damage > 0
@@ -479,9 +442,9 @@ const searchPlayerHistory = async (playerName: string) => {
                         "
                       >
                         <!-- 蓝队玩家承受伤害更多，蓝色背景，粉色进度条表示敌方占比 -->
-                        <div class="h-full bg-blue-500"></div>
+                        <div class="h-full bg-blue-500 dark:bg-blue-900"></div>
                         <div
-                          class="absolute top-0 left-0 h-full bg-pink-500"
+                          class="absolute top-0 left-0 h-full bg-pink-500 dark:bg-pink-900"
                           :style="{
                             width:
                               player.stats.damageTaken > 0
@@ -492,9 +455,9 @@ const searchPlayerHistory = async (playerName: string) => {
                       </template>
                       <template v-else>
                         <!-- 红队玩家承受伤害更多，粉色背景，蓝色进度条表示我方占比 -->
-                        <div class="h-full bg-pink-500"></div>
+                        <div class="h-full bg-pink-500 dark:bg-pink-900"></div>
                         <div
-                          class="absolute top-0 left-0 h-full bg-blue-500"
+                          class="absolute top-0 left-0 h-full bg-blue-500 dark:bg-blue-900"
                           :style="{
                             width:
                               match.teams[1].players[index].stats.damageTaken >
@@ -518,7 +481,7 @@ const searchPlayerHistory = async (playerName: string) => {
       <!-- 展开按钮 -->
       <button
         @click="$emit('toggle-detail')"
-        class="border-border/20 bg-primary hover:bg-primary/90 flex h-8 w-8 cursor-pointer items-center justify-center rounded border p-0 transition-colors"
+        class="border-border/20 bg-primary hover:bg-primary/90 flex h-8 w-8 cursor-pointer items-center justify-center border p-0 transition-colors"
       >
         <ChevronDown
           class="h-4 w-4 text-white transition-transform duration-200"

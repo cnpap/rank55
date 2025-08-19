@@ -360,15 +360,13 @@ defineExpose({
       class="flex items-center gap-3"
     >
       <!-- 位置图标 -->
-      <div class="flex min-w-[56px] items-center justify-center">
-        <div
-          class="bg-muted/50 border-border/50 flex h-[56px] w-[56px] items-center justify-center border p-3"
-        >
+      <div class="flex min-w-[56px] items-center justify-center border">
+        <div class="flex h-[56px] w-[56px] items-center justify-center p-3">
           <img
             :src="getPositionIconUrl(position.icon)"
             :alt="position.name"
             :title="position.name"
-            class="h-6 w-6 object-cover opacity-70"
+            class="h-6 w-6 object-cover opacity-70 brightness-0 dark:invert"
           />
         </div>
       </div>
@@ -379,7 +377,7 @@ defineExpose({
           <div
             class="flex h-[56px] items-center justify-start border-2 border-dashed border-red-200 bg-red-50/30 p-2 dark:border-red-800/50 dark:bg-red-950/20"
           >
-            <div class="flex w-full gap-1">
+            <div class="flex w-full">
               <!-- 用户选择的英雄 - 支持拖拽 -->
               <VueDraggable
                 v-model="localBanChampions[position.key]"
@@ -405,7 +403,7 @@ defineExpose({
                 <div
                   v-for="(champion, index) in localBanChampions[position.key]"
                   :key="`user-ban-${champion.key}`"
-                  class="group relative"
+                  class="group relative mr-1"
                 >
                   <img
                     :src="getChampionImageUrl(champion.key)"
@@ -440,7 +438,7 @@ defineExpose({
                 v-for="champion in getDisplayChampions(position.key, 'ban')
                   .recommendedChampions"
                 :key="`rec-ban-${champion.key}`"
-                class="group relative"
+                class="group relative mr-1"
               >
                 <img
                   :src="getChampionImageUrl(champion.key)"
@@ -451,13 +449,6 @@ defineExpose({
                     selectRecommendedChampion(position.key, 'ban', champion.key)
                   "
                 />
-                <div class="absolute -top-1 -right-1 hidden group-hover:block">
-                  <div
-                    class="flex h-3 w-3 items-center justify-center rounded-full bg-green-500"
-                  >
-                    <Plus class="h-2 w-2 text-white" />
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -478,7 +469,7 @@ defineExpose({
           <div
             class="flex h-[56px] items-center justify-start border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-2 dark:border-emerald-800/50 dark:bg-emerald-950/20"
           >
-            <div class="flex w-full gap-1">
+            <div class="flex w-full">
               <!-- 用户选择的英雄 - 支持拖拽 -->
               <VueDraggable
                 v-model="localPickChampions[position.key]"
@@ -492,7 +483,7 @@ defineExpose({
                 chosen-class="chosen-item"
                 drag-class="drag-item"
                 handle=".drag-handle"
-                class="flex gap-1"
+                class="flex"
                 @end="
                   () =>
                     handleReorderPick(
@@ -504,7 +495,7 @@ defineExpose({
                 <div
                   v-for="(champion, index) in localPickChampions[position.key]"
                   :key="`user-pick-${champion.key}`"
-                  class="group relative"
+                  class="group relative mr-1"
                 >
                   <img
                     :src="getChampionImageUrl(champion.key)"
@@ -529,7 +520,7 @@ defineExpose({
                     @click="removeUserChampion(position.key, 'pick', index)"
                     class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
                   >
-                    <X class="h-2 w-2 text-white" />
+                    <X class="h-3 w-3 text-white" />
                   </button>
                 </div>
               </VueDraggable>
@@ -539,7 +530,7 @@ defineExpose({
                 v-for="champion in getDisplayChampions(position.key, 'pick')
                   .recommendedChampions"
                 :key="`rec-pick-${champion.key}`"
-                class="group relative"
+                class="group relative mr-1"
               >
                 <img
                   :src="getChampionImageUrl(champion.key)"
@@ -554,13 +545,6 @@ defineExpose({
                     )
                   "
                 />
-                <div class="absolute -top-1 -right-1 hidden group-hover:block">
-                  <div
-                    class="flex h-3 w-3 items-center justify-center rounded-full bg-green-500"
-                  >
-                    <Plus class="h-2 w-2 text-white" />
-                  </div>
-                </div>
               </div>
             </div>
           </div>

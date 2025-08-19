@@ -320,7 +320,7 @@ onMounted(async () => {
                 <div ref="sentinelRef" class="h-0"></div>
                 <!-- 召唤师资料 -->
                 <div
-                  class="sticky top-10 z-50 bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-slate-900/80 dark:to-slate-800/80"
+                  class="sticky top-10 z-50 bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-[#131313]/80 dark:to-[#151515]/90"
                 >
                   <div class="pl-4">
                     <SummonerProfileComponent
