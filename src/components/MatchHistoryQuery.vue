@@ -264,20 +264,18 @@ onUnmounted(() => {
 // 组件挂载时自动查询当前登录的召唤师
 onMounted(async () => {
   // 延迟 500 ms，等待数据加载完成
-  setTimeout(async () => {
-    if (!hasAnyData.value) {
-      await matchHistoryStore.searchCurrentSummoner();
-    }
-  }, 500);
+  if (!hasAnyData.value) {
+    await matchHistoryStore.searchCurrentSummoner();
+  }
 });
 </script>
 
 <template>
-  <div class="flex h-full w-4xl flex-col">
-    <!-- 加载状态 -->
+  <div class="relative flex h-full w-4xl flex-col">
+    <!-- 加载遮罩层 -->
     <div
       v-if="isSearching && !hasAnyData"
-      class="flex flex-1 items-center justify-center"
+      class="bg-background/80 absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
     >
       <div class="flex flex-col items-center space-y-4">
         <Loading size="lg" class="text-primary" />
@@ -285,8 +283,8 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- 内容区域 -->
-    <template v-else>
+    <!-- 内容区域 - 始终显示 -->
+    <div class="flex-1" v-else>
       <!-- 错误信息 -->
       <div
         v-if="errorMessage"
@@ -308,17 +306,14 @@ onMounted(async () => {
         {{ errorMessage }}
       </div>
 
-      <div v-else class="">
+      <div v-else>
         <!-- 用于监测 sticky 的哨兵元素 -->
         <div ref="sentinelRef" class="h-0"></div>
         <!-- 召唤师资料 -->
         <div
           class="sticky top-10 z-50 bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-slate-900/80 dark:to-slate-800/80"
         >
-          <div
-            v-if="showMatchHistory && currentSummoner && rankedStats"
-            class="pl-4"
-          >
+          <div class="pl-4">
             <SummonerProfileComponent
               :summoner-data="currentSummoner"
               :ranked-stats="rankedStats"
@@ -357,6 +352,6 @@ onMounted(async () => {
           />
         </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>

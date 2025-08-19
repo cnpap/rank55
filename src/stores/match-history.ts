@@ -7,16 +7,17 @@ import { SummonerService } from '@/lib/service/summoner-service';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
 import type { Game } from '@/types/match-history-sgp';
+import { $local, SearchHistoryItem } from '@/storages/storage-use'; // 添加导入
 import serverConfig from '../../public/config/league-servers.json';
 
 // SGP API 搜索结果接口
 export interface SgpSearchResult {
-  summoner: SummonerData | null;
-  rankedStats: RankedStats | null;
-  matchHistory: Game[] | null;
-  serverId: string | null;
+  summoner?: SummonerData;
+  rankedStats?: RankedStats;
+  matchHistory?: Game[];
+  serverId?: string;
   totalCount: number;
-  error: string | null;
+  error?: string;
 }
 
 // 服务器选项接口
@@ -25,25 +26,23 @@ export interface ServerOption {
   name: string;
 }
 
-// 搜索历史项接口
-export interface SearchHistoryItem {
-  name: string;
-  serverId: string;
-  serverName: string;
-}
-
 export const useMatchHistoryStore = defineStore('matchHistory', () => {
   // 状态
   const searchResult = ref<SgpSearchResult>({
-    summoner: null,
-    rankedStats: null,
-    matchHistory: null,
-    serverId: null,
+    summoner: undefined,
+    rankedStats: undefined,
+    matchHistory: undefined,
+    serverId: undefined,
     totalCount: 0,
-    error: null,
+    error: undefined,
   });
   const isSearching = ref(false);
-  const searchHistory = ref<SearchHistoryItem[]>([]);
+
+  // 从 localStorage 初始化搜索历史
+  const searchHistory = ref<SearchHistoryItem[]>(
+    $local.getItem('searchHistory') || []
+  );
+
   const selectedServerId = ref<string>('TENCENT_HN1');
 
   // 添加分页状态
@@ -120,22 +119,22 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   // 清空搜索结果
   const clearSearchResult = () => {
     searchResult.value = {
-      summoner: null,
-      rankedStats: null,
-      matchHistory: null,
-      serverId: null,
+      summoner: undefined,
+      rankedStats: undefined,
+      matchHistory: undefined,
+      serverId: undefined,
       totalCount: 0,
-      error: null,
+      error: undefined,
     };
   };
 
   // 设置错误信息
   const setError = (error: string) => {
     searchResult.value = {
-      summoner: null,
-      rankedStats: null,
-      matchHistory: null,
-      serverId: null,
+      summoner: undefined,
+      rankedStats: undefined,
+      matchHistory: undefined,
+      serverId: undefined,
       totalCount: 0,
       error,
     };
@@ -182,6 +181,11 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     } finally {
       isSearching.value = false;
     }
+  };
+
+  // 保存搜索历史到 localStorage
+  const saveSearchHistory = () => {
+    $local.setItem('searchHistory', searchHistory.value);
   };
 
   // 根据召唤师名称搜索（需要指定服务器）
@@ -236,9 +240,11 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         item => item.name === trimmedName && item.serverId === targetServerId
       );
 
+      // 在 searchSummonerByName 方法的最后添加
       if (existingIndex !== -1) {
-        // 如果已存在，移动到最前面
+        // 如果已存在，移动到最前面并更新 puuid
         const existingItem = searchHistory.value.splice(existingIndex, 1)[0];
+        existingItem.puuid = summoner.puuid; // 更新 puuid
         searchHistory.value.unshift(existingItem);
       } else {
         // 如果不存在，添加新项到最前面
@@ -248,18 +254,28 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
           serverName:
             availableServers.value.find(server => server.id === targetServerId)
               ?.name || '',
+          puuid: summoner.puuid, // 添加 puuid
         });
         // 限制历史记录数量为10条
         if (searchHistory.value.length > 10) {
           searchHistory.value = searchHistory.value.slice(0, 10);
         }
       }
+
+      // 重要：保存到 localStorage
+      saveSearchHistory();
     } catch (error: any) {
       console.error('搜索召唤师失败:', error);
       setError(error.message || '搜索失败，请检查召唤师名称或网络连接');
     } finally {
       isSearching.value = false;
     }
+  };
+
+  // 清除搜索历史
+  const clearSearchHistory = () => {
+    searchHistory.value = [];
+    saveSearchHistory();
   };
 
   const setCurrentPage = (page: number) => {
@@ -352,7 +368,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         matchHistory: sgpResult.games,
         serverId: sgpResult.serverId,
         totalCount: sgpResult.totalCount,
-        error: null,
+        error: undefined,
       });
 
       // 设置查询成功后的服务器ID
@@ -395,7 +411,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         matchHistory: sgpResult.games,
         serverId: sgpResult.serverId,
         totalCount: sgpResult.totalCount,
-        error: null,
+        error: undefined,
       });
 
       // 设置查询成功后的服务器ID
@@ -458,5 +474,6 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     loadMatchHistoryPage,
     validateUserIdFormat,
     getAvailableServers,
+    clearSearchHistory, // 添加清除历史的方法
   };
 });
