@@ -240,7 +240,7 @@ defineEmits<Emits>();
               <div class="w-16">
                 <div class="space-y-0.5">
                   <div
-                    v-for="player in match.teams[0]?.players || []"
+                    v-for="(player, index) in match.teams[0]?.players || []"
                     :key="`${player.puuid}-kda`"
                     class="flex h-6 items-center justify-center rounded px-1 py-0.5"
                     :class="{
@@ -248,9 +248,38 @@ defineEmits<Emits>();
                     }"
                   >
                     <span class="text-center text-xs font-medium">
-                      {{ player.kda.kills }}/{{ player.kda.deaths }}/{{
-                        player.kda.assists
-                      }}
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[1]?.players?.[index] &&
+                            player.kda.kills >
+                              match.teams[1].players[index].kda.kills,
+                        }"
+                      >
+                        {{ player.kda.kills }}
+                      </span>
+                      /
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[1]?.players?.[index] &&
+                            player.kda.deaths <
+                              match.teams[1].players[index].kda.deaths,
+                        }"
+                      >
+                        {{ player.kda.deaths }}
+                      </span>
+                      /
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[1]?.players?.[index] &&
+                            player.kda.assists >
+                              match.teams[1].players[index].kda.assists,
+                        }"
+                      >
+                        {{ player.kda.assists }}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -288,7 +317,7 @@ defineEmits<Emits>();
               <div class="w-16">
                 <div class="space-y-0.5">
                   <div
-                    v-for="player in match.teams[1]?.players || []"
+                    v-for="(player, index) in match.teams[1]?.players || []"
                     :key="`${player.puuid}-kda`"
                     class="flex h-6 items-center justify-center rounded px-1 py-0.5"
                     :class="{
@@ -296,9 +325,38 @@ defineEmits<Emits>();
                     }"
                   >
                     <span class="text-center text-xs font-medium">
-                      {{ player.kda.kills }}/{{ player.kda.deaths }}/{{
-                        player.kda.assists
-                      }}
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[0]?.players?.[index] &&
+                            player.kda.kills >
+                              match.teams[0].players[index].kda.kills,
+                        }"
+                      >
+                        {{ player.kda.kills }}
+                      </span>
+                      /
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[0]?.players?.[index] &&
+                            player.kda.deaths <
+                              match.teams[0].players[index].kda.deaths,
+                        }"
+                      >
+                        {{ player.kda.deaths }}
+                      </span>
+                      /
+                      <span
+                        :class="{
+                          'text-primary font-bold':
+                            match.teams[0]?.players?.[index] &&
+                            player.kda.assists >
+                              match.teams[0].players[index].kda.assists,
+                        }"
+                      >
+                        {{ player.kda.assists }}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -318,10 +376,6 @@ defineEmits<Emits>();
           </button>
         </div>
       </div>
-
-      <!-- 移除原来的第二行玩家列表 -->
-      <!-- 第二行：所有玩家列表 -->
-      <!-- 这部分代码已删除 -->
     </div>
 
     <!-- 展开的详细信息 -->
