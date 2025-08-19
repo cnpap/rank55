@@ -61,7 +61,7 @@ const searchCurrentSummoner = async () => {
 
 // 从历史记录搜索
 const searchFromHistory = async (item: SearchHistoryItem) => {
-  summonerName.value = item;
+  summonerName.value = { ...item };
   await handleSearch();
 };
 </script>
