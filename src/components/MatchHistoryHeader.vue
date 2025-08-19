@@ -426,9 +426,9 @@ function getPositionIconUrl(iconName: string): string {
                         :src="getPositionIconUrl(stat.icon)"
                         :alt="stat.name"
                         :class="[
-                          'h-5 w-5 object-contain transition-opacity',
+                          'h-5 w-5 object-contain brightness-0 invert transition-opacity',
                           stat.count > 0
-                            ? 'opacity-90 brightness-0 invert group-hover:opacity-100'
+                            ? 'opacity-90 group-hover:opacity-100'
                             : 'opacity-60 group-hover:opacity-80',
                         ]"
                       />
