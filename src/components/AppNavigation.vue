@@ -3,6 +3,13 @@ import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Loading from '@/components/Loading.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { navigationItems } from '@/config/navigation';
@@ -28,6 +35,19 @@ const summonerName = ref<SearchHistoryItem>({
 // 计算属性
 const isSearching = computed(() => matchHistoryStore.isSearching);
 const searchHistory = computed(() => matchHistoryStore.searchHistory);
+const availableServers = computed(() => matchHistoryStore.availableServers);
+const selectedServerId = computed({
+  get: () => matchHistoryStore.selectedServerId,
+  set: (value: string) => {
+    matchHistoryStore.setSelectedServerId(value);
+    // 同时更新本地搜索状态中的服务器信息
+    const selectedServer = availableServers.value.find(s => s.id === value);
+    if (selectedServer) {
+      summonerName.value.serverId = selectedServer.id;
+      summonerName.value.serverName = selectedServer.name;
+    }
+  },
+});
 
 // 导航到指定路由
 const navigateTo = (path: string) => {
@@ -40,7 +60,7 @@ const handleSearch = async () => {
 
   await matchHistoryStore.searchSummonerByName(
     summonerName.value.name,
-    summonerName.value.serverId
+    selectedServerId.value
   );
 
   // 搜索成功后跳转到首页
@@ -62,6 +82,8 @@ const searchCurrentSummoner = async () => {
 // 从历史记录搜索
 const searchFromHistory = async (item: SearchHistoryItem) => {
   summonerName.value = { ...item };
+  // 设置对应的服务器
+  selectedServerId.value = item.serverId;
   await handleSearch();
 };
 </script>
@@ -93,38 +115,62 @@ const searchFromHistory = async (item: SearchHistoryItem) => {
 
     <!-- 右侧搜索区域 -->
     <div class="flex items-center space-x-3 pl-2">
-      <!-- 搜索输入框 -->
+      <!-- 服务器选择和搜索输入框 - 融合版本 -->
       <div class="flex items-center space-x-2">
-        <div class="relative">
-          <Input
-            v-model="summonerName.name"
-            placeholder="召唤师名称#00000..."
-            class="h-8 w-64 pr-20 pl-10 text-sm"
-            @keyup.enter="handleSearch"
-            :disabled="isSearching"
-          />
-          <!-- "我" 按钮 - 在输入框内部左侧，样式与搜索按钮保持一致 -->
-          <Button
-            @click="searchCurrentSummoner"
-            :disabled="isSearching"
-            class="absolute top-1/2 left-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
-            size="sm"
-          >
-            我
-          </Button>
-          <!-- 搜索按钮 - 在输入框内部右侧 -->
-          <Button
-            @click="handleSearch"
-            :disabled="!summonerName.name.trim() || isSearching"
-            class="absolute top-1/2 right-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
-            size="sm"
-          >
-            <span v-if="isSearching" class="flex items-center gap-1">
-              <Loading size="xs" />
-              搜索中
-            </span>
-            <span v-else>搜索</span>
-          </Button>
+        <!-- 融合的搜索框 -->
+        <div
+          class="border-input bg-background relative flex h-8 overflow-hidden rounded-md border"
+        >
+          <!-- 服务器选择框 - 作为输入框的前缀 -->
+          <Select v-model="selectedServerId">
+            <SelectTrigger
+              class="border-input bg-muted/30 -mt-1 h-8 w-28 border-0 text-xs ring-0 ring-offset-0 outline-none focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+            >
+              <SelectValue placeholder="服务器" class="h-8" />
+            </SelectTrigger>
+            <SelectContent class="z-999999 -mt-1 -ml-[0.5px]">
+              <SelectItem
+                v-for="server in availableServers"
+                :key="server.id"
+                :value="server.id"
+              >
+                {{ server.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <!-- 搜索输入框 - 无边框，与选择框融合 -->
+          <div class="relative flex-1">
+            <Input
+              v-model="summonerName.name"
+              placeholder="召唤师名称#00000..."
+              class="h-8 border-0 pr-20 pl-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+              @keyup.enter="handleSearch"
+              :disabled="isSearching"
+            />
+            <!-- "我" 按钮 - 在输入框内部左侧 -->
+            <Button
+              @click="searchCurrentSummoner"
+              :disabled="isSearching"
+              class="absolute top-1/2 left-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
+              size="sm"
+            >
+              我
+            </Button>
+            <!-- 搜索按钮 - 在输入框内部右侧 -->
+            <Button
+              @click="handleSearch"
+              :disabled="!summonerName.name.trim() || isSearching"
+              class="absolute top-1/2 right-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
+              size="sm"
+            >
+              <span v-if="isSearching" class="flex items-center gap-1">
+                <Loading size="xs" />
+                搜索中
+              </span>
+              <span v-else>搜索</span>
+            </Button>
+          </div>
         </div>
       </div>
 

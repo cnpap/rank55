@@ -194,6 +194,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     serverId?: string
   ): Promise<void> => {
     if (isSearching.value || !summonerName.trim()) return;
+    console.log('searchSummonerByName', summonerName, serverId);
 
     // 验证用户ID格式
     if (!validateUserIdFormat(summonerName.trim())) {
