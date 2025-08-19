@@ -22,7 +22,7 @@ defineEmits<Emits>();
 
 <template>
   <div
-    class="group bg-card relative overflow-hidden rounded border transition-all"
+    class="group bg-card relative w-4xl overflow-hidden rounded border transition-all"
     :class="{
       'border-emerald-200/70 bg-gradient-to-r from-emerald-50/30 to-emerald-50/10 dark:border-emerald-800/50 dark:from-emerald-950/20 dark:to-emerald-950/5':
         match.result === 'victory',
@@ -40,7 +40,7 @@ defineEmits<Emits>();
     />
 
     <!-- KDA + 统计 + 装备 + 玩家列表 -->
-    <div class="flex w-full items-center gap-4 px-2 py-0.5">
+    <div class="flex w-full items-center gap-4 px-2 py-0.5 pl-3">
       <!-- KDA + 统计数据 + 装备 (分四行显示) -->
       <div class="flex flex-1 items-center justify-between gap-2">
         <div class="flex flex-col gap-1">
@@ -346,6 +346,133 @@ defineEmits<Emits>();
                     {{ player.kda.assists }}
                   </span>
                 </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 伤害对比列 -->
+          <div class="w-24">
+            <div class="space-y-0.5">
+              <div
+                v-for="(player, index) in match.teams[0]?.players || []"
+                :key="`${player.puuid}-damage`"
+                class="flex h-6 items-center gap-1 rounded px-1 py-0.5"
+              >
+                <!-- 在第一行显示图标 -->
+                <Sword
+                  v-if="index === 0"
+                  class="h-3 w-3 flex-shrink-0 text-red-500"
+                />
+                <!-- 其他行用空白占位保持对齐 -->
+                <div v-else class="h-3 w-3 flex-shrink-0"></div>
+
+                <div class="flex-1">
+                  <!-- 进度条容器 -->
+                  <div
+                    class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
+                  >
+                    <template v-if="match.teams[1]?.players?.[index]">
+                      <!-- 计算两个玩家的伤害，确定谁更高 -->
+                      <template
+                        v-if="
+                          player.stats.damage >=
+                          match.teams[1].players[index].stats.damage
+                        "
+                      >
+                        <!-- 蓝队玩家伤害更高，蓝色背景，粉色进度条表示敌方占比 -->
+                        <div class="h-full bg-blue-500"></div>
+                        <div
+                          class="absolute top-0 left-0 h-full bg-pink-600"
+                          :style="{
+                            width:
+                              player.stats.damage > 0
+                                ? `${Math.min(100, (match.teams[1].players[index].stats.damage / player.stats.damage) * 100)}%`
+                                : '0%',
+                          }"
+                        ></div>
+                      </template>
+                      <template v-else>
+                        <!-- 红队玩家伤害更高，粉色背景，蓝色进度条表示我方占比 -->
+                        <div class="h-full bg-pink-600"></div>
+                        <div
+                          class="absolute top-0 left-0 h-full bg-blue-500"
+                          :style="{
+                            width:
+                              match.teams[1].players[index].stats.damage > 0
+                                ? `${Math.min(100, (player.stats.damage / match.teams[1].players[index].stats.damage) * 100)}%`
+                                : '0%',
+                          }"
+                        ></div>
+                      </template>
+                    </template>
+                    <!-- 如果没有对应的红队玩家，蓝队100% -->
+                    <div v-else class="h-full bg-blue-500"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 防御对比列 -->
+          <div class="w-24">
+            <div class="space-y-0.5">
+              <div
+                v-for="(player, index) in match.teams[0]?.players || []"
+                :key="`${player.puuid}-defense`"
+                class="flex h-6 items-center gap-1 rounded px-1 py-0.5"
+              >
+                <!-- 在第一行显示图标 -->
+                <Shield
+                  v-if="index === 0"
+                  class="h-3 w-3 flex-shrink-0 text-blue-500"
+                />
+                <!-- 其他行用空白占位保持对齐 -->
+                <div v-else class="h-3 w-3 flex-shrink-0"></div>
+
+                <div class="flex-1">
+                  <!-- 进度条容器 -->
+                  <div
+                    class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
+                  >
+                    <template v-if="match.teams[1]?.players?.[index]">
+                      <!-- 计算两个玩家的承受伤害，确定谁更高 -->
+                      <template
+                        v-if="
+                          player.stats.damageTaken >=
+                          match.teams[1].players[index].stats.damageTaken
+                        "
+                      >
+                        <!-- 蓝队玩家承受伤害更多，蓝色背景，粉色进度条表示敌方占比 -->
+                        <div class="h-full bg-blue-500"></div>
+                        <div
+                          class="absolute top-0 left-0 h-full bg-pink-500"
+                          :style="{
+                            width:
+                              player.stats.damageTaken > 0
+                                ? `${Math.min(100, (match.teams[1].players[index].stats.damageTaken / player.stats.damageTaken) * 100)}%`
+                                : '0%',
+                          }"
+                        ></div>
+                      </template>
+                      <template v-else>
+                        <!-- 红队玩家承受伤害更多，粉色背景，蓝色进度条表示我方占比 -->
+                        <div class="h-full bg-pink-500"></div>
+                        <div
+                          class="absolute top-0 left-0 h-full bg-blue-500"
+                          :style="{
+                            width:
+                              match.teams[1].players[index].stats.damageTaken >
+                              0
+                                ? `${Math.min(100, (player.stats.damageTaken / match.teams[1].players[index].stats.damageTaken) * 100)}%`
+                                : '0%',
+                          }"
+                        ></div>
+                      </template>
+                    </template>
+                    <!-- 如果没有对应的红队玩家，蓝队100% -->
+                    <div v-else class="h-full bg-blue-500"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

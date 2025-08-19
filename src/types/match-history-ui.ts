@@ -40,6 +40,7 @@ export interface MatchPlayer {
     cs: number;
     gold: number;
     damage: number;
+    damageTaken: number; // 添加承受伤害字段
   };
   items: number[];
   spells: [number, number];

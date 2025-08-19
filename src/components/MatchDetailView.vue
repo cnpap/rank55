@@ -371,7 +371,7 @@ const searchPlayerHistory = async (playerName: string) => {
                     <div class="flex items-center gap-2">
                       <button
                         @click="searchPlayerHistory(player.playerName)"
-                        class="text-foreground hover:text-primary truncate font-medium transition-colors hover:underline"
+                        class="text-foreground hover:text-primary cursor-pointer truncate font-medium transition-colors hover:underline"
                         :disabled="
                           player.playerName === '未知玩家' ||
                           matchHistoryStore.isSearching

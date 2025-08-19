@@ -155,12 +155,12 @@ function getChampionAvatarUrl(championId: number): string {
   <div
     :class="[
       // 基础样式
-      'border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-slate-700/60 dark:from-slate-900/80 dark:to-slate-800/80',
+      'border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/60 dark:from-slate-900/80 dark:to-slate-800/80',
       // 吸附时：占满视口宽度并移除圆角
       isSticky ? '-mx-[calc(50vw-50%)] w-[100vw] rounded-none' : 'rounded',
     ]"
   >
-    <div class="mx-auto max-w-4xl">
+    <div class="mx-auto max-w-4xl p-4">
       <!-- 第一行：统计信息和筛选器 -->
       <div class="mb-3 flex items-center justify-between">
         <!-- 左侧：统计信息 -->

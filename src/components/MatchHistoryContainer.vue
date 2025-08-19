@@ -143,6 +143,7 @@ const filteredMatchHistory = computed((): ProcessedMatch[] => {
           cs: playerCs,
           gold: participant.goldEarned,
           damage: participant.totalDamageDealtToChampions,
+          damageTaken: participant.totalDamageTaken, // 添加承受伤害数据
         },
         items: playerItems,
         spells: [participant.spell1Id, participant.spell2Id],
