@@ -107,9 +107,8 @@ const searchFromHistory = async (item: SearchHistoryItem) => {
           <Button
             @click="searchCurrentSummoner"
             :disabled="isSearching"
-            class="bg-secondary hover:bg-secondary/80 text-secondary-foreground absolute top-1/2 left-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
+            class="absolute top-1/2 left-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
             size="sm"
-            variant="secondary"
           >
             我
           </Button>

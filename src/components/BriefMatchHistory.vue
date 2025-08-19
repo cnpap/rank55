@@ -57,28 +57,26 @@ const processedMatches = computed((): BriefMatchData[] => {
       <div
         v-for="(match, index) in processedMatches"
         :key="match.gameId"
-        class="group relative overflow-hidden transition-all duration-200 hover:bg-slate-50/80 dark:hover:bg-slate-700/20"
+        class="group hover:bg-muted/30 relative overflow-hidden transition-all duration-200"
         :class="{
-          'bg-gradient-to-r from-emerald-50/30 via-emerald-50/10 to-transparent dark:from-emerald-950/20 dark:via-emerald-950/5 dark:to-transparent':
+          'border-emerald-200/70 bg-gradient-to-r from-emerald-50/30 to-emerald-50/10 dark:border-emerald-800/50 dark:from-emerald-950/20 dark:to-emerald-950/5':
             match.result === 'victory',
-          'bg-gradient-to-r from-red-50/30 via-red-50/10 to-transparent dark:from-red-950/20 dark:via-red-950/5 dark:to-transparent':
+          'border-red-200/70 bg-gradient-to-r from-red-50/30 to-red-50/10 dark:border-red-800/50 dark:from-red-950/20 dark:to-red-950/5':
             match.result === 'defeat',
         }"
       >
         <!-- 分隔线 (除了第一项) -->
         <div
           v-if="index > 0"
-          class="absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent via-slate-200/80 to-transparent dark:via-slate-600/60"
+          class="via-border/60 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
         />
 
         <!-- 胜负状态指示条 -->
         <div
-          class="absolute top-0 left-0 h-full w-1"
+          class="absolute top-0 left-0 h-full w-[1.5px]"
           :class="{
-            'bg-gradient-to-b from-emerald-500/90 to-emerald-600/90':
-              match.result === 'victory',
-            'bg-gradient-to-b from-red-500/90 to-red-600/90':
-              match.result === 'defeat',
+            'bg-emerald-500': match.result === 'victory',
+            'bg-red-500': match.result === 'defeat',
           }"
         />
 
@@ -93,13 +91,13 @@ const processedMatches = computed((): BriefMatchData[] => {
           }"
         />
 
-        <div class="flex items-center gap-1.5 p-1.5 pl-2.5">
+        <div class="flex items-center gap-2 p-2 pl-3">
           <!-- 英雄头像 -->
           <div class="relative flex-shrink-0">
             <img
               :src="gameAssets.getChampionIcon(`${match.championId}`)"
               :alt="`英雄${match.championId}`"
-              class="h-11 w-11 rounded object-cover ring-1 ring-slate-300/40 dark:ring-slate-600/40"
+              class="ring-border/30 h-12 w-12 object-cover ring-2"
             />
           </div>
 
@@ -110,12 +108,12 @@ const processedMatches = computed((): BriefMatchData[] => {
               <img
                 :src="gameAssets.getSpellIcon(`${match.spells[0]}`)"
                 :alt="`召唤师技能${match.spells[0]}`"
-                class="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50"
+                class="border-border/40 h-5 w-5 border object-cover shadow-sm"
               />
               <img
                 :src="gameAssets.getSpellIcon(`${match.spells[1]}`)"
                 :alt="`召唤师技能${match.spells[1]}`"
-                class="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50"
+                class="border-border/40 h-5 w-5 border object-cover shadow-sm"
               />
             </div>
 
@@ -127,12 +125,12 @@ const processedMatches = computed((): BriefMatchData[] => {
                   v-if="match.runes[0]"
                   :src="gameAssets.getRuneIcon(`${match.runes[0]}`)"
                   :alt="`主要天赋系${match.runes[0]}`"
-                  class="h-full w-full rounded object-cover shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50"
+                  class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
                   title="主要天赋系"
                 />
                 <div
                   v-else
-                  class="h-full w-full rounded border border-slate-200/60 bg-slate-100/50 dark:border-slate-600/40 dark:bg-slate-700/30"
+                  class="border-border/20 bg-muted/30 h-full w-full rounded border"
                   title="主要天赋系"
                 />
               </div>
@@ -143,12 +141,12 @@ const processedMatches = computed((): BriefMatchData[] => {
                   v-if="match.runes[1]"
                   :src="gameAssets.getRuneIcon(`${match.runes[1]}`)"
                   :alt="`次要天赋系${match.runes[1]}`"
-                  class="h-full w-full rounded object-cover shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600/50"
+                  class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
                   title="次要天赋系"
                 />
                 <div
                   v-else
-                  class="h-full w-full rounded border border-slate-200/60 bg-slate-100/50 dark:border-slate-600/40 dark:bg-slate-700/30"
+                  class="border-border/20 bg-muted/30 h-full w-full rounded border"
                   title="次要天赋系"
                 />
               </div>
@@ -156,31 +154,30 @@ const processedMatches = computed((): BriefMatchData[] => {
           </div>
 
           <!-- 比赛信息 -->
-          <div class="flex h-11 min-w-0 flex-1 flex-col justify-center gap-0.5">
+          <div class="flex h-12 min-w-0 flex-1 flex-col justify-center gap-1">
             <div class="flex items-center justify-between">
               <!-- 游戏模式 -->
-              <span
-                class="text-muted-foreground truncate text-sm font-medium"
-                >{{ match.queueType }}</span
-              >
+              <h4 class="text-foreground truncate text-sm font-semibold">
+                {{ match.queueType }}
+              </h4>
 
               <!-- 游戏开始时间 (在小屏幕时隐藏) -->
-              <span class="text-muted-foreground hidden text-sm xl:block">
+              <span class="text-muted-foreground hidden text-xs xl:block">
                 {{ formatDateToDay(match.createdAt.toString()) }}
               </span>
             </div>
 
             <div class="flex items-center justify-between">
               <!-- KDA -->
-              <div class="flex items-center gap-1.5">
-                <span class="font-tektur-numbers font-semibold">
+              <div class="flex items-center gap-2">
+                <div class="font-tektur-numbers text-foreground font-bold">
                   {{ match.kda.kills }}/{{ match.kda.deaths }}/{{
                     match.kda.assists
                   }}
-                </span>
+                </div>
                 <Badge
                   variant="secondary"
-                  class="font-tektur-numbers px-1.5 py-0.5 text-sm"
+                  class="font-tektur-numbers px-1.5 py-0.5 text-xs font-bold"
                   :class="{
                     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
                       match.kda.ratio >= 3,
@@ -190,12 +187,12 @@ const processedMatches = computed((): BriefMatchData[] => {
                       match.kda.ratio < 2,
                   }"
                 >
-                  {{ match.kda.ratio.toFixed(1) }}
+                  {{ match.kda.ratio.toFixed(2) }}
                 </Badge>
               </div>
 
               <!-- 游戏时长 (在小屏幕时隐藏) -->
-              <span class="text-muted-foreground hidden text-sm xl:block">
+              <span class="text-muted-foreground hidden text-xs xl:block">
                 {{ match.duration }}
               </span>
             </div>

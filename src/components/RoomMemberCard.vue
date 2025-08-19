@@ -75,33 +75,12 @@ const handleKick = () => {
 
 <template>
   <div
-    class="relative flex h-full flex-col overflow-hidden bg-slate-50/80 shadow-sm dark:bg-slate-900/90"
+    class="relative flex h-full flex-col overflow-hidden bg-slate-50/80 shadow-sm dark:bg-[#121212]/90"
   >
     <!-- 顶部玩家信息区域 -->
     <div
-      class="relative overflow-hidden border-b border-slate-200/80 bg-white/90 p-3 dark:border-slate-700/60 dark:bg-slate-800/90"
+      class="relative overflow-hidden border-b border-slate-200/80 bg-white/90 p-3 dark:border-[#454545]/60 dark:bg-[#121212]/90"
     >
-      <!-- 背景纹理装饰 -->
-      <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
-        <div
-          class="absolute inset-0"
-          style="
-            background-image: radial-gradient(
-              circle at 1px 1px,
-              rgba(0, 0, 0, 0.15) 1px,
-              transparent 0
-            );
-            background-size: 20px 20px;
-          "
-        ></div>
-      </div>
-
-      <!-- 房主背景光效 -->
-      <div
-        v-if="member.isLeader"
-        class="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-amber-600/6"
-      ></div>
-
       <!-- 踢出按钮 -->
       <button
         v-if="canKick && !member.isLeader"
@@ -140,12 +119,6 @@ const handleKick = () => {
 
           <!-- 头像容器 -->
           <div class="relative">
-            <!-- 房主头像光环 -->
-            <div
-              v-if="member.isLeader"
-              class="absolute -inset-1 bg-gradient-to-r from-amber-400/30 via-amber-500/40 to-amber-600/30 blur-sm"
-            ></div>
-
             <!-- 头像边框 -->
             <div
               :class="[
@@ -234,7 +207,7 @@ const handleKick = () => {
 
     <!-- 战绩区域 -->
     <div
-      class="bg-slate-25/50 dark:bg-slate-850/50 relative flex-1 overflow-hidden"
+      class="bg-slate-25/50 relative flex-1 overflow-hidden dark:bg-[#121212]/50"
     >
       <div class="h-full overflow-y-auto">
         <!-- 加载状态 -->
