@@ -19,7 +19,7 @@ defineEmits<Emits>();
 </script>
 
 <template>
-  <div class="space-y-1">
+  <div>
     <!-- 战绩列表 -->
     <MatchListItem
       v-for="match in matches"
@@ -32,7 +32,7 @@ defineEmits<Emits>();
     <!-- 无匹配结果提示 -->
     <div
       v-if="matches.length === 0 && !isLoading"
-      class="border-border/40 bg-card/50 hover:bg-card/70 rounded-sm border p-8 text-center backdrop-blur-sm transition-all duration-200"
+      class="bg-card/50 hover:bg-card/70 border-border/40 border-r border-b border-l p-8 text-center backdrop-blur-sm transition-all duration-200"
     >
       <div
         class="bg-muted/40 hover:bg-muted/60 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-all duration-200"
@@ -62,7 +62,7 @@ defineEmits<Emits>();
     <!-- 加载状态 -->
     <div
       v-if="isLoading"
-      class="border-border/40 bg-card/50 rounded-sm border p-8 text-center backdrop-blur-sm"
+      class="bg-card/50 border-border/40 border-r border-b border-l p-8 text-center backdrop-blur-sm"
     >
       <div
         class="bg-muted/40 mx-auto mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-full"
@@ -88,3 +88,8 @@ defineEmits<Emits>();
     </div>
   </div>
 </template>
+<mcfile
+  name="MatchList.vue"
+  path="d:\code\nodejs\rank55\src\components\MatchList.vue"
+></mcfile>
+，去除间隙和边框：

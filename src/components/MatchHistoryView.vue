@@ -59,7 +59,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div>
     <!-- 用于监测 sticky 的哨兵元素 -->
     <div ref="sentinelRef" class="h-0"></div>
 

@@ -215,9 +215,9 @@ function getPositionIconUrl(iconName: string): string {
   <div
     :class="[
       // 基础样式
-      'bg-gradient-to-r from-slate-50/80 to-white/80 shadow-sm backdrop-blur-sm dark:from-slate-900/80 dark:to-slate-800/80',
+      'bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-slate-900/80 dark:to-slate-800/80',
       // 吸附时：占满视口宽度并移除圆角
-      isSticky ? '-mx-[calc(50vw-50%)] w-[100vw] rounded-none' : 'rounded',
+      isSticky ? '-mx-[calc(50vw-50%)] w-[100vw] rounded-t' : 'rounded-t',
     ]"
   >
     <div class="mx-auto max-w-4xl p-4">

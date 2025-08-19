@@ -53,7 +53,7 @@ const searchPlayerHistory = async (playerName: string) => {
 
 <template>
   <div
-    class="group bg-card relative w-4xl overflow-hidden rounded border transition-all"
+    class="group bg-card relative w-4xl overflow-hidden border-b transition-all"
     :class="{
       'border-emerald-200/70 bg-gradient-to-r from-emerald-50/30 to-emerald-50/10 dark:border-emerald-800/50 dark:from-emerald-950/20 dark:to-emerald-950/5':
         match.result === 'victory',
