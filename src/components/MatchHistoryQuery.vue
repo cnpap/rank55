@@ -36,7 +36,7 @@ onMounted(async () => {
       class="flex flex-1 items-center justify-center"
     >
       <div class="flex flex-col items-center space-y-4">
-        <Loading size="lg" />
+        <Loading size="lg" class="text-primary" />
         <p class="text-muted-foreground text-sm">正在获取当前账号信息...</p>
       </div>
     </div>

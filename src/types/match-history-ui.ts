@@ -62,6 +62,7 @@ export interface ProcessedMatch {
   queueType: string;
   queueId: number;
   duration: string;
+  // 使用办法 formatDateToDay(match.createdAt as unknown as string)
   createdAt: number; // SGP使用timestamp而不是string
   kda: KDAData;
   stats: GameStats;
