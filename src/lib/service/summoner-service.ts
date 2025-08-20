@@ -3,6 +3,7 @@ import { LCUClientInterface } from '../client/interface';
 import { RankedStats } from '@/types/ranked-stats';
 import { Game, MatchHistory } from '@/types/match-history';
 import { BaseService } from './base-service';
+import { PlayerAccountAlias } from '@/types/player-account-alias';
 
 export class SummonerService extends BaseService {
   constructor(client?: LCUClientInterface) {
@@ -108,5 +109,34 @@ export class SummonerService extends BaseService {
       stats.tier !== '' &&
       stats.tier !== 'NONE'
     );
+  }
+
+  // 根据游戏名称和标签查找玩家账户别名
+  async lookupPlayerAccount(
+    gameName: string,
+    tagLine: string
+  ): Promise<PlayerAccountAlias> {
+    try {
+      const endpoint = '/player-account/aliases/v1/lookup';
+      const data = await this.makeRiotRequest<PlayerAccountAlias>(
+        'GET',
+        endpoint,
+        {
+          params: { gameName, tagLine },
+        }
+      );
+      return data;
+    } catch (error: any) {
+      if (error.message.includes('404')) {
+        throw new Error(`查找玩家账户失败: 玩家不存在`);
+      }
+      if (error.message.includes('500')) {
+        throw new Error(`查找玩家账户失败: 服务器错误`);
+      }
+      if (error.message.includes('400')) {
+        throw new Error(`查找玩家账户失败: 无效的游戏名称或标签`);
+      }
+      throw new Error(`查找玩家账户失败: ${error}`);
+    }
   }
 }

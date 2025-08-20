@@ -90,7 +90,7 @@ export class BanPickService extends BaseService {
       .find(a => a.actorCellId === myself?.cellId && a.type === type)?.id;
     const endpoint = `/lol-champ-select/v1/session/actions/${id}`;
     const body = { championId: championId, completed, type };
-    await this.makeRequest('PATCH', endpoint, body);
+    await this.makeRequest('PATCH', endpoint, { body });
   }
 
   // Ban 英雄

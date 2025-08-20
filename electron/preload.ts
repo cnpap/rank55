@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { RequestOptions } from '../src/lib/client/interface';
 
 console.log('Preload script loaded');
 
@@ -13,8 +14,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
   // LCU 相关方法
-  lcuRequest: (method: 'GET' | 'POST', endpoint: string, body?: any) =>
-    ipcRenderer.invoke('lcu-request', method, endpoint, body),
+  lcuRequest: (
+    method: 'GET' | 'POST',
+    endpoint: string,
+    options?: RequestOptions
+  ) => ipcRenderer.invoke('lcu-request', method, endpoint, options),
+  // Riot 相关方法
+  riotRequest: (
+    method: 'GET' | 'POST',
+    endpoint: string,
+    options?: RequestOptions
+  ) => ipcRenderer.invoke('riot-request', method, endpoint, options),
   lcuIsConnected: () => ipcRenderer.invoke('lcu-is-connected'),
 
   // 新增：获取 LCU 凭据信息
@@ -33,7 +43,12 @@ declare global {
       lcuRequest: (
         method: 'GET' | 'POST',
         endpoint: string,
-        body?: any
+        options?: RequestOptions
+      ) => Promise<any>;
+      riotRequest: (
+        method: 'GET' | 'POST',
+        endpoint: string,
+        options?: RequestOptions
       ) => Promise<any>;
       lcuIsConnected: () => Promise<boolean>;
       // 新增类型声明

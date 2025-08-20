@@ -38,7 +38,9 @@ export class RuneService extends BaseService {
 
   // 设置当前天赋页面
   async setCurrentRunePage(pageId: number): Promise<void> {
-    return this.makeRequest('PUT', '/lol-perks/v1/currentpage', { id: pageId });
+    return this.makeRequest('PUT', '/lol-perks/v1/currentpage', {
+      body: { id: pageId },
+    });
   }
 
   // 获取所有可用的天赋数据

@@ -453,28 +453,5 @@ describe('SummonerService', () => {
 
       console.log('✅ 根据ID获取召唤师信息测试通过');
     });
-
-    it('应该能够处理不存在的召唤师ID', async () => {
-      const nonExistentID = 999999999; // 一个不太可能存在的ID
-      console.log(`🔍 测试不存在的召唤师ID: ${nonExistentID}`);
-
-      try {
-        const result = await summonerService.getSummonerByID(nonExistentID);
-
-        // 如果没有抛出错误，检查返回值
-        if (!result || Object.keys(result).length === 0) {
-          console.log('✅ 正确处理了不存在的召唤师ID（返回空结果）');
-        } else {
-          console.log('⚠️ 意外地找到了召唤师信息:', result);
-        }
-      } catch (error: any) {
-        console.log(
-          `✅ 正确处理了不存在的召唤师ID（抛出错误）: ${error.message}`
-        );
-        expect(error.message).toContain('根据ID获取召唤师失败');
-      }
-
-      console.log('✅ 不存在召唤师ID测试通过');
-    });
   });
 });

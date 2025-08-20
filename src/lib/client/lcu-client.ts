@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import https from 'https';
-import { LCUClientInterface } from './interface';
+import { LCUClientInterface, RequestOptions } from './interface';
 import { LCUCredentials } from '@/types/lcu';
 
 const execAsync = promisify(exec);
@@ -14,10 +14,13 @@ export class LCUClient implements LCUClientInterface {
   private maxRetries: number = 2;
   private retryDelay: number = 1000;
   // 新增服务器参数缓存
-  private region?: string;
-  private rsoPlatformId?: string;
-  private locale?: string;
-  private serverHost?: string;
+  private region: string;
+  private rsoPlatformId: string;
+  private locale: string;
+  private serverHost: string;
+  // 新增 Riot Client 参数缓存
+  private riotClientPort: number;
+  private riotClientAuthToken: string;
 
   constructor(credentials: LCUCredentials) {
     this.port = credentials.port;
@@ -27,6 +30,9 @@ export class LCUClient implements LCUClientInterface {
     this.rsoPlatformId = credentials.rsoPlatformId;
     this.locale = credentials.locale;
     this.serverHost = credentials.serverHost;
+    // 缓存新增参数
+    this.riotClientPort = credentials.riotClientPort;
+    this.riotClientAuthToken = credentials.riotClientAuthToken;
   }
 
   // 创建新的LCU客户端
@@ -46,6 +52,9 @@ export class LCUClient implements LCUClientInterface {
       this.rsoPlatformId = credentials.rsoPlatformId;
       this.locale = credentials.locale;
       this.serverHost = credentials.serverHost;
+      // 更新新增参数
+      this.riotClientPort = credentials.riotClientPort;
+      this.riotClientAuthToken = credentials.riotClientAuthToken;
     } catch (error) {
       throw new Error(`刷新凭据失败: ${error}`);
     }
@@ -86,6 +95,9 @@ export class LCUClient implements LCUClientInterface {
       const rsoPlatformIdRegex = /--rso_platform_id=([\w_]+)/;
       const localeRegex = /--locale=([\w_]+)/;
       const serverHostRegex = /--t\.lcdshost=([\w.-]+)/;
+      // 新增正则表达式
+      const riotClientPortRegex = /--riotclient-app-port=([0-9]+)/;
+      const riotClientAuthRegex = /--riotclient-auth-token=([\w-_]+)/;
 
       console.log('命令行参数:', cmdOutput);
 
@@ -95,6 +107,9 @@ export class LCUClient implements LCUClientInterface {
       const rsoPlatformIdMatch = cmdOutput.match(rsoPlatformIdRegex);
       const localeMatch = cmdOutput.match(localeRegex);
       const serverHostMatch = cmdOutput.match(serverHostRegex);
+      // 新增参数匹配
+      const riotClientPortMatch = cmdOutput.match(riotClientPortRegex);
+      const riotClientAuthMatch = cmdOutput.match(riotClientAuthRegex);
 
       if (!portMatch || !tokenMatch) {
         throw new Error(
@@ -107,13 +122,24 @@ export class LCUClient implements LCUClientInterface {
         throw new Error('解析端口号失败');
       }
 
+      // 解析 Riot Client 端口
+      const riotClientPort = riotClientPortMatch
+        ? parseInt(riotClientPortMatch[1], 10)
+        : undefined;
+      if (riotClientPortMatch && isNaN(riotClientPort!)) {
+        console.warn('解析 Riot Client 端口号失败');
+      }
+
       const credentials: LCUCredentials = {
         port,
         token: tokenMatch[1],
-        region: regionMatch ? regionMatch[1] : undefined,
-        rsoPlatformId: rsoPlatformIdMatch ? rsoPlatformIdMatch[1] : undefined,
-        locale: localeMatch ? localeMatch[1] : undefined,
-        serverHost: serverHostMatch ? serverHostMatch[1] : undefined,
+        region: regionMatch![1],
+        rsoPlatformId: rsoPlatformIdMatch![1],
+        locale: localeMatch![1],
+        serverHost: serverHostMatch![1],
+        // 新增参数
+        riotClientPort: riotClientPort!,
+        riotClientAuthToken: riotClientAuthMatch![1],
       };
 
       console.log('提取的服务器参数:', {
@@ -122,6 +148,9 @@ export class LCUClient implements LCUClientInterface {
         rsoPlatformId: credentials.rsoPlatformId,
         locale: credentials.locale,
         serverHost: credentials.serverHost,
+        // 新增日志输出
+        riotClientPort: credentials.riotClientPort,
+        riotClientAuthToken: credentials.riotClientAuthToken,
       });
 
       return credentials;
@@ -130,29 +159,45 @@ export class LCUClient implements LCUClientInterface {
     }
   }
 
-  // 发送HTTP请求到LCU API（带自动重试）
-  private async makeRequest(
+  // 通用的HTTP请求方法（抽象出来的核心逻辑）
+  private async makeHttpRequest(
     method: string,
+    baseUrl: string,
     endpoint: string,
-    body?: any,
-    retryCount: number = 0
+    authToken: string,
+    options: RequestOptions = {},
+    retryCount: number = 0,
+    isRiotApi: boolean = false
   ): Promise<any> {
     return new Promise(async (resolve, reject) => {
-      const url = new URL(this.baseURL + endpoint);
+      // 处理查询参数
+      let finalEndpoint = endpoint;
+      if (options.params) {
+        const searchParams = new URLSearchParams();
+        Object.entries(options.params).forEach(([key, value]) => {
+          searchParams.append(key, String(value));
+        });
+        const queryString = searchParams.toString();
+        if (queryString) {
+          finalEndpoint += (endpoint.includes('?') ? '&' : '?') + queryString;
+        }
+      }
 
-      const options: https.RequestOptions = {
+      const url = new URL(baseUrl + finalEndpoint);
+      const requestOptions: https.RequestOptions = {
         hostname: url.hostname,
         port: url.port,
         path: url.pathname + url.search,
         method: method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Basic ${Buffer.from(`riot:${this.authToken}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`riot:${authToken}`).toString('base64')}`,
+          ...options.headers, // 合并自定义头部
         },
-        rejectUnauthorized: false, // 忽略SSL证书验证
+        rejectUnauthorized: false,
       };
 
-      const req = https.request(options, res => {
+      const req = https.request(requestOptions, res => {
         let data = '';
 
         res.on('data', chunk => {
@@ -160,7 +205,6 @@ export class LCUClient implements LCUClientInterface {
         });
 
         res.on('end', async () => {
-          // 如果是认证错误或连接错误，且还有重试次数，则尝试刷新凭据后重试
           if (
             res.statusCode &&
             (res.statusCode === 401 || res.statusCode === 403) &&
@@ -172,11 +216,14 @@ export class LCUClient implements LCUClientInterface {
               );
               await this.delay(this.retryDelay);
               await this.refreshCredentials();
-              const result = await this.makeRequest(
+              const result = await this.makeHttpRequest(
                 method,
-                endpoint,
-                body,
-                retryCount + 1
+                baseUrl,
+                finalEndpoint,
+                isRiotApi ? this.riotClientAuthToken : this.authToken,
+                options,
+                retryCount + 1,
+                isRiotApi
               );
               resolve(result);
               return;
@@ -203,7 +250,6 @@ export class LCUClient implements LCUClientInterface {
       });
 
       req.on('error', async (error: any) => {
-        // 如果是连接错误且还有重试次数，尝试刷新凭据后重试
         if (
           (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') &&
           retryCount < this.maxRetries
@@ -214,11 +260,14 @@ export class LCUClient implements LCUClientInterface {
             );
             await this.delay(this.retryDelay);
             await this.refreshCredentials();
-            const result = await this.makeRequest(
+            const result = await this.makeHttpRequest(
               method,
-              endpoint,
-              body,
-              retryCount + 1
+              baseUrl,
+              finalEndpoint,
+              isRiotApi ? this.riotClientAuthToken : this.authToken,
+              options,
+              retryCount + 1,
+              isRiotApi
             );
             resolve(result);
             return;
@@ -231,43 +280,76 @@ export class LCUClient implements LCUClientInterface {
       });
 
       // 发送请求体
-      if (body) {
-        req.write(JSON.stringify(body));
+      if (options.body) {
+        req.write(JSON.stringify(options.body));
       }
 
       req.end();
     });
   }
 
-  // 发送GET请求
-  async get(endpoint: string): Promise<any> {
-    return this.makeRequest('GET', endpoint);
+  // 重构 makeRequest 方法
+  async makeRequest<T = unknown>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options: RequestOptions = {},
+    retryCount: number = 0
+  ): Promise<T> {
+    return this.makeHttpRequest(
+      method,
+      this.baseURL,
+      endpoint,
+      this.authToken,
+      options,
+      retryCount,
+      false
+    );
   }
 
-  // 发送POST请求
-  async post(endpoint: string, body?: any): Promise<any> {
-    return this.makeRequest('POST', endpoint, body);
+  // 重构 makeRiotRequest 方法
+  async makeRiotRequest<T = unknown>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options: RequestOptions = {},
+    retryCount: number = 0
+  ): Promise<T> {
+    const riotBaseURL = `https://127.0.0.1:${this.riotClientPort}`;
+    return this.makeHttpRequest(
+      method,
+      riotBaseURL,
+      endpoint,
+      this.riotClientAuthToken,
+      options,
+      retryCount,
+      true
+    );
   }
 
-  // 发送PATCH请求
-  async patch(endpoint: string, body?: any): Promise<any> {
-    return this.makeRequest('PATCH', endpoint, body);
+  async patchRiot<T = unknown>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.makeRiotRequest<T>('PATCH', endpoint, options);
   }
 
-  // 发送PUT请求
-  async put(endpoint: string, body?: any): Promise<any> {
-    return this.makeRequest('PUT', endpoint, body);
+  async putRiot<T = unknown>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.makeRiotRequest<T>('PUT', endpoint, options);
   }
 
-  // 发送DELETE请求
-  async delete(endpoint: string): Promise<any> {
-    return this.makeRequest('DELETE', endpoint);
+  async deleteRiot<T = unknown>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    return this.makeRiotRequest<T>('DELETE', endpoint, options);
   }
 
   // 检查是否连接到LOL客户端
   async isConnected(): Promise<boolean> {
     try {
-      await this.get('/lol-summoner/v1/current-summoner');
+      await this.makeRequest('GET', '/lol-summoner/v1/current-summoner');
       return true;
     } catch (error) {
       console.log('连接检查失败:', error);
@@ -289,6 +371,9 @@ export class LCUClient implements LCUClientInterface {
       rsoPlatformId: this.rsoPlatformId,
       locale: this.locale,
       serverHost: this.serverHost,
+      // 返回新增参数
+      riotClientPort: this.riotClientPort,
+      riotClientAuthToken: this.riotClientAuthToken,
     };
   }
 }

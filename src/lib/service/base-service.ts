@@ -1,4 +1,4 @@
-import { LCUClientInterface } from '../client/interface';
+import { LCUClientInterface, RequestOptions } from '../client/interface';
 
 /**
  * 基础服务类
@@ -224,16 +224,18 @@ export abstract class BaseService {
   }
 
   /**
-   * 统一的请求方法，自动选择调用方式
+   * 通用的HTTP请求方法（抽象出来的核心逻辑）
    * @param method HTTP 方法
    * @param endpoint API 端点
-   * @param body 请求体（可选）
-   * @returns Promise<any>
+   * @param options 请求选项
+   * @param isRiotApi 是否为 Riot API 请求
+   * @returns Promise<T>
    */
-  protected async makeRequest<T = unknown>(
+  protected async makeHttpRequest<T = unknown>(
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
-    body?: any
+    options?: RequestOptions,
+    isRiotApi: boolean = false
   ): Promise<T> {
     // 将请求添加到队列中
     return BaseService.addToQueue(async () => {
@@ -249,25 +251,19 @@ export abstract class BaseService {
           // 记录汇总日志（在请求前记录）
           await BaseService.logSummary(sequence, method, endpoint);
 
-          // 执行请求
-          switch (method) {
-            case 'GET':
-              response = await this.client.get(endpoint);
-              break;
-            case 'POST':
-              response = await this.client.post(endpoint, body);
-              break;
-            case 'PATCH':
-              response = await this.client.patch(endpoint, body);
-              break;
-            case 'PUT':
-              response = await this.client.put(endpoint, body);
-              break;
-            case 'DELETE':
-              response = await this.client.delete(endpoint);
-              break;
-            default:
-              throw new Error(`不支持的 HTTP 方法: ${method}`);
+          // 根据 isRiotApi 选择调用方式
+          if (isRiotApi) {
+            response = await this.client.makeRiotRequest<T>(
+              method,
+              endpoint,
+              options
+            );
+          } else {
+            response = await this.client.makeRequest<T>(
+              method,
+              endpoint,
+              options
+            );
           }
 
           // 推断 Content-Type（基于响应内容）
@@ -328,12 +324,44 @@ export abstract class BaseService {
           window.electronAPI &&
           window.electronAPI.lcuRequest
         ) {
-          return window.electronAPI.lcuRequest(method, endpoint, body);
+          // 注意：这里可能需要扩展 electronAPI 以支持 riot request
+          // 目前先使用现有的 lcuRequest，后续可能需要添加 riotRequest
+          return window.electronAPI.lcuRequest(method, endpoint, options);
         } else {
           throw new Error('无法找到可用的 LCU 客户端连接方式');
         }
       }
     });
+  }
+
+  /**
+   * 统一的请求方法，自动选择调用方式
+   * @param method HTTP 方法
+   * @param endpoint API 端点
+   * @param options 请求选项（包含 body、params、headers）
+   * @returns Promise<any>
+   */
+  protected async makeRequest<T = unknown>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.makeHttpRequest<T>(method, endpoint, options, false);
+  }
+
+  /**
+   * Riot API 请求方法
+   * @param method HTTP 方法
+   * @param endpoint API 端点
+   * @param options 请求选项（包含 body、params、headers）
+   * @returns Promise<any>
+   */
+  protected async makeRiotRequest<T = unknown>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.makeHttpRequest<T>(method, endpoint, options, true);
   }
 
   /**

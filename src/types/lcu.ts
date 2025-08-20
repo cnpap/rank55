@@ -2,8 +2,10 @@
 export interface LCUCredentials {
   port: number;
   token: string;
-  region?: string;
-  rsoPlatformId?: string;
-  locale?: string;
-  serverHost?: string;
+  region: string;
+  rsoPlatformId: string;
+  locale: string;
+  serverHost: string;
+  riotClientPort: number;
+  riotClientAuthToken: string;
 }

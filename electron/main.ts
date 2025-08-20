@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import log from 'electron-log';
 import { LCUClient } from '../src/lib/client/lcu-client';
 import { UpdateManager } from './updater';
+import { RequestOptions } from '../src/lib/client/interface';
 
 // 配置日志
 log.transports.file.level = 'info';
@@ -113,22 +114,34 @@ ipcMain.handle(
     _,
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     endpoint: string,
-    body?: any
+    options?: RequestOptions
   ) => {
     try {
       const client = await ensureLCUClient();
-
-      if (method === 'GET') {
-        return await client.get(endpoint);
-      } else if (method === 'POST') {
-        return await client.post(endpoint, body);
-      } else if (method === 'PATCH') {
-        return await client.patch(endpoint, body);
-      } else if (method === 'DELETE') {
-        return await client.delete(endpoint);
-      }
+      return await client.makeRequest(method, endpoint, options);
     } catch (error) {
       console.error('LCU 请求失败:', error);
+      // 如果请求失败，尝试重新初始化客户端
+      lcuClient = null;
+      throw error;
+    }
+  }
+);
+
+// Riot 相关处理程序
+ipcMain.handle(
+  'riot-request',
+  async (
+    _,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    endpoint: string,
+    options?: RequestOptions
+  ) => {
+    try {
+      const client = await ensureLCUClient();
+      return await client.makeRiotRequest(method, endpoint, options);
+    } catch (error) {
+      console.error('Riot 请求失败:', error);
       // 如果请求失败，尝试重新初始化客户端
       lcuClient = null;
       throw error;

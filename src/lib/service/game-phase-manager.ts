@@ -1,10 +1,7 @@
 import { ref, type Ref } from 'vue';
 import { GameflowService } from './gameflow-service';
-import { BanPickService } from './ban-pick-service';
 import { SessionStorageService } from './session-storage-service';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
-import type { ChampSelectSession } from '@/types/champ-select-session';
-import type { RankTeam } from '@/types/players-info';
 
 export interface GamePhaseState {
   currentPhase: GameflowPhaseEnum | null;
