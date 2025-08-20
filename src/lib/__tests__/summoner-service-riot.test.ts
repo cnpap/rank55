@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
+import { RiotApiService } from '../service/riot-api-service';
 
 describe('SummonerService - Riot API', () => {
   let lcuClient: LCUClientInterface;
   let summonerService: SummonerService;
+  let riotApiService: RiotApiService;
 
   // 测试查找玩家账户别名（Riot API）
   describe('LookupPlayerAccount - Riot API', () => {
@@ -13,6 +15,7 @@ describe('SummonerService - Riot API', () => {
       try {
         lcuClient = await LCUClient.create();
         summonerService = new SummonerService(lcuClient);
+        riotApiService = new RiotApiService();
       } catch (error) {
         console.log(`⏭️ 跳过 Riot API 测试: ${error}`);
         return;
@@ -22,7 +25,7 @@ describe('SummonerService - Riot API', () => {
     it('应该能够根据游戏名称和标签查找玩家账户', async () => {
       try {
         // 查找玩家账户别名（Riot API 调用）
-        const accountInfo = await summonerService.lookupPlayerAccount(
+        const accountInfo = await riotApiService.lookupPlayerAccount(
           '认真努力不放弃',
           '43614'
         );

@@ -80,6 +80,7 @@ export const staticAssets = {
   getRuneIcon: (runeId: string) => `./${StaticAssets.RUNE_IMAGES}${runeId}.png`,
   getPerkIcon: (perkId: string) => `./${StaticAssets.PERK_IMAGES}${perkId}.png`,
   getProfileIcon: (profileIconId: string) =>
+    // `/lol-game-data/assets/v1/profile-icons/${profileIconId}.jpg`,
     `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,
   getSpellIcon: (spellId: string) =>
     `./${StaticAssets.SPELL_IMAGES}${spellId}.png`,

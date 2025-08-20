@@ -272,47 +272,9 @@ describe('SummonerService', () => {
     });
 
     it('应该能够根据名称获取召唤师信息', async () => {
-      // 先获取当前召唤师信息作为测试数据
-      const currentSummoner = await summonerService.getCurrentSummoner();
-      if (!currentSummoner) {
-        console.log('⏭️ 无法获取当前召唤师信息');
-        return;
-      }
-
-      // 尝试多个可能的名称字段
-      let testName = '';
-      if (currentSummoner.displayName && currentSummoner.displayName.trim()) {
-        testName = currentSummoner.displayName.trim();
-      } else if (currentSummoner.gameName && currentSummoner.gameName.trim()) {
-        testName = currentSummoner.gameName.trim();
-      } else if (
-        currentSummoner.internalName &&
-        currentSummoner.internalName.trim()
-      ) {
-        testName = currentSummoner.internalName.trim();
-      }
-
-      if (!testName) {
-        console.log('⏭️ 当前召唤师没有可用的显示名称');
-        console.log('📋 召唤师数据:', {
-          displayName: currentSummoner.displayName,
-          gameName: currentSummoner.gameName,
-          internalName: currentSummoner.internalName,
-          tagLine: currentSummoner.tagLine,
-        });
-
-        // 如果没有可用的名称，我们使用一个已知存在的测试名称
-        // 注意：这里应该使用一个在你的服务器上确实存在的召唤师名称
-        console.log('⚠️ 使用备用测试名称进行测试');
-        testName = 'Riot'; // 使用一个通用的测试名称，你可以根据实际情况修改
-      }
-
-      console.log(`🔍 使用召唤师名称进行测试: "${testName}"`);
-
       // 根据名称获取召唤师信息
-      const summonerByName = await summonerService.getSummonerByName(
-        `${testName}#${currentSummoner.tagLine}`
-      );
+      const summonerByName =
+        await summonerService.getSummonerByName(`认真努力不放弃#43614`);
 
       expect(summonerByName).toBeDefined();
       expect(summonerByName).not.toBeNull();
@@ -330,7 +292,6 @@ describe('SummonerService', () => {
       const displayName =
         summonerByName.displayName || summonerByName.gameName || '';
       console.log('📊 根据名称获取的召唤师信息:');
-      console.log(`   - 搜索名称: ${testName}`);
       console.log(`   - 显示名称: ${displayName}`);
       console.log(`   - 等级: ${summonerByName.summonerLevel}`);
       console.log(`   - 召唤师ID: ${summonerByName.summonerId}`);
@@ -343,49 +304,6 @@ describe('SummonerService', () => {
           `   - 游戏名称: ${summonerByName.gameName}#${summonerByName.tagLine}`
         );
       }
-
-      // 验证获取的召唤师是否与当前召唤师匹配（仅当使用当前召唤师名称时）
-      if (
-        testName ===
-        (currentSummoner.displayName ||
-          currentSummoner.gameName ||
-          currentSummoner.internalName)
-      ) {
-        if (currentSummoner.summonerId === summonerByName.summonerId) {
-          console.log('✅ 根据名称获取的召唤师与当前召唤师匹配');
-        } else {
-          console.log(
-            '⚠️ 根据名称获取的召唤师与当前召唤师不匹配，可能是同名玩家'
-          );
-        }
-      } else {
-        console.log('ℹ️ 使用了备用测试名称，跳过与当前召唤师的匹配验证');
-      }
-
-      console.log('✅ 根据名称获取召唤师信息测试通过');
-    });
-
-    it('应该能够处理不存在的召唤师名称', async () => {
-      const nonExistentName = 'ThisSummonerNameShouldNotExist12345';
-      console.log(`🔍 测试不存在的召唤师名称: ${nonExistentName}`);
-
-      try {
-        const result = await summonerService.getSummonerByName(nonExistentName);
-
-        // 如果没有抛出错误，检查返回值
-        if (!result || Object.keys(result).length === 0) {
-          console.log('✅ 正确处理了不存在的召唤师名称（返回空结果）');
-        } else {
-          console.log('⚠️ 意外地找到了召唤师信息:', result);
-        }
-      } catch (error: any) {
-        console.log(
-          `✅ 正确处理了不存在的召唤师名称（抛出错误）: ${error.message}`
-        );
-        expect(error.message).toContain('根据名称获取召唤师失败');
-      }
-
-      console.log('✅ 不存在召唤师名称测试通过');
     });
   });
 

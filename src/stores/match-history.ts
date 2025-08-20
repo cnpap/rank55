@@ -9,6 +9,7 @@ import type { RankedStats } from '@/types/ranked-stats';
 import type { Game } from '@/types/match-history-sgp';
 import { $local, SearchHistoryItem } from '@/storages/storage-use'; // 添加导入
 import serverConfig from '../../public/config/league-servers.json';
+import { RiotApiService } from '@/lib/service/riot-api-service';
 
 // SGP API 搜索结果接口
 export interface SgpSearchResult {
@@ -53,6 +54,8 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   let summonerService: SummonerService | null = null;
   let sgpApi: SimpleSgpApi | null = null;
   let sgpMatchService: SgpMatchService | null = null;
+  // 在需要使用的地方
+  const riotApiService = new RiotApiService();
 
   // 初始化服务
   const initializeServices = async () => {
@@ -227,9 +230,14 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         throw new Error('无法连接到英雄联盟客户端，请确保游戏客户端已启动');
       }
 
-      // 获取召唤师信息
-      const summoner = await summonerService.getSummonerByName(
+      // 获取玩家 puuid
+      const playerAccountAlias = await riotApiService.lookupPlayerAccount(
         summonerName.trim()
+      );
+
+      // 获取召唤师信息
+      const summoner = await summonerService.getSummonerByPUUID(
+        playerAccountAlias.puuid
       );
 
       // 执行搜索（指定服务器）
