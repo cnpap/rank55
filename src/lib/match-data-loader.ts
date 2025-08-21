@@ -1,17 +1,20 @@
 import type { SummonerData } from '@/types/summoner';
 import type { LocalSearchResult } from '@/lib/composables/useMatchHistoryState';
 import { RiotApiService } from '@/lib/service/riot-api-service';
+import { SgpMatchService } from './sgp/sgp-match-service';
+import { SummonerService } from './service/summoner-service';
 
 /**
  * 战绩数据加载服务
  */
 export class MatchDataLoader {
-  private riotService: RiotApiService;
-  private summonerService: any;
-  private sgpMatchService: any;
+  private summonerService: SummonerService;
+  private sgpMatchService: SgpMatchService;
 
-  constructor(summonerService: any, sgpMatchService: any) {
-    this.riotService = new RiotApiService();
+  constructor(
+    summonerService: SummonerService,
+    sgpMatchService: SgpMatchService
+  ) {
     this.summonerService = summonerService;
     this.sgpMatchService = sgpMatchService;
   }
@@ -21,13 +24,27 @@ export class MatchDataLoader {
    */
   async loadSummonerData(
     puuid: string,
-    currentUser?: SummonerData
+    currentUser: SummonerData,
+    serverId: string
   ): Promise<SummonerData> {
     if (puuid === currentUser?.puuid) {
       return currentUser as SummonerData;
     } else {
-      const summoners = await this.riotService.getSummonersByPuuids([puuid]);
-      return summoners[0] as unknown as SummonerData;
+      const summoners = await this.sgpMatchService.getSummonersByPuuids(
+        [puuid],
+        serverId
+      );
+
+      const firstSummoner = summoners[0];
+      return {
+        gameName: '',
+        tagLine: '',
+        displayName: '',
+        internalName: firstSummoner.internalName,
+        summonerLevel: 0,
+        profileIconId: firstSummoner.profileIconId,
+        puuid: firstSummoner.puuid,
+      } as SummonerData;
     }
   }
 
@@ -38,11 +55,15 @@ export class MatchDataLoader {
     serverId: string,
     puuid: string,
     pageSize: number,
-    currentUser?: SummonerData
+    currentUser: SummonerData
   ): Promise<LocalSearchResult> {
     try {
       // 获取召唤师数据
-      const summoner = await this.loadSummonerData(puuid, currentUser);
+      const summoner = await this.loadSummonerData(
+        puuid,
+        currentUser,
+        serverId
+      );
 
       // 获取排位数据
       const stats = await this.summonerService.getRankedStats(puuid);

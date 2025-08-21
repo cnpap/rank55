@@ -1,6 +1,7 @@
 import { SimpleSgpApi } from './sgp-api';
 import { BaseService } from '../service/base-service';
 import { Game, MatchHistorySgp } from '@/types/match-history-sgp';
+import { SummonerLedge } from '@/types/summoner';
 
 interface SgpMatchHistoryResult {
   games: Game[];
@@ -26,7 +27,7 @@ export class SgpMatchService extends BaseService {
   /**
    * 从LCU获取entitlement token
    */
-  private async _getEntitlementToken(): Promise<string | null> {
+  private async _getEntitlementToken(): Promise<string | undefined> {
     try {
       const response = await this.makeRequest<{ accessToken: string }>(
         'GET',
@@ -40,7 +41,7 @@ export class SgpMatchService extends BaseService {
       return response.accessToken;
     } catch (error) {
       console.warn('获取entitlement token失败:', error);
-      return null;
+      return;
     }
   }
 
@@ -115,34 +116,9 @@ export class SgpMatchService extends BaseService {
   ): Promise<SgpMatchHistoryResult> {
     // 获取token
     const token = await this._getEntitlementToken();
-    if (!token) {
-      throw new Error('无法获取认证token');
-    }
-
     // 确定使用的服务器ID
     let serverId = options.serverId;
-
-    // 如果仍然没有服务器ID，抛出错误
-    if (!serverId) {
-      throw new Error(
-        '无法确定服务器ID。请手动指定serverId参数，或确保LCU客户端已连接且isCurrentUser=true'
-      );
-    }
-
-    // 检查服务器是否支持战绩查询
-    if (!this._sgpApi.isMatchHistorySupported(serverId)) {
-      throw new Error(`服务器 ${serverId} 不支持战绩查询`);
-    }
-
-    console.log('SGP战绩查询:', {
-      serverId,
-      playerPuuid: playerPuuid.substring(0, 8) + '...',
-      start,
-      count,
-      tokenPrefix: token.substring(0, 20) + '...',
-    });
-
-    this._sgpApi.setEntitlementToken(token);
+    this._sgpApi.setEntitlementToken(token!);
 
     try {
       const response: MatchHistorySgp = await this._sgpApi.getMatchHistory(
@@ -153,11 +129,6 @@ export class SgpMatchService extends BaseService {
         options.tag // 传递tag参数
       );
 
-      console.log('SGP API详细响应:', {
-        gameCount: response.games.length,
-        serverId,
-      });
-
       const result: SgpMatchHistoryResult = {
         games: response.games,
         totalCount: response.games.length,
@@ -165,12 +136,6 @@ export class SgpMatchService extends BaseService {
         endIndex: start + count - 1,
         serverId,
       };
-
-      console.log('处理后的结果:', {
-        gamesFound: result.games.length,
-        totalCount: result.totalCount,
-        serverId: result.serverId,
-      });
 
       return result;
     } catch (error: any) {
@@ -202,5 +167,15 @@ export class SgpMatchService extends BaseService {
 
   getAvailableServers(): string[] {
     return this._sgpApi.getAvailableServers();
+  }
+
+  async getSummonersByPuuids(
+    puuids: string[],
+    serverId: string
+  ): Promise<SummonerLedge[]> {
+    const token = await this._getEntitlementToken();
+    // 确定使用的服务器ID
+    this._sgpApi.setEntitlementToken(token!);
+    return this._sgpApi.getSummonersByPuuids(puuids, serverId);
   }
 }

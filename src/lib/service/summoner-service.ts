@@ -52,22 +52,6 @@ export class SummonerService extends BaseService {
     return data;
   }
 
-  // 获取比赛历史 - 使用PUUID
-  async getMatchHistory(
-    puuid: string,
-    beginIndex: number,
-    endIndex: number
-  ): Promise<MatchHistory> {
-    try {
-      console.log('getMatchHistory', puuid, beginIndex, endIndex);
-      const endpoint = `/lol-match-history/v1/products/lol/${puuid}/matches?begIndex=${beginIndex}&endIndex=${endIndex}`;
-      const data = await this.makeRequest<MatchHistory>('GET', endpoint);
-      return data;
-    } catch (error) {
-      throw new Error(`获取比赛历史失败: ${error}`);
-    }
-  }
-
   // 获取排位统计
   async getRankedStats(puuid: string): Promise<RankedStats> {
     const endpoint = `/lol-ranked/v1/ranked-stats/${puuid}`;

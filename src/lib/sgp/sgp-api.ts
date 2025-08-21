@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { MatchHistorySgp } from '../../types/match-history-sgp';
 import serverConfig from '../../../public/config/league-servers.json';
+import { SummonerLedge } from '@/types/summoner';
 
 interface SgpServer {
   matchHistory: string | null;
@@ -26,7 +27,7 @@ export class SimpleSgpApi {
     this._http = axios.create();
   }
 
-  setEntitlementToken(token: string | null) {
+  setEntitlementToken(token: string) {
     this._entitlementToken = token;
   }
 
@@ -53,6 +54,19 @@ export class SimpleSgpApi {
       rsoPlatformId,
     });
     return;
+  }
+
+  /**
+   * 对于腾讯系, 仅保留其 rsoPlatformId
+   * @param sgpServerId
+   */
+  private _getSubId(sgpServerId: string) {
+    if (sgpServerId.startsWith('TENCENT')) {
+      const [_, rsoPlatformId] = sgpServerId.split('_');
+      return rsoPlatformId;
+    }
+
+    return sgpServerId;
   }
 
   /**
@@ -84,24 +98,7 @@ export class SimpleSgpApi {
     count: number,
     tag?: string
   ): Promise<MatchHistorySgp> {
-    if (!this._entitlementToken) {
-      throw new Error('JWT token未设置');
-    }
-
     const sgpServer = this._getSgpServer(sgpServerId);
-    if (!sgpServer.matchHistory) {
-      throw new Error(`服务器 ${sgpServerId} 不支持战绩查询`);
-    }
-
-    console.log('SGP API请求:', {
-      serverId: sgpServerId,
-      serverUrl: sgpServer.matchHistory,
-      playerPuuid: playerPuuid.substring(0, 8) + '...',
-      start,
-      count,
-      tag,
-    });
-
     const params: any = {
       startIndex: start,
       count,
@@ -115,7 +112,7 @@ export class SimpleSgpApi {
     const response = await this._http.get<MatchHistorySgp>(
       `/match-history-query/v1/products/lol/player/${playerPuuid}/SUMMARY`,
       {
-        baseURL: sgpServer.matchHistory,
+        baseURL: sgpServer.matchHistory!,
         headers: {
           Authorization: `Bearer ${this._entitlementToken}`,
         },
@@ -127,20 +124,47 @@ export class SimpleSgpApi {
   }
 
   /**
+   * 批量查询召唤师信息
+   * @param puuids 召唤师 PUUID 列表
+   * @returns Promise<any>
+   */
+  async getSummonersByPuuids(
+    puuids: string[],
+    sgpServerId: string
+  ): Promise<SummonerLedge[]> {
+    try {
+      const sgpServer = this._getSgpServer(sgpServerId);
+      const subId = this._getSubId(sgpServerId);
+      const response = await this._http.post<SummonerLedge[]>(
+        `/summoner-ledge/v1/regions/${subId.toLocaleLowerCase()}/summoners/puuids`,
+        puuids,
+        {
+          baseURL: sgpServer.matchHistory!,
+          headers: {
+            Authorization: `Bearer ${this._entitlementToken}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.message.includes('404')) {
+        throw new Error(`批量查询召唤师失败: 端点不存在`);
+      }
+      if (error.message.includes('500')) {
+        throw new Error(`批量查询召唤师失败: 服务器错误`);
+      }
+      if (error.message.includes('400')) {
+        throw new Error(`批量查询召唤师失败: 无效的 PUUID 列表`);
+      }
+      throw new Error(`批量查询召唤师失败: ${error}`);
+    }
+  }
+
+  /**
    * 获取可用的服务器列表
    * @returns 服务器ID数组
    */
   getAvailableServers(): string[] {
     return Object.keys(this._sgpServerConfig.servers);
-  }
-
-  /**
-   * 检查服务器是否支持战绩查询
-   * @param sgpServerId SGP服务器ID
-   * @returns 是否支持
-   */
-  isMatchHistorySupported(sgpServerId: string): boolean {
-    const server = this._sgpServerConfig.servers[sgpServerId.toUpperCase()];
-    return !!(server && server.matchHistory);
   }
 }

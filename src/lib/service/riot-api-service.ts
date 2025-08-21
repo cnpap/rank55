@@ -57,34 +57,4 @@ export class RiotApiService extends BaseService {
       throw new Error(`查找玩家账户失败: ${error}`);
     }
   }
-
-  /**
-   * 批量查询召唤师信息
-   * @param puuids 召唤师 PUUID 列表
-   * @returns Promise<any>
-   */
-  async getSummonersByPuuids(puuids: string[]): Promise<SummonerLedge[]> {
-    try {
-      const endpoint = '/summoner-ledge/v1/regions/cq100/summoners/puuids';
-      const data = await this.makeRiotRequest<SummonerLedge[]>(
-        'POST',
-        endpoint,
-        {
-          body: puuids,
-        }
-      );
-      return data;
-    } catch (error: any) {
-      if (error.message.includes('404')) {
-        throw new Error(`批量查询召唤师失败: 端点不存在`);
-      }
-      if (error.message.includes('500')) {
-        throw new Error(`批量查询召唤师失败: 服务器错误`);
-      }
-      if (error.message.includes('400')) {
-        throw new Error(`批量查询召唤师失败: 无效的 PUUID 列表`);
-      }
-      throw new Error(`批量查询召唤师失败: ${error}`);
-    }
-  }
 }
