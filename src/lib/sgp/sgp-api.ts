@@ -23,13 +23,7 @@ export class SimpleSgpApi {
   constructor(config?: SgpServersConfig) {
     // 如果没有传入配置，使用默认导入的配置
     this._sgpServerConfig = config || (serverConfig as SgpServersConfig);
-    this._http = axios.create({
-      headers: {
-        'User-Agent':
-          'LeagueOfLegendsClient/14.13.596.7996 (rcp-be-lol-match-history)',
-      },
-      timeout: 12500,
-    });
+    this._http = axios.create();
   }
 
   setEntitlementToken(token: string | null) {

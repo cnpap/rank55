@@ -324,9 +324,13 @@ export abstract class BaseService {
           window.electronAPI &&
           window.electronAPI.lcuRequest
         ) {
+          if (isRiotApi) {
+            return window.electronAPI.riotRequest(method, endpoint, options);
+          } else {
+            return window.electronAPI.lcuRequest(method, endpoint, options);
+          }
           // 注意：这里可能需要扩展 electronAPI 以支持 riot request
           // 目前先使用现有的 lcuRequest，后续可能需要添加 riotRequest
-          return window.electronAPI.lcuRequest(method, endpoint, options);
         } else {
           throw new Error('无法找到可用的 LCU 客户端连接方式');
         }

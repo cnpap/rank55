@@ -15,7 +15,7 @@ describe('SummonerService - Riot API', () => {
       try {
         lcuClient = await LCUClient.create();
         summonerService = new SummonerService(lcuClient);
-        riotApiService = new RiotApiService();
+        riotApiService = new RiotApiService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过 Riot API 测试: ${error}`);
         return;

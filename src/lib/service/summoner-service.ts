@@ -52,25 +52,6 @@ export class SummonerService extends BaseService {
     return data;
   }
 
-  // 通过PUUID获取召唤师信息
-  async getSummonerByPUUID(puuid: string): Promise<SummonerData> {
-    try {
-      console.log('getSummonerByPUUID', puuid);
-      const endpoint = `/lol-summoner/v1/summoners-by-puuid/${puuid}`;
-      const data = await this.makeRequest<SummonerData>('GET', endpoint);
-      return data;
-    } catch (error: any) {
-      console.log('getSummonerByPUUID', error);
-      if (error.message.includes('404')) {
-        throw new Error(`根据PUUID获取召唤师失败: 召唤师不存在`);
-      }
-      if (error.message.includes('500')) {
-        throw new Error(`根据PUUID获取召唤师失败: 服务器错误`);
-      }
-      throw new Error(`根据PUUID获取召唤师失败: ${error}`);
-    }
-  }
-
   // 获取比赛历史 - 使用PUUID
   async getMatchHistory(
     puuid: string,

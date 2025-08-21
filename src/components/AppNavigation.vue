@@ -74,6 +74,10 @@ const handleSearch = async () => {
 const searchCurrentSummoner = async () => {
   try {
     const serverId = await sgpMatchService._inferCurrentUserServerId();
+    console.log(
+      `searchCurrentSummoner 输入: serverId=${serverId} fullGameName=${userStore.fullGameName}`
+    );
+
     await matchHistoryStore.searchSummonerByName(
       userStore.fullGameName,
       serverId!

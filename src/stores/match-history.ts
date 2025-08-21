@@ -8,6 +8,7 @@ import serverConfig from '../../public/config/league-servers.json';
 import { useRouter } from 'vue-router';
 import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
 import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
+import { useUserStore } from './user';
 
 // 简化的搜索结果接口 - 只包含基本信息
 export interface PuuidSearchResult {
@@ -25,6 +26,7 @@ export interface ServerOption {
 
 export const useMatchHistoryStore = defineStore('matchHistory', () => {
   const router = useRouter();
+  const userStore = useUserStore();
 
   // 只保留导航组件需要的状态
   const isSearching = ref(false);
@@ -89,8 +91,10 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     summonerName: string,
     serverId?: string
   ): Promise<void> => {
+    summonerName = summonerName.trim();
+
     // 验证用户ID格式
-    if (!validateUserIdFormat(summonerName.trim())) {
+    if (!validateUserIdFormat(summonerName)) {
       throw new Error(
         '召唤师名称格式不正确，请使用格式：召唤师名#标签（标签至少5位数字）'
       );
@@ -103,19 +107,28 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
 
     try {
       // 获取玩家 puuid
-      const playerAccountAlias = await riotApiService.lookupPlayerAccount(
-        summonerName.trim()
-      );
+      console.log(`搜索召唤师名称: ${summonerName}`);
 
+      const playerAccountAlias =
+        await riotApiService.lookupPlayerAccount(summonerName);
+
+      if (playerAccountAlias.puuid === userStore.currentUser!.puuid) {
+        // 跳转到 Home 页面，带上 puuid 和 serverId 参数
+        await router.push({
+          name: 'Home',
+          query: {
+            puuid: playerAccountAlias.puuid,
+            serverId: targetServerId,
+          },
+        });
+        return;
+      }
       // 获取召唤师信息（用于保存到历史记录）
-      const summoner = await summonerService.getSummonerByPUUID(
-        playerAccountAlias.puuid
-      );
+      const summoner = await summonerService.getSummonerByName(summonerName);
 
       // 添加到搜索历史（避免重复）
-      const trimmedName = summonerName.trim();
       const existingIndex = searchHistory.value.findIndex(
-        item => item.name === trimmedName && item.serverId === targetServerId
+        item => item.name === summonerName && item.serverId === targetServerId
       );
 
       if (existingIndex !== -1) {
@@ -126,7 +139,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       } else {
         // 如果不存在，添加新项到最前面
         searchHistory.value.unshift({
-          name: trimmedName,
+          name: summonerName,
           serverId: targetServerId,
           serverName:
             availableServers.value.find(server => server.id === targetServerId)

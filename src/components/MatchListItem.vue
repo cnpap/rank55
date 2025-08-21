@@ -6,10 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Coins, Sword, Shield } from 'lucide-vue-next';
 import MatchDetailView from './MatchDetailView.vue';
 import { staticAssets } from '@/assets/data-assets';
-// 新增导入
-import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { useMatchHistoryStore } from '@/stores/match-history';
+import { inject } from 'vue';
 
 interface Props {
   match: ProcessedMatch;
@@ -23,31 +22,15 @@ interface Emits {
 defineProps<Props>();
 defineEmits<Emits>();
 
-// 新增：路由和store
-const router = useRouter();
 const matchHistoryStore = useMatchHistoryStore();
-
+const serverId = inject<string>('serverId');
 // 新增：搜索玩家战绩函数
 const searchPlayerHistory = async (playerName: string) => {
   if (!playerName || playerName === '未知玩家') {
     toast.error('无法查询该玩家的战绩');
     return;
   }
-
-  try {
-    // 使用store的搜索功能
-    await matchHistoryStore.searchSummonerByName(playerName);
-
-    // 搜索成功后跳转到首页
-    if (router.currentRoute.value.name !== 'Home') {
-      router.push('/');
-    }
-
-    toast.success(`正在查询 ${playerName} 的战绩`);
-  } catch (error) {
-    console.error('搜索玩家失败:', error);
-    toast.error('搜索玩家失败，请重试');
-  }
+  await matchHistoryStore.searchSummonerByName(playerName, serverId);
 };
 </script>
 

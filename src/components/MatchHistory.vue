@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  provide,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
@@ -19,23 +27,26 @@ import type { RankedStats } from '@/types/ranked-stats';
 import type { Game } from '@/types/match-history-sgp';
 import { useUserStore } from '@/stores/user';
 import { useMatchHistoryStore } from '@/stores/match-history';
+import { RiotApiService } from '@/lib/service/riot-api-service';
 
 // 组件内部状态管理
 interface LocalSearchResult {
   summoner?: SummonerData;
   rankedStats?: RankedStats;
   matchHistory?: Game[];
-  serverId?: string;
   totalCount: number;
   error?: string;
 }
+
+const route = useRoute();
+const { serverId, puuid } = route.query as { serverId: string; puuid: string };
+provide('serverId', serverId);
 
 // 本地状态
 const searchResult = ref<LocalSearchResult>({
   summoner: undefined,
   rankedStats: undefined,
   matchHistory: undefined,
-  serverId: undefined,
   totalCount: 0,
   error: undefined,
 });
@@ -49,6 +60,7 @@ const matchHistoryStore = useMatchHistoryStore();
 
 // 服务实例
 const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
+const riotService = new RiotApiService();
 
 // 计算属性：从本地状态获取数据
 const currentSummoner = computed(() => searchResult.value.summoner);
@@ -85,7 +97,6 @@ const clearSearchResult = () => {
     summoner: undefined,
     rankedStats: undefined,
     matchHistory: undefined,
-    serverId: undefined,
     totalCount: 0,
     error: undefined,
   };
@@ -97,7 +108,6 @@ const setError = (error: string) => {
     summoner: undefined,
     rankedStats: undefined,
     matchHistory: undefined,
-    serverId: undefined,
     totalCount: 0,
     error,
   };
@@ -119,8 +129,8 @@ const loadMatchHistoryPage = async (tag: string): Promise<void> => {
 
   try {
     const sgpResult = await sgpMatchService.getServerMatchHistory(
-      searchResult.value.serverId,
-      searchResult.value.summoner.puuid,
+      serverId,
+      puuid,
       startIndex,
       targetPageSize,
       tag
@@ -353,22 +363,20 @@ onUnmounted(() => {
   observer = null;
 });
 
-const route = useRoute();
-
 // 根据路由参数获取数据
 const loadDataFromRoute = async (): Promise<void> => {
-  const puuid = route.query.puuid as string;
-  const serverId = route.query.serverId as string;
-
   if (isSearching.value) return;
   isSearching.value = true;
   clearSearchResult();
 
   try {
-    // 根据 puuid 获取召唤师信息
-    const summoner = await summonerService.getSummonerByID(
-      userStore.currentUser!.summonerId
-    );
+    let summoner: SummonerData;
+    if (puuid === userStore.currentUser?.puuid) {
+      summoner = userStore.currentUser as SummonerData;
+    } else {
+      const summoners = await riotService.getSummonersByPuuids([puuid]);
+      summoner = summoners[0] as unknown as SummonerData;
+    }
 
     // 获取排位数据
     const stats = await summonerService.getRankedStats(puuid);
@@ -385,7 +393,6 @@ const loadDataFromRoute = async (): Promise<void> => {
       summoner,
       rankedStats: stats,
       matchHistory: sgpResult.games,
-      serverId: sgpResult.serverId,
       totalCount: sgpResult.totalCount,
       error: undefined,
     });
@@ -399,17 +406,22 @@ const loadDataFromRoute = async (): Promise<void> => {
   }
 };
 
-// 监听路由变化
-watch(
-  () => route.query,
-  async () => {
-    await loadDataFromRoute();
-  },
-  { immediate: false }
-);
-
-// 组件挂载时根据路由参数加载数据
+// 移除 watch 逻辑，改为在组件挂载时执行
 onMounted(async () => {
+  if (sentinelRef.value) {
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        isSticky.value = !entry.isIntersecting;
+      },
+      {
+        threshold: 0,
+        rootMargin: '-40px 0px 0px 0px',
+      }
+    );
+    observer.observe(sentinelRef.value);
+  }
+
+  // 加载数据
   await loadDataFromRoute();
 });
 </script>

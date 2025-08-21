@@ -19,7 +19,12 @@ declare global {
       lcuRequest: (
         method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
         endpoint: string,
-        body?: any
+        options: RequestOptions = {}
+      ) => Promise<any>;
+      riotRequest: (
+        method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+        endpoint: string,
+        options: RequestOptions = {}
       ) => Promise<any>;
       lcuIsConnected: () => Promise<boolean>;
       // 新增：获取 LCU 凭据信息
