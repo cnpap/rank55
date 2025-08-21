@@ -14,15 +14,18 @@ import Loading from '@/components/Loading.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { navigationItems } from '@/config/navigation';
 import { SearchHistoryItem } from '@/storages/storage-use';
+import { useUserStore } from '@/stores/user';
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore();
 
 // 当前激活的路由
 const currentRoute = computed(() => route.name);
 
 // 使用 Pinia store
 const matchHistoryStore = useMatchHistoryStore();
+const { sgpMatchService } = matchHistoryStore.getServices();
 
 // 本地搜索状态
 const summonerName = ref<SearchHistoryItem>({
@@ -54,28 +57,31 @@ const navigateTo = (path: string) => {
   router.push(path);
 };
 
-// 搜索功能
+// 搜索功能 - 简化为只调用 store 方法
 const handleSearch = async () => {
   if (!summonerName.value.name.trim()) return;
 
-  await matchHistoryStore.searchSummonerByName(
-    summonerName.value.name,
-    selectedServerId.value
-  );
-
-  // 搜索成功后跳转到首页
-  if (route.name !== 'Home') {
-    router.push('/');
+  try {
+    await matchHistoryStore.searchSummonerByName(summonerName.value.name);
+    // store 内部会处理路由跳转
+  } catch (error: any) {
+    console.error('搜索失败:', error);
+    // 这里可以添加错误提示
   }
 };
 
-// 搜索当前登录的召唤师
+// 搜索当前登录的召唤师 - 简化为只调用 store 方法
 const searchCurrentSummoner = async () => {
-  await matchHistoryStore.searchCurrentSummoner();
-
-  // 搜索成功后跳转到首页
-  if (route.name !== 'Home') {
-    router.push('/');
+  try {
+    const serverId = await sgpMatchService._inferCurrentUserServerId();
+    await matchHistoryStore.searchSummonerByName(
+      userStore.fullGameName,
+      serverId!
+    );
+    // store 内部会处理路由跳转
+  } catch (error: any) {
+    console.error('搜索当前召唤师失败:', error);
+    // 这里可以添加错误提示
   }
 };
 

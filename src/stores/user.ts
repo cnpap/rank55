@@ -6,6 +6,7 @@ export const useUserStore = defineStore('user', () => {
   // 简化状态 - 主要作为数据存储
   const currentUser = ref<SummonerData | null>(null);
   const errorMessage = ref<string | null>(null);
+  const serverId = ref<string>('');
 
   // 计算属性
   const isLoggedIn = computed(() => !!currentUser.value);
@@ -45,10 +46,15 @@ export const useUserStore = defineStore('user', () => {
     errorMessage.value = null;
   };
 
+  const setServerId = (id: string) => {
+    serverId.value = id;
+  };
+
   return {
     // 状态
     currentUser,
     errorMessage,
+    serverId,
 
     // 计算属性
     isLoggedIn,
@@ -63,5 +69,6 @@ export const useUserStore = defineStore('user', () => {
     setError,
     clearError,
     clearState,
+    setServerId,
   };
 });

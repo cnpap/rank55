@@ -4,24 +4,23 @@ import { User } from 'lucide-vue-next';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import AppNavigation from '@/components/AppNavigation.vue';
 import WindowControls from '@/components/WindowControls.vue';
-import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
+import { useUserStore } from '@/stores/user';
 import { staticAssets } from '@/assets/data-assets';
+import { SummonerService } from '@/lib/service/summoner-service';
 
 // 检查是否在 Electron 环境中
 const isElectron = ref(false);
 
-// 使用 auto-accept-game hook 获取用户信息
-const { currentUser, isConnected, errorMessage } = useAutoAcceptGame();
+// 使用 user store 获取用户信息
+const userStore = useUserStore();
+let summonerService: SummonerService = new SummonerService();
 
-// 用户信息计算属性
-const isLoggedIn = computed(() => !!currentUser.value && isConnected.value);
-const displayName = computed(() => {
-  if (!currentUser.value) return '';
-  return currentUser.value.displayName || currentUser.value.gameName || '';
-});
-const profileIconId = computed(() => currentUser.value?.profileIconId || 0);
-const summonerLevel = computed(() => currentUser.value?.summonerLevel || 0);
-const hasUserError = computed(() => !!errorMessage.value || !isConnected.value);
+// 用户信息计算属性 - 直接使用 store 中的计算属性
+const isLoggedIn = computed(() => userStore.isLoggedIn);
+const displayName = computed(() => userStore.displayName);
+const profileIconId = computed(() => userStore.profileIconId);
+const summonerLevel = computed(() => userStore.summonerLevel);
+const hasUserError = computed(() => userStore.hasError);
 
 // 获取召唤师头像URL
 const profileIconUrl = computed(() => {
@@ -29,13 +28,9 @@ const profileIconUrl = computed(() => {
 });
 
 onMounted(async () => {
-  // 检查是否有 electronAPI
   isElectron.value = !!(window as any).electronAPI;
-
-  if (!isElectron.value) {
-    // 在浏览器环境下也可以测试
-    isElectron.value = true;
-  }
+  const summoner = await summonerService.getCurrentSummoner();
+  userStore.setUser(summoner);
 });
 
 // 双击拖拽区域触发最大化/还原

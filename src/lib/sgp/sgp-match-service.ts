@@ -11,8 +11,7 @@ interface SgpMatchHistoryResult {
 }
 
 interface MatchHistoryOptions {
-  serverId?: string;
-  isCurrentUser?: boolean;
+  serverId: string;
   tag?: string; // 添加tag选项
 }
 
@@ -48,7 +47,7 @@ export class SgpMatchService extends BaseService {
   /**
    * 自动推断当前用户的服务器ID
    */
-  private async _inferCurrentUserServerId(): Promise<string | undefined> {
+  async _inferCurrentUserServerId(): Promise<string | undefined> {
     try {
       // 前端环境：通过 electronAPI 获取凭据
       if (
@@ -112,7 +111,7 @@ export class SgpMatchService extends BaseService {
     playerPuuid: string,
     start: number = 0,
     count: number = 20,
-    options: MatchHistoryOptions = {}
+    options: MatchHistoryOptions
   ): Promise<SgpMatchHistoryResult> {
     // 获取token
     const token = await this._getEntitlementToken();
@@ -122,11 +121,6 @@ export class SgpMatchService extends BaseService {
 
     // 确定使用的服务器ID
     let serverId = options.serverId;
-
-    // 如果没有手动指定服务器ID，且是当前用户查询，则尝试自动推断
-    if (!serverId && options.isCurrentUser) {
-      serverId = await this._inferCurrentUserServerId();
-    }
 
     // 如果仍然没有服务器ID，抛出错误
     if (!serverId) {
@@ -145,7 +139,6 @@ export class SgpMatchService extends BaseService {
       playerPuuid: playerPuuid.substring(0, 8) + '...',
       start,
       count,
-      isCurrentUser: options.isCurrentUser,
       tokenPrefix: token.substring(0, 20) + '...',
     });
 
@@ -192,18 +185,6 @@ export class SgpMatchService extends BaseService {
       });
       throw error;
     }
-  }
-
-  async getCurrentUserMatchHistory(
-    playerPuuid: string,
-    start: number = 0,
-    count: number = 20,
-    tag?: string
-  ): Promise<SgpMatchHistoryResult> {
-    return this.getMatchHistory(playerPuuid, start, count, {
-      isCurrentUser: true,
-      tag,
-    });
   }
 
   async getServerMatchHistory(

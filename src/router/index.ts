@@ -22,7 +22,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '战绩查询',
       icon: '📊',
-      keepAlive: true,
+      // keepAlive: true,
     },
   },
   {

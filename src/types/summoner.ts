@@ -13,7 +13,7 @@ export interface SummonerLedge {
   lastGameDate: number;
   nameChangeFlag: boolean;
   unnamed: boolean;
-  privacy: string;
+  privacy: 'PRIVATE' | 'PUBLIC';
   expToNextLevel: number;
 }
 
