@@ -1,146 +1,91 @@
 <script setup lang="ts">
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  provide,
-  reactive,
-  ref,
-  watch,
-} from 'vue';
+import { computed, onMounted, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
-import {
-  ChampionState,
-  GameModesFilter,
-  MatchPlayer,
-  MatchTeam,
-  ProcessedMatch,
-} from '@/types/match-history-ui';
-import { ChampionData } from '@/types/champion';
-import { formatGameDuration, getQueueName } from '@/lib/rank-helpers';
 import MatchHistoryView from '@/components/MatchHistoryView.vue';
 import MatchHistoryHeader from '@/components/MatchHistoryHeader.vue';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-import type { Game } from '@/types/match-history-sgp';
 import { useUserStore } from '@/stores/user';
 import { useMatchHistoryStore } from '@/stores/match-history';
-import { RiotApiService } from '@/lib/service/riot-api-service';
-
-// 组件内部状态管理
-interface LocalSearchResult {
-  summoner?: SummonerData;
-  rankedStats?: RankedStats;
-  matchHistory?: Game[];
-  totalCount: number;
-  error?: string;
-}
+import { useMatchHistoryState } from '@/lib/composables/useMatchHistoryState';
+import { useMatchHistoryUI } from '@/lib/composables/useMatchHistoryUI';
+import { MatchDataProcessor } from '@/lib/match-data-processor';
+import { MatchDataLoader } from '@/lib/match-data-loader';
 
 const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
 provide('serverId', serverId);
 
-// 本地状态
-const searchResult = ref<LocalSearchResult>({
-  summoner: undefined,
-  rankedStats: undefined,
-  matchHistory: undefined,
-  totalCount: 0,
-  error: undefined,
-});
-
-const isSearching = ref(false);
-const currentPage = ref(1);
-const pageSize = ref(20);
-const expandedMatches = ref(new Set<number>());
 const userStore = useUserStore();
 const matchHistoryStore = useMatchHistoryStore();
 
-// 服务实例
+// 使用解耦的状态管理
+const {
+  searchResult,
+  isSearching,
+  currentPage,
+  pageSize,
+  expandedMatches,
+  championState,
+  gameModesFilter,
+  currentSummoner,
+  rankedStats,
+  matchHistory,
+  errorMessage,
+  hasAnyData,
+  showMatchHistory,
+  hasData,
+  hasSummoner,
+  isLoading,
+  clearSearchResult,
+  setError,
+  setSearchResult,
+  updateGameModesFilter,
+} = useMatchHistoryState();
+
+// 使用解耦的UI交互逻辑
+const {
+  isSticky,
+  sentinelRef,
+  toggleMatchDetail,
+  handlePageChange,
+  handlePageSizeChange,
+} = useMatchHistoryUI();
+
+// 初始化数据加载器
 const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
-const riotService = new RiotApiService();
+const dataLoader = new MatchDataLoader(summonerService, sgpMatchService);
 
-// 计算属性：从本地状态获取数据
-const currentSummoner = computed(() => searchResult.value.summoner);
-const rankedStats = computed(() => searchResult.value.rankedStats);
-const matchHistory = computed(() => searchResult.value.matchHistory);
-const errorMessage = computed(() => searchResult.value.error);
-const hasAnyData = computed(
-  () => !!(currentSummoner.value || errorMessage.value)
-);
-const showMatchHistory = computed(() => {
-  return !!(currentSummoner.value && rankedStats.value && matchHistory.value);
+// 使用解耦的数据处理逻辑
+const filteredMatchHistory = computed(() => {
+  return MatchDataProcessor.processMatchHistory(
+    matchHistory.value || [],
+    currentSummoner.value!,
+    championState.championNames,
+    expandedMatches.value
+  );
 });
-
-// 计算属性：数据状态
-const hasData = computed(() => Boolean(matchHistory.value?.length));
-const hasSummoner = computed(() => Boolean(currentSummoner.value));
-const isLoading = computed(() => championState.isLoading);
-
-// 英雄数据状态
-const championState = reactive<ChampionState>({
-  champions: [] as ChampionData[],
-  championNames: new Map<string, string>(),
-  isLoading: false,
-});
-
-// 游戏模式过滤选项
-const gameModesFilter = reactive<GameModesFilter>({
-  selectedTag: 'all',
-});
-
-// 清空搜索结果
-const clearSearchResult = () => {
-  searchResult.value = {
-    summoner: undefined,
-    rankedStats: undefined,
-    matchHistory: undefined,
-    totalCount: 0,
-    error: undefined,
-  };
-};
-
-// 设置错误信息
-const setError = (error: string) => {
-  searchResult.value = {
-    summoner: undefined,
-    rankedStats: undefined,
-    matchHistory: undefined,
-    totalCount: 0,
-    error,
-  };
-};
-
-// 设置搜索结果
-const setSearchResult = (result: LocalSearchResult) => {
-  searchResult.value = result;
-};
 
 // 加载分页数据
 const loadMatchHistoryPage = async (tag: string): Promise<void> => {
   if (isSearching.value || !searchResult.value.summoner) return;
 
-  const targetPageSize = pageSize.value;
-  const startIndex = (currentPage.value - 1) * targetPageSize;
-
   isSearching.value = true;
 
   try {
-    const sgpResult = await sgpMatchService.getServerMatchHistory(
+    const result = await dataLoader.loadMatchHistoryPage(
       serverId,
       puuid,
-      startIndex,
-      targetPageSize,
+      currentPage.value,
+      pageSize.value,
       tag
     );
 
     // 更新搜索结果
     searchResult.value = {
       ...searchResult.value,
-      matchHistory: sgpResult.games,
-      totalCount: sgpResult.totalCount,
+      matchHistory: result.games,
+      totalCount: result.totalCount,
     };
   } catch (error: any) {
     console.error('加载分页数据失败:', error);
@@ -150,219 +95,6 @@ const loadMatchHistoryPage = async (tag: string): Promise<void> => {
   }
 };
 
-// 过滤后的战绩数据
-const filteredMatchHistory = computed((): ProcessedMatch[] => {
-  if (!matchHistory.value || !currentSummoner.value) {
-    return [];
-  }
-
-  const processedMatches: ProcessedMatch[] = [];
-
-  for (const game of matchHistory.value) {
-    const gameInfo = game.json;
-
-    // 找到当前玩家的参与者数据
-    const currentPlayer = gameInfo.participants.find(
-      participant => participant.puuid === currentSummoner.value?.puuid
-    );
-
-    if (!currentPlayer) continue;
-
-    const kills = currentPlayer.kills;
-    const deaths = currentPlayer.deaths;
-    const assists = currentPlayer.assists;
-    const kda = (kills + assists) / Math.max(deaths, 1);
-
-    const cs =
-      currentPlayer.totalMinionsKilled +
-      currentPlayer.totalAllyJungleMinionsKilled +
-      currentPlayer.totalEnemyJungleMinionsKilled;
-
-    const items = [
-      currentPlayer.item0,
-      currentPlayer.item1,
-      currentPlayer.item2,
-      currentPlayer.item3,
-      currentPlayer.item4,
-      currentPlayer.item5,
-      currentPlayer.item6,
-    ].filter(item => item && item !== 0) as number[];
-
-    const championName =
-      championState.championNames.get(String(currentPlayer.championId)) ||
-      currentPlayer.championName ||
-      `英雄${currentPlayer.championId}`;
-
-    // 处理所有玩家信息
-    const allPlayers: MatchPlayer[] = gameInfo.participants.map(participant => {
-      const playerKills = participant.kills;
-      const playerDeaths = participant.deaths;
-      const playerAssists = participant.assists;
-      const playerKda =
-        (playerKills + playerAssists) / Math.max(playerDeaths, 1);
-
-      const playerCs =
-        participant.totalMinionsKilled +
-        participant.totalAllyJungleMinionsKilled +
-        participant.totalEnemyJungleMinionsKilled;
-
-      const playerItems = [
-        participant.item0,
-        participant.item1,
-        participant.item2,
-        participant.item3,
-        participant.item4,
-        participant.item5,
-        participant.item6,
-      ].filter(item => item && item !== 0) as number[];
-
-      const playerChampionName =
-        championState.championNames.get(String(participant.championId)) ||
-        participant.championName ||
-        `英雄${participant.championId}`;
-
-      const displayName =
-        participant.riotIdGameName && participant.riotIdTagline
-          ? `${participant.riotIdGameName}#${participant.riotIdTagline}`
-          : participant.summonerName || 'Unknown';
-
-      return {
-        puuid: participant.puuid,
-        riotIdGameName: participant.riotIdGameName || '',
-        riotIdTagline: participant.riotIdTagline || '',
-        displayName,
-        championId: participant.championId,
-        championName: playerChampionName,
-        teamId: participant.teamId,
-        teamPosition:
-          participant.teamPosition ||
-          participant.individualPosition ||
-          'UNKNOWN',
-        isCurrentPlayer: participant.puuid === currentSummoner.value?.puuid,
-        kda: {
-          kills: playerKills,
-          deaths: playerDeaths,
-          assists: playerAssists,
-          ratio: playerKda,
-        },
-        stats: {
-          level: participant.champLevel,
-          cs: playerCs,
-          gold: participant.goldEarned,
-          damage: participant.totalDamageDealtToChampions,
-          damageTaken: participant.totalDamageTaken,
-        },
-        items: playerItems,
-        spells: [participant.spell1Id, participant.spell2Id],
-        runes: [
-          participant.perks?.styles?.[0]?.style || 0,
-          participant.perks?.styles?.[1]?.style || 0,
-        ],
-      };
-    });
-
-    // 按队伍分组
-    const blueTeam: MatchTeam = {
-      teamId: 100,
-      win: gameInfo.teams.find(t => t.teamId === 100)?.win || false,
-      players: allPlayers.filter(p => p.teamId === 100),
-    };
-
-    const redTeam: MatchTeam = {
-      teamId: 200,
-      win: gameInfo.teams.find(t => t.teamId === 200)?.win || false,
-      players: allPlayers.filter(p => p.teamId === 200),
-    };
-
-    processedMatches.push({
-      gameId: gameInfo.gameId,
-      championId: currentPlayer.championId,
-      championName,
-      result: currentPlayer.win ? 'victory' : 'defeat',
-      queueType: getQueueName(gameInfo.queueId),
-      queueId: gameInfo.queueId,
-      duration: formatGameDuration(gameInfo.gameDuration),
-      createdAt: gameInfo.gameCreation,
-      kda: {
-        kills,
-        deaths,
-        assists,
-        ratio: kda,
-      },
-      stats: {
-        cs,
-        gold: currentPlayer.goldEarned,
-        damage: currentPlayer.totalDamageDealtToChampions,
-        damageTaken: currentPlayer.totalDamageTaken,
-        level: currentPlayer.champLevel,
-      },
-      items,
-      spells: [currentPlayer.spell1Id, currentPlayer.spell2Id],
-      runes: [
-        currentPlayer.perks?.styles?.[0]?.style || 0,
-        currentPlayer.perks?.styles?.[1]?.style || 0,
-      ],
-      expanded: expandedMatches.value.has(gameInfo.gameId),
-      teams: [blueTeam, redTeam],
-      allPlayers,
-    });
-  }
-
-  return processedMatches;
-});
-
-// 更新游戏模式过滤器
-function updateGameModesFilter(newFilter: GameModesFilter) {
-  Object.assign(gameModesFilter, newFilter);
-  // 触发重新加载数据
-  loadMatchHistoryPage(newFilter.selectedTag);
-}
-
-// 控制对局展开/收起状态
-function toggleMatchDetail(gameId: number) {
-  if (expandedMatches.value.has(gameId)) {
-    expandedMatches.value.delete(gameId);
-  } else {
-    expandedMatches.value.add(gameId);
-  }
-}
-
-// 添加分页处理方法
-function handlePageChange(page: number) {
-  currentPage.value = page;
-  loadMatchHistoryPage(gameModesFilter.selectedTag);
-}
-
-function handlePageSizeChange(size: number) {
-  pageSize.value = size;
-  loadMatchHistoryPage(gameModesFilter.selectedTag);
-}
-
-// 添加吸附状态监测
-const isSticky = ref(false);
-const sentinelRef = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
-
-onMounted(() => {
-  if (sentinelRef.value) {
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        isSticky.value = !entry.isIntersecting;
-      },
-      {
-        threshold: 0,
-        rootMargin: '-40px 0px 0px 0px',
-      }
-    );
-    observer.observe(sentinelRef.value);
-  }
-});
-
-onUnmounted(() => {
-  observer?.disconnect();
-  observer = null;
-});
-
 // 根据路由参数获取数据
 const loadDataFromRoute = async (): Promise<void> => {
   if (isSearching.value) return;
@@ -370,33 +102,14 @@ const loadDataFromRoute = async (): Promise<void> => {
   clearSearchResult();
 
   try {
-    let summoner: SummonerData;
-    if (puuid === userStore.currentUser?.puuid) {
-      summoner = userStore.currentUser as SummonerData;
-    } else {
-      const summoners = await riotService.getSummonersByPuuids([puuid]);
-      summoner = summoners[0] as unknown as SummonerData;
-    }
-
-    // 获取排位数据
-    const stats = await summonerService.getRankedStats(puuid);
-
-    // 获取战绩数据
-    const sgpResult = await sgpMatchService.getServerMatchHistory(
+    const result = await dataLoader.loadCompleteMatchData(
       serverId,
       puuid,
-      0,
-      pageSize.value
+      pageSize.value,
+      userStore.currentUser!
     );
 
-    setSearchResult({
-      summoner,
-      rankedStats: stats,
-      matchHistory: sgpResult.games,
-      totalCount: sgpResult.totalCount,
-      error: undefined,
-    });
-
+    setSearchResult(result);
     currentPage.value = 1;
   } catch (error: any) {
     console.error('获取数据失败:', error);
@@ -406,22 +119,38 @@ const loadDataFromRoute = async (): Promise<void> => {
   }
 };
 
-// 移除 watch 逻辑，改为在组件挂载时执行
-onMounted(async () => {
-  if (sentinelRef.value) {
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        isSticky.value = !entry.isIntersecting;
-      },
-      {
-        threshold: 0,
-        rootMargin: '-40px 0px 0px 0px',
-      }
-    );
-    observer.observe(sentinelRef.value);
-  }
+// 更新游戏模式过滤器
+function handleUpdateGameModesFilter(newFilter: any) {
+  updateGameModesFilter(newFilter);
+  loadMatchHistoryPage(newFilter.selectedTag);
+}
 
-  // 加载数据
+// 处理对局详情切换
+function handleToggleMatchDetail(gameId: number) {
+  toggleMatchDetail(gameId, expandedMatches.value);
+}
+
+// 处理分页变化
+function handlePageChangeWrapper(page: number) {
+  handlePageChange(
+    page,
+    currentPage,
+    loadMatchHistoryPage,
+    gameModesFilter.selectedTag
+  );
+}
+
+function handlePageSizeChangeWrapper(size: number) {
+  handlePageSizeChange(
+    size,
+    pageSize,
+    loadMatchHistoryPage,
+    gameModesFilter.selectedTag
+  );
+}
+
+// 组件挂载时加载数据
+onMounted(async () => {
   await loadDataFromRoute();
 });
 </script>
@@ -493,9 +222,9 @@ onMounted(async () => {
                     :page-size="pageSize"
                     :total-matches="searchResult.totalCount"
                     :is-sticky="isSticky"
-                    @update:model-value="updateGameModesFilter"
-                    @update:current-page="handlePageChange"
-                    @update:page-size="handlePageSizeChange"
+                    @update:model-value="handleUpdateGameModesFilter"
+                    @update:current-page="handlePageChangeWrapper"
+                    @update:page-size="handlePageSizeChangeWrapper"
                   />
                 </div>
                 <!-- 历史战绩 -->
@@ -510,10 +239,10 @@ onMounted(async () => {
                     :current-page="currentPage"
                     :page-size="pageSize"
                     :total-matches="searchResult.totalCount"
-                    @update:game-modes-filter="updateGameModesFilter"
-                    @toggle-match-detail="toggleMatchDetail"
-                    @update:current-page="handlePageChange"
-                    @update:page-size="handlePageSizeChange"
+                    @update:game-modes-filter="handleUpdateGameModesFilter"
+                    @toggle-match-detail="handleToggleMatchDetail"
+                    @update:current-page="handlePageChangeWrapper"
+                    @update:page-size="handlePageSizeChangeWrapper"
                   />
                 </div>
               </div>
