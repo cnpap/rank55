@@ -5,7 +5,7 @@ import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
 import MatchHistoryView from '@/components/MatchHistoryView.vue';
 import MatchHistoryHeader from '@/components/MatchHistoryHeader.vue';
-import { useUserStore } from '@/stores/user';
+import { useClientUserStore } from '@/stores/client-user';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { useMatchHistoryState } from '@/lib/composables/useMatchHistoryState';
 import { useMatchHistoryUI } from '@/lib/composables/useMatchHistoryUI';
@@ -16,7 +16,7 @@ const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
 provide('serverId', serverId);
 
-const userStore = useUserStore();
+const userStore = useClientUserStore();
 const matchHistoryStore = useMatchHistoryStore();
 
 // 使用解耦的状态管理
@@ -54,7 +54,13 @@ const {
 
 // 初始化数据加载器
 const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
-const dataLoader = new MatchDataLoader(summonerService, sgpMatchService);
+const dataLoader = new MatchDataLoader(
+  summonerService,
+  sgpMatchService,
+  userStore.user!,
+  userStore.serverId,
+  serverId
+);
 
 // 使用解耦的数据处理逻辑
 const filteredMatchHistory = computed(() => {
@@ -103,10 +109,8 @@ const loadDataFromRoute = async (): Promise<void> => {
 
   try {
     const result = await dataLoader.loadCompleteMatchData(
-      serverId,
       puuid,
-      pageSize.value,
-      userStore.currentUser!
+      pageSize.value
     );
 
     setSearchResult(result);

@@ -14,11 +14,11 @@ import Loading from '@/components/Loading.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { navigationItems } from '@/config/navigation';
 import { SearchHistoryItem } from '@/storages/storage-use';
-import { useUserStore } from '@/stores/user';
+import { useClientUserStore } from '@/stores/client-user';
 
 const route = useRoute();
 const router = useRouter();
-const userStore = useUserStore();
+const userStore = useClientUserStore();
 
 // 当前激活的路由
 const currentRoute = computed(() => route.name);

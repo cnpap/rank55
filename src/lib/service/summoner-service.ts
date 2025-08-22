@@ -52,6 +52,13 @@ export class SummonerService extends BaseService {
     return data;
   }
 
+  // 通过召唤师 accountId 获取召唤师信息
+  async getSummonerByAccountID(accountID: number): Promise<SummonerData> {
+    const endpoint = `/lol-summoner/v1/summoners/account/${accountID}`;
+    const data = await this.makeRequest<SummonerData>('GET', endpoint);
+    return data;
+  }
+
   // 获取排位统计
   async getRankedStats(puuid: string): Promise<RankedStats> {
     const endpoint = `/lol-ranked/v1/ranked-stats/${puuid}`;

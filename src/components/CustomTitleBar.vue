@@ -4,16 +4,18 @@ import { User } from 'lucide-vue-next';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import AppNavigation from '@/components/AppNavigation.vue';
 import WindowControls from '@/components/WindowControls.vue';
-import { useUserStore } from '@/stores/user';
+import { useClientUserStore } from '@/stores/client-user';
 import { staticAssets } from '@/assets/data-assets';
 import { SummonerService } from '@/lib/service/summoner-service';
+import { useMatchHistoryStore } from '@/stores/match-history';
 
 // 检查是否在 Electron 环境中
 const isElectron = ref(false);
 
 // 使用 user store 获取用户信息
-const userStore = useUserStore();
-let summonerService: SummonerService = new SummonerService();
+const userStore = useClientUserStore();
+const matchHistoryStore = useMatchHistoryStore();
+const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
 
 // 用户信息计算属性 - 直接使用 store 中的计算属性
 const isLoggedIn = computed(() => userStore.isLoggedIn);
@@ -31,6 +33,8 @@ onMounted(async () => {
   isElectron.value = !!(window as any).electronAPI;
   const summoner = await summonerService.getCurrentSummoner();
   userStore.setUser(summoner);
+  const serverId = await sgpMatchService._inferCurrentUserServerId();
+  userStore.setServerId(serverId!);
 });
 
 // 双击拖拽区域触发最大化/还原

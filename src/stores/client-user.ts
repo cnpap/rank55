@@ -2,33 +2,33 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { SummonerData } from '@/types/summoner';
 
-export const useUserStore = defineStore('user', () => {
+export const useClientUserStore = defineStore('clientUser', () => {
   // 简化状态 - 主要作为数据存储
-  const currentUser = ref<SummonerData | null>(null);
+  const user = ref<SummonerData | null>(null);
   const errorMessage = ref<string | null>(null);
   const serverId = ref<string>('');
 
   // 计算属性
-  const isLoggedIn = computed(() => !!currentUser.value);
+  const isLoggedIn = computed(() => !!user.value);
   const displayName = computed(() => {
-    if (!currentUser.value) return '';
-    return currentUser.value.displayName || currentUser.value.gameName || '';
+    if (!user.value) return '';
+    return user.value.displayName || user.value.gameName || '';
   });
   const fullGameName = computed(() => {
-    if (!currentUser.value) return '';
-    if (currentUser.value.gameName && currentUser.value.tagLine) {
-      return `${currentUser.value.gameName}#${currentUser.value.tagLine}`;
+    if (!user.value) return '';
+    if (user.value.gameName && user.value.tagLine) {
+      return `${user.value.gameName}#${user.value.tagLine}`;
     }
     return displayName.value;
   });
-  const profileIconId = computed(() => currentUser.value?.profileIconId || 0);
-  const summonerLevel = computed(() => currentUser.value?.summonerLevel || 0);
+  const profileIconId = computed(() => user.value?.profileIconId || 0);
+  const summonerLevel = computed(() => user.value?.summonerLevel || 0);
   const hasError = computed(() => !!errorMessage.value);
 
   // 简化方法
-  const setUser = (user: SummonerData | null) => {
-    currentUser.value = user;
-    if (user) {
+  const setUser = (newUser: SummonerData | null) => {
+    user.value = newUser;
+    if (newUser) {
       errorMessage.value = null;
     }
   };
@@ -42,7 +42,7 @@ export const useUserStore = defineStore('user', () => {
   };
 
   const clearState = () => {
-    currentUser.value = null;
+    user.value = null;
     errorMessage.value = null;
   };
 
@@ -52,9 +52,9 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     // 状态
-    currentUser,
-    errorMessage,
+    user,
     serverId,
+    errorMessage,
 
     // 计算属性
     isLoggedIn,

@@ -21,7 +21,7 @@ export class RiotApiService extends BaseService {
   async lookupPlayerAccount(
     gameName: string,
     tagLine?: string
-  ): Promise<PlayerAccountAlias> {
+  ): Promise<PlayerAccountAlias[]> {
     if (!tagLine) {
       // # 号分割
       const parts = gameName.split('#');
@@ -36,7 +36,7 @@ export class RiotApiService extends BaseService {
     }
     try {
       const endpoint = '/player-account/aliases/v1/lookup';
-      const data = await this.makeRiotRequest<PlayerAccountAlias>(
+      const data = await this.makeRiotRequest<PlayerAccountAlias[]>(
         'GET',
         endpoint,
         {
