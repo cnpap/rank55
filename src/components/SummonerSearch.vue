@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,10 +11,13 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import Loading from '@/components/Loading.vue';
+import SearchHistory from '@/components/SearchHistory.vue';
+import FriendsList from '@/components/FriendsList.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { SearchHistoryItem } from '@/storages/storage-use';
 import { useClientUserStore } from '@/stores/client-user';
-import { Clock, Users, Search, UserCheck } from 'lucide-vue-next';
+import { FriendService, Friend } from '@/lib/service/friend-service';
+import { SimpleFriend } from '@/types/friend';
 
 // Props 定义
 interface Props {
@@ -32,21 +35,8 @@ const props = withDefaults(defineProps<Props>(), {
   maxHistoryItems: 5,
 });
 
-// Emits 定义
-interface Emits {
-  // 搜索开始事件
-  searchStart: [summonerName: string, serverId: string];
-  // 搜索成功事件
-  searchSuccess: [result: any];
-  // 搜索失败事件
-  searchError: [error: string];
-}
-
-const emit = defineEmits<Emits>();
-
 const userStore = useClientUserStore();
 const matchHistoryStore = useMatchHistoryStore();
-const { sgpMatchService } = matchHistoryStore.getServices();
 
 // 弹出框状态
 const isDropdownOpen = ref(false);
@@ -60,36 +50,62 @@ const summonerName = ref<SearchHistoryItem>({
   puuid: '',
 });
 
-// 模拟好友列表数据（实际项目中应该从API获取）
-const mockFriends = ref([
-  {
-    id: '1',
-    name: 'Player1#1234',
-    displayName: 'Player1',
-    tagLine: '1234',
-    isOnline: true,
-    serverId: 'kr',
-    serverName: '韩服',
-  },
-  {
-    id: '2',
-    name: 'Player2#5678',
-    displayName: 'Player2',
-    tagLine: '5678',
-    isOnline: false,
-    serverId: 'na1',
-    serverName: '北美',
-  },
-  {
-    id: '3',
-    name: 'Player3#9999',
-    displayName: 'Player3',
-    tagLine: '9999',
-    isOnline: true,
-    serverId: 'euw1',
-    serverName: '欧西',
-  },
-]);
+// 好友服务和数据
+const friendService = ref<FriendService | null>(null);
+const friends = ref<Friend[]>([]);
+const isLoadingFriends = ref(false);
+// 添加定时器引用
+const friendsRefreshTimer = ref<NodeJS.Timeout | null>(null);
+
+// 初始化好友服务
+const initFriendService = async () => {
+  try {
+    friendService.value = new FriendService();
+    await loadFriends();
+    // 启动定时刷新
+    startFriendsRefresh();
+  } catch (error) {
+    console.warn('无法连接到LOL客户端，好友功能不可用:', error);
+  }
+};
+
+// 加载好友列表
+const loadFriends = async () => {
+  if (!friendService.value) return;
+
+  try {
+    isLoadingFriends.value = true;
+    friends.value = await friendService.value.getOnlineFriends();
+  } catch (error) {
+    console.error('获取好友列表失败:', error);
+    friends.value = [];
+  } finally {
+    isLoadingFriends.value = false;
+  }
+};
+
+// 启动定时刷新好友列表
+const startFriendsRefresh = () => {
+  // 清除现有定时器
+  if (friendsRefreshTimer.value) {
+    clearInterval(friendsRefreshTimer.value);
+  }
+
+  // 每30秒刷新一次好友列表
+  friendsRefreshTimer.value = setInterval(() => {
+    if (friendService.value) {
+      loadFriends();
+    }
+  }, 30000);
+};
+
+// 停止定时刷新
+const stopFriendsRefresh = () => {
+  if (friendsRefreshTimer.value) {
+    clearInterval(friendsRefreshTimer.value);
+    friendsRefreshTimer.value = null;
+  }
+};
 
 // 计算属性
 const isSearching = computed(() => matchHistoryStore.isSearching);
@@ -108,48 +124,42 @@ const selectedServerId = computed({
   },
 });
 
-// 在线好友
-const onlineFriends = computed(() =>
-  mockFriends.value.filter(friend => friend.isOnline)
-);
+// 转换好友数据为简化格式
+const simplifiedFriends = computed(() => {
+  return friends.value.map(friend => ({
+    id: friend.id,
+    gameName: friend.gameName,
+    tagLine: friend.gameTag,
+    isOnline: ['online', 'chat', 'mobile', 'spectating', 'dnd'].includes(
+      friend.availability
+    ),
+    isInGame: friend.lol?.gameStatus === 'inGame',
+  }));
+});
 
 // 搜索功能
 const handleSearch = async () => {
   if (!summonerName.value.name.trim()) return;
 
   try {
-    emit('searchStart', summonerName.value.name, selectedServerId.value);
     await matchHistoryStore.searchSummonerByName(summonerName.value.name);
-    emit('searchSuccess', {
-      name: summonerName.value.name,
-      serverId: selectedServerId.value,
-    });
     // 搜索成功后关闭弹出框
     isDropdownOpen.value = false;
   } catch (error: any) {
     console.error('搜索失败:', error);
-    emit('searchError', error.message || '搜索失败');
   }
 };
 
 // 搜索当前登录的召唤师
 const searchCurrentSummoner = async () => {
   try {
-    const serverId = await sgpMatchService._inferCurrentUserServerId();
-    console.log(
-      `searchCurrentSummoner 输入: serverId=${serverId} fullGameName=${userStore.fullGameName}`
-    );
-
-    emit('searchStart', userStore.fullGameName, serverId!);
     await matchHistoryStore.searchSummonerByName(
       userStore.fullGameName,
-      serverId!
+      userStore.serverId
     );
-    emit('searchSuccess', { name: userStore.fullGameName, serverId });
     isDropdownOpen.value = false;
   } catch (error: any) {
     console.error('搜索当前召唤师失败:', error);
-    emit('searchError', error.message || '搜索当前召唤师失败');
   }
 };
 
@@ -162,14 +172,11 @@ const searchFromHistory = async (item: SearchHistoryItem) => {
 };
 
 // 从好友列表搜索
-const searchFromFriend = async (friend: any) => {
-  summonerName.value = {
-    name: friend.name,
-    serverId: friend.serverId,
-    serverName: friend.serverName,
-    puuid: '',
-  };
-  selectedServerId.value = friend.serverId;
+const searchFromFriend = async (friend: SimpleFriend) => {
+  await matchHistoryStore.searchSummonerByName(
+    `${friend.gameName}#${friend.tagLine}`,
+    userStore.serverId
+  );
   await handleSearch();
 };
 
@@ -188,14 +195,24 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 };
 
-// 组件挂载时添加事件监听器
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+// 监听弹出框状态，打开时刷新好友列表
+watch(isDropdownOpen, newValue => {
+  if (newValue && friendService.value) {
+    // 弹出框打开时立即刷新好友列表
+    loadFriends();
+  }
 });
 
-// 组件卸载时移除事件监听器
+// 组件挂载时添加事件监听器和初始化好友服务
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+  initFriendService();
+});
+
+// 组件卸载时移除事件监听器和清理定时器
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  stopFriendsRefresh();
 });
 
 // 暴露方法给父组件
@@ -206,6 +223,10 @@ defineExpose({
   clearInput: () => {
     summonerName.value.name = '';
   },
+  refreshFriends: loadFriends,
+  // 暴露定时器控制方法
+  startFriendsRefresh,
+  stopFriendsRefresh,
 });
 </script>
 
@@ -270,7 +291,7 @@ defineExpose({
         </div>
       </div>
 
-      <!-- 弹出框内容 - 简化的布局 -->
+      <!-- 弹出框内容 - 使用子组件 -->
       <div
         v-if="isDropdownOpen"
         class="font-tektur-numbers border-border/50 from-background/95 to-background/90 animate-in fade-in-0 zoom-in-95 absolute top-full left-0 z-50 mt-0.5 w-120 border bg-gradient-to-b p-4 backdrop-blur-sm duration-100"
@@ -278,82 +299,35 @@ defineExpose({
         <div
           class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/30 max-h-[28rem] overflow-y-auto"
         >
-          <!-- 历史搜索记录 -->
-          <div v-if="searchHistory.length > 0" class="mb-3">
-            <div class="mb-3">
-              <span class="text-foreground font-medium">搜索历史</span>
-            </div>
-            <!-- flex布局，自适应每行显示数量 -->
-            <div class="flex flex-wrap gap-1">
-              <div
-                v-for="(item, index) in searchHistory"
-                :key="index"
-                class="group border-border/40 bg-card/50 hover:border-border/80 hover:bg-card/80 relative cursor-pointer overflow-hidden border p-0.5 transition-all duration-200 hover:shadow-sm"
-                @click="searchFromHistory(item)"
-                :class="{ 'cursor-not-allowed opacity-50': isSearching }"
-              >
-                <div class="flex items-center gap-2 text-sm">
-                  <span class="text-muted-foreground">{{
-                    item.serverName
-                  }}</span>
-                  <span class="text-foreground">{{ item.name }}</span>
-                </div>
-                <!-- 底部装饰线 -->
-                <div
-                  class="bg-primary absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-300 group-hover:w-full"
-                ></div>
-              </div>
-            </div>
-          </div>
+          <!-- 历史搜索记录组件 -->
+          <SearchHistory
+            :search-history="searchHistory"
+            :is-searching="isSearching"
+            @search-from-history="searchFromHistory"
+          />
 
           <!-- 分隔线 -->
           <div
-            v-if="searchHistory.length > 0 && onlineFriends.length > 0"
+            v-if="searchHistory.length > 0 && simplifiedFriends.length > 0"
             class="mb-3"
           >
             <Separator class="bg-border/30" />
           </div>
 
-          <!-- 好友列表 -->
-          <div v-if="onlineFriends.length > 0">
-            <div class="mb-3">
-              <span class="text-foreground font-medium">在线好友</span>
-              <span class="text-muted-foreground ml-2 text-xs">
-                {{ onlineFriends.length }}
-              </span>
-            </div>
-            <!-- 好友flex布局，自适应每行显示数量 -->
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="friend in onlineFriends"
-                :key="friend.id"
-                class="group border-border/40 bg-card/50 hover:border-border/80 hover:bg-card/80 relative cursor-pointer overflow-hidden rounded-lg border px-3 py-2 transition-all duration-200 hover:shadow-sm"
-                @click="searchFromFriend(friend)"
-                :class="{ 'cursor-not-allowed opacity-50': isSearching }"
-              >
-                <!-- 在线装饰线 -->
-                <div
-                  class="absolute top-0 left-0 h-full w-1 bg-green-500"
-                ></div>
-                <div class="flex items-center gap-2 pl-1">
-                  <span class="text-foreground text-xs font-medium">{{
-                    friend.displayName
-                  }}</span>
-                  <span class="text-muted-foreground text-xs"
-                    >#{{ friend.tagLine }}</span
-                  >
-                </div>
-                <!-- 底部装饰线 -->
-                <div
-                  class="absolute bottom-0 left-0 h-0.5 w-0 bg-green-500 transition-all duration-300 group-hover:w-full"
-                ></div>
-              </div>
-            </div>
-          </div>
+          <!-- 好友列表组件 -->
+          <FriendsList
+            :friends="simplifiedFriends"
+            :is-searching="isSearching || isLoadingFriends"
+            @search-from-friend="searchFromFriend"
+          />
 
           <!-- 空状态 -->
           <div
-            v-if="searchHistory.length === 0 && onlineFriends.length === 0"
+            v-if="
+              searchHistory.length === 0 &&
+              simplifiedFriends.length === 0 &&
+              !isLoadingFriends
+            "
             class="p-8 text-center"
           >
             <h3 class="text-foreground mb-1 text-sm font-medium">
@@ -364,6 +338,12 @@ defineExpose({
             >
               开始搜索召唤师来建立历史记录
             </p>
+          </div>
+
+          <!-- 加载状态 -->
+          <div v-if="isLoadingFriends" class="p-4 text-center">
+            <Loading size="sm" />
+            <p class="text-muted-foreground mt-2 text-xs">加载好友列表中...</p>
           </div>
         </div>
       </div>

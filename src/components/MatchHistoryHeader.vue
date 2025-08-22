@@ -229,9 +229,7 @@ function getPositionIconUrl(iconName: string): string {
             :model-value="modelValue.selectedTag"
             @update:model-value="handleGameModeChange"
           >
-            <SelectTrigger
-              class="h-8 w-50 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
-            >
+            <SelectTrigger class="h-8 w-50 text-sm">
               <SelectValue placeholder="选择模式" />
             </SelectTrigger>
             <SelectContent>
@@ -255,9 +253,7 @@ function getPositionIconUrl(iconName: string): string {
             :model-value="String(pageSize)"
             @update:model-value="handlePageSizeChange"
           >
-            <SelectTrigger
-              class="h-8 w-20 border-slate-200 bg-white/80 text-sm dark:border-slate-600 dark:bg-slate-800/80"
-            >
+            <SelectTrigger class="h-8 w-20 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -283,16 +279,14 @@ function getPositionIconUrl(iconName: string): string {
               <ChevronLeft class="h-4 w-4" />
             </Button>
 
-            <div
-              class="border border-slate-200 bg-slate-100/80 px-3 py-1 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-700/80 dark:text-slate-300"
-            >
+            <div class="px-3 py-1 text-sm text-slate-600 dark:text-slate-300">
               {{ currentPage }}
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
+              class="h-8 w-8 border-slate-200 p-0"
               @click="goToPage(currentPage + 1)"
             >
               <ChevronRight class="h-4 w-4" />
@@ -348,7 +342,7 @@ function getPositionIconUrl(iconName: string): string {
                     <img
                       :src="getChampionAvatarUrl(champion.championId)"
                       :alt="`英雄${champion.championId}`"
-                      class="h-8 w-8 rounded border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
+                      class="h-8 w-8 border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
                     <div
                       class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white shadow-sm"
@@ -452,7 +446,7 @@ function getPositionIconUrl(iconName: string): string {
 
                 <!-- Tooltip -->
                 <div
-                  class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                  class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
                 >
                   <div class="text-center whitespace-nowrap">
                     <div class="font-medium">{{ stat.name }}</div>

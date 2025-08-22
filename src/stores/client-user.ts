@@ -4,7 +4,7 @@ import type { SummonerData } from '@/types/summoner';
 
 export const useClientUserStore = defineStore('clientUser', () => {
   // 简化状态 - 主要作为数据存储
-  const user = ref<SummonerData | null>(null);
+  const user = ref<SummonerData>({} as SummonerData);
   const errorMessage = ref<string | null>(null);
   const serverId = ref<string>('');
 
@@ -26,7 +26,7 @@ export const useClientUserStore = defineStore('clientUser', () => {
   const hasError = computed(() => !!errorMessage.value);
 
   // 简化方法
-  const setUser = (newUser: SummonerData | null) => {
+  const setUser = (newUser: SummonerData) => {
     user.value = newUser;
     if (newUser) {
       errorMessage.value = null;
@@ -42,7 +42,7 @@ export const useClientUserStore = defineStore('clientUser', () => {
   };
 
   const clearState = () => {
-    user.value = null;
+    user.value = {} as SummonerData;
     errorMessage.value = null;
   };
 

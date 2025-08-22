@@ -14,20 +14,6 @@ const currentRoute = computed(() => route.name);
 const navigateTo = (path: string) => {
   router.push(path);
 };
-
-// 搜索事件处理
-const handleSearchStart = (summonerName: string, serverId: string) => {
-  console.log('开始搜索:', summonerName, '服务器:', serverId);
-};
-
-const handleSearchSuccess = (result: any) => {
-  console.log('搜索成功:', result);
-};
-
-const handleSearchError = (error: string) => {
-  console.error('搜索失败:', error);
-  // 这里可以添加错误提示，比如 toast 通知
-};
 </script>
 
 <template>
@@ -61,9 +47,6 @@ const handleSearchError = (error: string) => {
         class="flex items-center space-x-3"
         :show-history="true"
         :max-history-items="3"
-        @search-start="handleSearchStart"
-        @search-success="handleSearchSuccess"
-        @search-error="handleSearchError"
       />
     </div>
   </nav>
