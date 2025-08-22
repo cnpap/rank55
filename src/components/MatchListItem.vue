@@ -30,6 +30,8 @@ const searchPlayerHistory = async (playerName: string) => {
     toast.error('无法查询该玩家的战绩');
     return;
   }
+  console.log(`查询玩家：${playerName}`, `serverId: ${serverId}`);
+
   await matchHistoryStore.searchSummonerByName(playerName, serverId);
 };
 </script>

@@ -48,7 +48,7 @@ export class MatchDataLoader {
         tagLine: '',
         displayName: '',
         internalName: firstSummoner.internalName,
-        summonerLevel: 0,
+        summonerLevel: firstSummoner.level,
         profileIconId: firstSummoner.profileIconId,
         puuid: firstSummoner.puuid,
       } as SummonerData;
@@ -76,6 +76,12 @@ export class MatchDataLoader {
         0,
         pageSize
       );
+      const participant = sgpResult.games[0].json.participants.find(
+        (p: any) => p.puuid === puuid
+      );
+      console.log(summoner, participant);
+      summoner.gameName = participant!.riotIdGameName;
+      summoner.tagLine = participant!.riotIdTagline;
 
       return {
         summoner,
