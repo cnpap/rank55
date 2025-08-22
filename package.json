@@ -29,7 +29,7 @@
     "@aws-sdk/s3-request-presigner": "^3.858.0",
     "@heroicons/vue": "^2.2.0",
     "@tanstack/vue-table": "^8.21.3",
-    "@vueuse/core": "^13.6.0",
+    "@vueuse/core": "^13.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "commander": "^14.0.0",

@@ -4034,16 +4034,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vueuse/core@npm:^13.6.0":
-  version: 13.6.0
-  resolution: "@vueuse/core@npm:13.6.0"
+"@vueuse/core@npm:^13.7.0":
+  version: 13.7.0
+  resolution: "@vueuse/core@npm:13.7.0"
   dependencies:
     "@types/web-bluetooth": "npm:^0.0.21"
-    "@vueuse/metadata": "npm:13.6.0"
-    "@vueuse/shared": "npm:13.6.0"
+    "@vueuse/metadata": "npm:13.7.0"
+    "@vueuse/shared": "npm:13.7.0"
   peerDependencies:
     vue: ^3.5.0
-  checksum: 10c0/c9f7b4c95b7bbca5c0b168fb1f238a4db5a0d7b3e7dc89b5f35dc4812c5a8efa9b441af7f5a79b20829942e06e66e7298c3d10809c9ea104500317556b791e75
+  checksum: 10c0/092d7ae5162b48a6953741edcd635c50697f644d1bd2f2b807d18ca01938d9b6fcb05498daa6aff5480237944d7e7a2f09cadd8c9f77cd2da95aa20f093ff847
   languageName: node
   linkType: hard
 
@@ -4061,10 +4061,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vueuse/metadata@npm:13.6.0":
-  version: 13.6.0
-  resolution: "@vueuse/metadata@npm:13.6.0"
-  checksum: 10c0/8966688196d3e15a2cf73e7c033abfdc41add43d89fd3ff2562f53294b8ee04316d9578a222c9c6b07e9535ace4fef678a16d4626bfcdbd4884b63f217f1a04a
+"@vueuse/metadata@npm:13.7.0":
+  version: 13.7.0
+  resolution: "@vueuse/metadata@npm:13.7.0"
+  checksum: 10c0/d17402a8b55aa90824bebd9dd08ee03d88b10bcb7f99edd20ae85383c12beefb9296938afbfc3c4c24bc86834082ac3328c5724237e94ef64f37f36a4c46a717
   languageName: node
   linkType: hard
 
@@ -4086,12 +4086,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vueuse/shared@npm:13.6.0":
-  version: 13.6.0
-  resolution: "@vueuse/shared@npm:13.6.0"
+"@vueuse/shared@npm:13.7.0":
+  version: 13.7.0
+  resolution: "@vueuse/shared@npm:13.7.0"
   peerDependencies:
     vue: ^3.5.0
-  checksum: 10c0/378e8158ea13225a33e6fafb91a2e94c2720a7f93b9227d6e3277e22d081d92f59b1a4a946692bc47f5d4a5d7f32bf1bbeab3a941a7b68fec2aa04df8ec8aa19
+  checksum: 10c0/4667f703537b744d6c1617f5fb7a309a9022d2f0e2c231c94d078ee4069579d48f374159a3cb750e4d119d0726638ae15cfd375fd9427cd59aefb03b2092b1fe
   languageName: node
   linkType: hard
 
@@ -9068,7 +9068,7 @@ __metadata:
     "@tanstack/vue-table": "npm:^8.21.3"
     "@types/node": "npm:^24.0.7"
     "@vitejs/plugin-vue": "npm:^6.0.0"
-    "@vueuse/core": "npm:^13.6.0"
+    "@vueuse/core": "npm:^13.7.0"
     class-variance-authority: "npm:^0.7.1"
     clsx: "npm:^2.1.1"
     commander: "npm:^14.0.0"
