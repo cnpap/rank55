@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
 import { GamePhaseManager } from '@/lib/service/game-phase-manager';
 import { AutoActionService } from '@/lib/service/auto-action-service';
 import { BanPickService } from '@/lib/service/ban-pick-service';
@@ -11,11 +10,6 @@ export function useGamePhaseHandler() {
   const gamePhaseManager = new GamePhaseManager();
   const autoActionService = new AutoActionService();
   const banpickService = new BanPickService();
-
-  // 创建防抖的准备检查操作
-  const debouncedReadyCheckAction = useDebounceFn(async () => {
-    await autoActionService.executeReadyCheckAction();
-  }, 7000);
 
   const handleChampSelectPhase = async (): Promise<void> => {
     const session = await banpickService.getChampSelectSession();
@@ -29,9 +23,8 @@ export function useGamePhaseHandler() {
     }
 
     // 检查是否是预选阶段
-    if (flatActions.every(a => !a.isInProgress)) {
+    if (flatActions.every(a => !a.completed)) {
       await autoActionService.executePrePickAction(session);
-      return;
     }
 
     // 检查游戏是否即将开始
@@ -110,7 +103,6 @@ export function useGamePhaseHandler() {
     lastPhase,
     gamePhaseManager,
     autoActionService,
-    debouncedReadyCheckAction,
     handleChampSelectPhase,
     handleGameStartPhase,
     resetPhaseState,

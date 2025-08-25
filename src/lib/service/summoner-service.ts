@@ -1,7 +1,7 @@
 import { SummonerData } from '@/types/summoner';
 import { LCUClientInterface } from '../client/interface';
 import { RankedStats } from '@/types/ranked-stats';
-import { Game, MatchHistory } from '@/types/match-history';
+import { Game } from '@/types/match-history';
 import { BaseService } from './base-service';
 
 export class SummonerService extends BaseService {
@@ -23,26 +23,6 @@ export class SummonerService extends BaseService {
       '/lol-summoner/v1/current-summoner'
     );
     return data;
-  }
-
-  // 根据名称获取召唤师信息
-  async getSummonerByName(name: string): Promise<SummonerData> {
-    try {
-      const endpoint = `/lol-summoner/v1/summoners?name=${encodeURIComponent(name)}`;
-      const data = await this.makeRequest<SummonerData>('GET', endpoint);
-      return data;
-    } catch (error: any) {
-      if (error.message.includes('404')) {
-        throw new Error(`根据名称获取召唤师失败: 召唤师不存在`);
-      }
-      if (error.message.includes('500')) {
-        throw new Error(`根据名称获取召唤师失败: 服务器错误`);
-      }
-      if (error.message.includes('402')) {
-        throw new Error(`根据名称获取召唤师失败: 无效的召唤师名称`);
-      }
-      throw new Error(`根据名称获取召唤师失败: ${error}`);
-    }
   }
 
   // 通过召唤师ID获取召唤师信息
@@ -84,7 +64,7 @@ export class SummonerService extends BaseService {
         const rankName = flexQueue.division;
         return [tierName, rankName, flexQueue.leaguePoints];
       } else {
-        return ['未定级', '', 0];
+        return ['未知', '', 0];
       }
     } catch (error) {
       return ['段位获取失败', '', 0];

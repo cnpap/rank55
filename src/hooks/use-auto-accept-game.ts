@@ -7,7 +7,6 @@ import { useGamePhaseHandler } from './useGamePhaseHandler';
 
 export function useAutoAcceptGame() {
   const gamePhaseTimer = ref<NodeJS.Timeout | null>(null);
-  const isPolling = ref(false); // 添加轮询状态标记
   const route = useRoute();
 
   // 使用拆分后的 hooks
@@ -16,14 +15,7 @@ export function useAutoAcceptGame() {
   const phaseHandler = useGamePhaseHandler();
 
   const checkGamePhaseAndExecute = async (): Promise<void> => {
-    // 防止重复执行
-    if (isPolling.value) {
-      return;
-    }
-
     try {
-      isPolling.value = true;
-
       // 检查连接状态
       const connected = await connection.checkConnection();
 
@@ -48,7 +40,6 @@ export function useAutoAcceptGame() {
       // 场景 0: None 状态 - 获取用户信息
       if (phase === GameflowPhaseEnum.None) {
         await connection.fetchCurrentUser();
-        return;
       }
 
       // 场景 1: 房间阶段 - 只有在房间管理页面时才执行房间逻辑
@@ -65,7 +56,7 @@ export function useAutoAcceptGame() {
 
       // 场景 2: 准备检查阶段
       if (phase === GameflowPhaseEnum.ReadyCheck) {
-        phaseHandler.debouncedReadyCheckAction();
+        await phaseHandler.autoActionService.executeReadyCheckAction();
         return;
       }
 
@@ -97,7 +88,6 @@ export function useAutoAcceptGame() {
       console.error('游戏阶段轮询出错:', error);
       roomManager.errorMessage.value = '检查游戏状态失败';
     } finally {
-      isPolling.value = false;
       // 安排下一次执行
       scheduleNextPoll();
     }
@@ -119,7 +109,6 @@ export function useAutoAcceptGame() {
       clearTimeout(gamePhaseTimer.value);
       gamePhaseTimer.value = null;
     }
-    isPolling.value = false;
     phaseHandler.resetPhaseState();
     roomManager.resetRoom();
     connection.resetConnection();
@@ -137,7 +126,7 @@ export function useAutoAcceptGame() {
   return {
     // 连接相关
     isConnected: connection.isConnected,
-    currentUser: connection.currentUser,
+    clientUser: connection.clientUser,
 
     // 房间相关
     currentRoom: roomManager.currentRoom,

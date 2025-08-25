@@ -16,20 +16,22 @@ import Loading from '@/components/Loading.vue';
 import MatchHistory from '@/components/MatchHistory.vue';
 import { useClientUserStore } from '@/stores/client-user';
 import { useMatchHistoryStore } from '@/stores/match-history';
-import { onMounted } from 'vue';
+import { watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 const userStore = useClientUserStore();
 const route = useRoute();
 const matchHistoryStore = useMatchHistoryStore();
 
-// 监听 user 变化
-onMounted(async () => {
-  if (userStore.user && !route.query.puuid) {
-    await matchHistoryStore.searchSummonerByName(
-      `${userStore.user.gameName}#${userStore.user.tagLine}`,
-      userStore.serverId
-    );
+watch(
+  () => userStore.serverId,
+  async newServerId => {
+    if (userStore.user) {
+      await matchHistoryStore.searchSummonerByName(
+        `${userStore.user.gameName}#${userStore.user.tagLine}`,
+        newServerId
+      );
+    }
   }
-});
+);
 </script>

@@ -259,54 +259,6 @@ describe('SummonerService', () => {
     });
   });
 
-  // 测试根据名称获取召唤师信息（真实LOL）
-  describe('GetSummonerByName - Real LOL', () => {
-    beforeEach(async () => {
-      try {
-        lcuClient = await LCUClient.create();
-        summonerService = new SummonerService(lcuClient);
-      } catch (error) {
-        console.log(`⏭️ 跳过真实LOL测试: ${error}`);
-        return;
-      }
-    });
-
-    it('应该能够根据名称获取召唤师信息', async () => {
-      // 根据名称获取召唤师信息
-      const summonerByName =
-        await summonerService.getSummonerByName(`认真努力不放弃#43614`);
-
-      expect(summonerByName).toBeDefined();
-      expect(summonerByName).not.toBeNull();
-
-      // 验证返回的数据结构
-      if (summonerByName.summonerId) {
-        expect(summonerByName.summonerId).toBeGreaterThan(0);
-      }
-
-      if (summonerByName.summonerLevel) {
-        expect(summonerByName.summonerLevel).toBeGreaterThan(0);
-      }
-
-      // 输出召唤师详细信息
-      const displayName =
-        summonerByName.displayName || summonerByName.gameName || '';
-      console.log('📊 根据名称获取的召唤师信息:');
-      console.log(`   - 显示名称: ${displayName}`);
-      console.log(`   - 等级: ${summonerByName.summonerLevel}`);
-      console.log(`   - 召唤师ID: ${summonerByName.summonerId}`);
-      console.log(`   - 账户ID: ${summonerByName.accountId}`);
-      console.log(`   - PUUID: ${summonerByName.puuid}`);
-      console.log(`   - 头像ID: ${summonerByName.profileIconId}`);
-
-      if (summonerByName.gameName && summonerByName.tagLine) {
-        console.log(
-          `   - 游戏名称: ${summonerByName.gameName}#${summonerByName.tagLine}`
-        );
-      }
-    });
-  });
-
   // 测试根据ID获取召唤师信息（真实LOL）
   describe('GetSummonerByID - Real LOL', () => {
     beforeEach(async () => {

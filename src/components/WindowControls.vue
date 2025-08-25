@@ -3,74 +3,29 @@ import { Button } from '@/components/ui/button';
 import { ref, onMounted } from 'vue';
 import { Minus, Square, X, Copy } from 'lucide-vue-next';
 
-// Props
-interface Props {
-  isElectron?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  isElectron: false,
-});
-
 const isMaximized = ref(false);
 
 const updateMaximizedState = async () => {
-  if (props.isElectron && (window as any).electronAPI) {
-    try {
-      isMaximized.value = await (window as any).electronAPI.windowIsMaximized();
-    } catch (error) {
-      console.error('Failed to get window state:', error);
-    }
-  }
+  isMaximized.value = await (window as any).electronAPI.windowIsMaximized();
 };
 
 // 窗口控制函数
 const minimizeWindow = async () => {
-  if (props.isElectron && (window as any).electronAPI) {
-    try {
-      await (window as any).electronAPI.windowMinimize();
-    } catch (error) {
-      console.error('Failed to minimize window:', error);
-    }
-  } else {
-    console.log('最小化窗口 (浏览器环境下不可用)');
-  }
+  await (window as any).electronAPI.windowMinimize();
 };
 
 const maximizeWindow = async () => {
-  if (props.isElectron && (window as any).electronAPI) {
-    try {
-      await (window as any).electronAPI.windowMaximize();
-      // 更新最大化状态
-      await updateMaximizedState();
-    } catch (error) {
-      console.error('Failed to maximize window:', error);
-    }
-  } else {
-    console.log('最大化窗口 (浏览器环境下不可用)');
-  }
+  await (window as any).electronAPI.windowMaximize();
+  // 更新最大化状态
+  await updateMaximizedState();
 };
 
 const closeWindow = async () => {
-  if (props.isElectron && (window as any).electronAPI) {
-    try {
-      await (window as any).electronAPI.windowClose();
-    } catch (error) {
-      console.error('Failed to close window:', error);
-    }
-  } else {
-    // 在浏览器环境下，可以关闭当前标签页
-    if (confirm('确定要关闭应用吗？')) {
-      window.close();
-    }
-  }
+  await (window as any).electronAPI.windowClose();
 };
 
 onMounted(() => {
-  if (props.isElectron) {
-    // 获取初始最大化状态
-    updateMaximizedState();
-  }
+  updateMaximizedState();
 });
 </script>
 

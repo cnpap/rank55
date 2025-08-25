@@ -1,11 +1,13 @@
 import { ref } from 'vue';
-import { SummonerService } from '@/lib/service/summoner-service';
 import type { SummonerData } from '@/types/summoner';
+import { useClientUserStore } from '@/stores/client-user';
+import { useMatchHistoryStore } from '@/stores/match-history';
 
 export function useGameConnection() {
   const isConnected = ref(false);
-  const currentUser = ref<SummonerData | null>(null);
-  const summonerService = new SummonerService();
+  const clientUserStore = useClientUserStore();
+  const matchHistoryStore = useMatchHistoryStore();
+  const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
 
   const checkConnection = async (): Promise<boolean> => {
     try {
@@ -18,7 +20,7 @@ export function useGameConnection() {
           console.log('🔌 游戏客户端已连接');
         } else {
           console.log('🔌 游戏客户端连接断开');
-          currentUser.value = null;
+          clientUserStore.setUser({} as SummonerData);
         }
       }
 
@@ -30,29 +32,29 @@ export function useGameConnection() {
   };
 
   const fetchCurrentUser = async (): Promise<void> => {
-    if (currentUser.value) return;
+    if (clientUserStore.user.puuid) return;
 
     try {
-      console.log('🔍 获取用户信息...');
-      const userData = await summonerService.getCurrentSummoner();
-      currentUser.value = userData;
+      const summoner = await summonerService.getCurrentSummoner();
+      clientUserStore.setUser(summoner);
+      const serverId = await sgpMatchService._inferCurrentUserServerId();
+      clientUserStore.setServerId(serverId!);
       console.log(
-        `👤 用户信息获取成功: ${userData.displayName || userData.gameName}`
+        `👤 用户信息获取成功: ${summoner.displayName || summoner.gameName}`
       );
     } catch (error) {
       console.error('获取用户信息失败:', error);
-      currentUser.value = null;
+      clientUserStore.setUser({} as SummonerData);
     }
   };
 
   const resetConnection = () => {
     isConnected.value = false;
-    currentUser.value = null;
   };
 
   return {
     isConnected,
-    currentUser,
+    clientUser: clientUserStore.user,
     checkConnection,
     fetchCurrentUser,
     resetConnection,
