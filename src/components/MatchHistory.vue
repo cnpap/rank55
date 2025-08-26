@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, provide } from 'vue';
+import { onMounted, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
-import MatchHistoryView from '@/components/MatchHistoryView.vue';
+import MatchListItem from '@/components/MatchListItem.vue'; // 直接导入 MatchListItem
 import MatchHistoryHeader from '@/components/MatchHistoryHeader.vue';
 import { useClientUserStore } from '@/stores/client-user';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { useMatchHistoryState } from '@/lib/composables/useMatchHistoryState';
 import { useMatchHistoryUI } from '@/lib/composables/useMatchHistoryUI';
-import { MatchDataProcessor } from '@/lib/match-data-processor';
 import { MatchDataLoader } from '@/lib/match-data-loader';
 
 const route = useRoute();
@@ -26,7 +25,6 @@ const {
   currentPage,
   pageSize,
   expandedMatches,
-  championState,
   gameModesFilter,
   currentSummoner,
   rankedStats,
@@ -36,7 +34,6 @@ const {
   showMatchHistory,
   hasData,
   hasSummoner,
-  isLoading,
   clearSearchResult,
   setError,
   setSearchResult,
@@ -61,16 +58,6 @@ const dataLoader = new MatchDataLoader(
   userStore.serverId,
   serverId
 );
-
-// 使用解耦的数据处理逻辑
-const filteredMatchHistory = computed(() => {
-  return MatchDataProcessor.processMatchHistory(
-    matchHistory.value || [],
-    currentSummoner.value!,
-    championState.championNames,
-    expandedMatches.value
-  );
-});
 
 // 加载分页数据
 const loadMatchHistoryPage = async (tag: string): Promise<void> => {
@@ -221,9 +208,10 @@ onMounted(async () => {
                   <!-- 头部组件 -->
                   <MatchHistoryHeader
                     :model-value="gameModesFilter"
-                    :matches="filteredMatchHistory"
+                    :matches="matchHistory"
                     :current-page="currentPage"
                     :page-size="pageSize"
+                    :current-user-puuid="currentSummoner?.puuid || ''"
                     :total-matches="searchResult.totalCount"
                     :is-sticky="isSticky"
                     @update:model-value="handleUpdateGameModesFilter"
@@ -231,22 +219,14 @@ onMounted(async () => {
                     @update:page-size="handlePageSizeChangeWrapper"
                   />
                 </div>
-                <!-- 历史战绩 -->
+                <!-- 历史战绩 - 直接使用 MatchListItem -->
                 <div v-if="showMatchHistory && matchHistory && currentSummoner">
-                  <MatchHistoryView
-                    :filtered-matches="filteredMatchHistory"
-                    :game-modes-filter="gameModesFilter"
-                    :expanded-matches="expandedMatches"
-                    :is-loading="isLoading"
-                    :has-data="hasData"
-                    :has-summoner="hasSummoner"
-                    :current-page="currentPage"
-                    :page-size="pageSize"
-                    :total-matches="searchResult.totalCount"
-                    @update:game-modes-filter="handleUpdateGameModesFilter"
-                    @toggle-match-detail="handleToggleMatchDetail"
-                    @update:current-page="handlePageChangeWrapper"
-                    @update:page-size="handlePageSizeChangeWrapper"
+                  <MatchListItem
+                    v-for="match in matchHistory"
+                    :key="match.json.gameId"
+                    :match="match"
+                    :is-expanded="expandedMatches.has(match.json.gameId)"
+                    @toggle-detail="handleToggleMatchDetail(match.json.gameId)"
                   />
                 </div>
               </div>

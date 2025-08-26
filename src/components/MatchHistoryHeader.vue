@@ -9,15 +9,17 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Filter } from 'lucide-vue-next';
-import type { GameModesFilter, ProcessedMatch } from '@/types/match-history-ui';
+import type { GameModesFilter } from '@/types/match-history-ui';
+import type { Game } from '@/types/match-history-sgp';
 import { AcceptableValue } from 'reka-ui';
 import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 
 interface Props {
   modelValue: GameModesFilter;
-  matches: ProcessedMatch[];
+  matches: Game[];
   currentPage: number;
   pageSize: number;
+  currentUserPuuid: string; // 新增：当前用户的puuid
   isSticky?: boolean;
 }
 
@@ -57,6 +59,13 @@ const positionMap = {
   UTILITY: { name: '辅助', icon: 'support', order: 5 },
 } as const;
 
+// 从Game数据中找到当前玩家
+function findCurrentPlayer(game: Game) {
+  return game.json.participants.find(
+    participant => participant.puuid === props.currentUserPuuid
+  );
+}
+
 // 计算位置统计
 const positionStats = computed(() => {
   // 初始化所有位置为0局
@@ -72,10 +81,8 @@ const positionStats = computed(() => {
 
   // 如果有比赛数据，统计实际游戏次数
   if (props.matches && props.matches.length > 0) {
-    props.matches.forEach(match => {
-      const currentPlayer = match.allPlayers.find(
-        player => player.isCurrentPlayer
-      );
+    props.matches.forEach(game => {
+      const currentPlayer = findCurrentPlayer(game);
       if (currentPlayer && currentPlayer.teamPosition) {
         const position = currentPlayer.teamPosition;
         positionCounts.set(position, (positionCounts.get(position) || 0) + 1);
@@ -116,18 +123,26 @@ const overallStats = computed(() => {
   }
 
   const totalGames = props.matches.length;
-  const totalWins = props.matches.filter(
-    match => match.result === 'victory'
-  ).length;
+  let totalWins = 0;
+  let totalKDA = 0;
+
+  props.matches.forEach(game => {
+    const currentPlayer = findCurrentPlayer(game);
+    if (currentPlayer) {
+      if (currentPlayer.win) {
+        totalWins++;
+      }
+      // 计算KDA
+      const kda =
+        (currentPlayer.kills + currentPlayer.assists) /
+        Math.max(currentPlayer.deaths, 1);
+      totalKDA += kda;
+    }
+  });
+
   const totalLosses = totalGames - totalWins;
   const winRate =
     totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
-
-  // 计算平均KDA
-  const totalKDA = props.matches.reduce(
-    (sum, match) => sum + match.kda.ratio,
-    0
-  );
   const avgKDA =
     totalGames > 0 ? Number((totalKDA / totalGames).toFixed(1)) : 0;
 
@@ -152,24 +167,28 @@ const recentChampions = computed(() => {
     { games: number; wins: number; losses: number; winRate: number }
   >();
 
-  props.matches.forEach(match => {
-    const existing = championStats.get(match.championId) || {
-      games: 0,
-      wins: 0,
-      losses: 0,
-      winRate: 0,
-    };
-    existing.games += 1;
-    if (match.result === 'victory') {
-      existing.wins += 1;
-    } else {
-      existing.losses += 1;
+  props.matches.forEach(game => {
+    const currentPlayer = findCurrentPlayer(game);
+    if (currentPlayer) {
+      const championId = currentPlayer.championId;
+      const existing = championStats.get(championId) || {
+        games: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+      };
+      existing.games += 1;
+      if (currentPlayer.win) {
+        existing.wins += 1;
+      } else {
+        existing.losses += 1;
+      }
+      existing.winRate =
+        existing.games > 0
+          ? Math.round((existing.wins / existing.games) * 100)
+          : 0;
+      championStats.set(championId, existing);
     }
-    existing.winRate =
-      existing.games > 0
-        ? Math.round((existing.wins / existing.games) * 100)
-        : 0;
-    championStats.set(match.championId, existing);
   });
 
   // 转换为数组并按使用次数排序，取前5个

@@ -2,14 +2,13 @@ import { computed, reactive, ref } from 'vue';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
 import type { Game } from '@/types/match-history-sgp';
-import type { ChampionState, GameModesFilter } from '@/types/match-history-ui';
-import type { ChampionData } from '@/types/champion';
+import type { GameModesFilter } from '@/types/match-history-ui';
 
 // 组件内部状态管理
 export interface LocalSearchResult {
   summoner?: SummonerData;
   rankedStats?: RankedStats;
-  matchHistory?: Game[];
+  matchHistory: Game[];
   totalCount: number;
   error?: string;
 }
@@ -22,7 +21,7 @@ export function useMatchHistoryState() {
   const searchResult = ref<LocalSearchResult>({
     summoner: undefined,
     rankedStats: undefined,
-    matchHistory: undefined,
+    matchHistory: [],
     totalCount: 0,
     error: undefined,
   });
@@ -31,13 +30,6 @@ export function useMatchHistoryState() {
   const currentPage = ref(1);
   const pageSize = ref(20);
   const expandedMatches = ref(new Set<number>());
-
-  // 英雄数据状态
-  const championState = reactive<ChampionState>({
-    champions: [] as ChampionData[],
-    championNames: new Map<string, string>(),
-    isLoading: false,
-  });
 
   // 游戏模式过滤选项
   const gameModesFilter = reactive<GameModesFilter>({
@@ -59,14 +51,13 @@ export function useMatchHistoryState() {
   // 计算属性：数据状态
   const hasData = computed(() => Boolean(matchHistory.value?.length));
   const hasSummoner = computed(() => Boolean(currentSummoner.value));
-  const isLoading = computed(() => championState.isLoading);
 
   // 状态操作方法
   const clearSearchResult = () => {
     searchResult.value = {
       summoner: undefined,
       rankedStats: undefined,
-      matchHistory: undefined,
+      matchHistory: [],
       totalCount: 0,
       error: undefined,
     };
@@ -76,7 +67,7 @@ export function useMatchHistoryState() {
     searchResult.value = {
       summoner: undefined,
       rankedStats: undefined,
-      matchHistory: undefined,
+      matchHistory: [],
       totalCount: 0,
       error,
     };
@@ -97,7 +88,6 @@ export function useMatchHistoryState() {
     currentPage,
     pageSize,
     expandedMatches,
-    championState,
     gameModesFilter,
 
     // 计算属性
@@ -109,7 +99,6 @@ export function useMatchHistoryState() {
     showMatchHistory,
     hasData,
     hasSummoner,
-    isLoading,
 
     // 方法
     clearSearchResult,

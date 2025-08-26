@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProcessedMatch } from '@/types/match-history-ui';
+import type { Game } from '@/types/match-history-sgp';
 import { formatNumber } from '@/lib/rank-helpers';
 import { formatDateToDay } from '@/utils/date-utils';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +8,11 @@ import MatchDetailView from './MatchDetailView.vue';
 import { staticAssets } from '@/assets/data-assets';
 import { toast } from 'vue-sonner';
 import { useMatchHistoryStore } from '@/stores/match-history';
-import { inject } from 'vue';
+import { inject, computed } from 'vue';
+import { useClientUserStore } from '@/stores/client-user';
 
 interface Props {
-  match: ProcessedMatch;
+  match: Game;
   isExpanded: boolean;
 }
 
@@ -19,19 +20,150 @@ interface Emits {
   (e: 'toggle-detail'): void;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 defineEmits<Emits>();
 
 const matchHistoryStore = useMatchHistoryStore();
+const clientUser = useClientUserStore();
 const serverId = inject<string>('serverId');
-// 新增：搜索玩家战绩函数
+
+// 辅助函数：获取当前玩家的参与者信息
+const currentPlayer = computed(() => {
+  return props.match.json.participants.find(
+    p =>
+      // 这里需要根据实际的当前玩家标识逻辑来判断
+      // 可能需要通过 puuid 或其他标识符来确定
+      p.puuid === clientUser.user.puuid
+  );
+});
+
+// 辅助函数：获取游戏结果
+const gameResult = computed(() => {
+  if (!currentPlayer.value) return 'unknown';
+  return currentPlayer.value.win ? 'victory' : 'defeat';
+});
+
+// 辅助函数：获取队伍信息
+const teams = computed(() => {
+  const blueTeam = props.match.json.participants.filter(p => p.teamId === 100);
+  const redTeam = props.match.json.participants.filter(p => p.teamId === 200);
+
+  return [
+    {
+      players: blueTeam.map(p => ({
+        puuid: p.puuid,
+        championId: p.championId,
+        championName: p.championName,
+        displayName: p.riotIdGameName || p.summonerName,
+        isCurrentPlayer: p.puuid === clientUser.user.puuid,
+        kda: {
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+        },
+        stats: {
+          damage: p.totalDamageDealtToChampions,
+          damageTaken: p.totalDamageTaken,
+        },
+      })),
+    },
+    {
+      players: redTeam.map(p => ({
+        puuid: p.puuid,
+        championId: p.championId,
+        championName: p.championName,
+        displayName: p.riotIdGameName || p.summonerName,
+        isCurrentPlayer: p.puuid === clientUser.user.puuid,
+        kda: {
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+        },
+        stats: {
+          damage: p.totalDamageDealtToChampions,
+          damageTaken: p.totalDamageTaken,
+        },
+      })),
+    },
+  ];
+});
+
+// 辅助函数：获取当前玩家的装备
+const items = computed(() => {
+  if (!currentPlayer.value) return [];
+  return [
+    currentPlayer.value.item0,
+    currentPlayer.value.item1,
+    currentPlayer.value.item2,
+    currentPlayer.value.item3,
+    currentPlayer.value.item4,
+    currentPlayer.value.item5,
+    currentPlayer.value.item6,
+  ];
+});
+
+// 辅助函数：获取召唤师技能
+const spells = computed(() => {
+  if (!currentPlayer.value) return [0, 0];
+  return [currentPlayer.value.spell1Id, currentPlayer.value.spell2Id];
+});
+
+// 辅助函数：获取符文
+const runes = computed(() => {
+  if (!currentPlayer.value?.perks) return [0, 0];
+  const primaryStyle = currentPlayer.value.perks.styles.find(
+    s => s.description === 'primaryStyle'
+  );
+  const subStyle = currentPlayer.value.perks.styles.find(
+    s => s.description === 'subStyle'
+  );
+  return [primaryStyle?.style || 0, subStyle?.style || 0];
+});
+
+// 辅助函数：获取KDA信息
+const kda = computed(() => {
+  if (!currentPlayer.value)
+    return { kills: 0, deaths: 0, assists: 0, ratio: 0 };
+  const { kills, deaths, assists } = currentPlayer.value;
+  const ratio = deaths === 0 ? kills + assists : (kills + assists) / deaths;
+  return { kills, deaths, assists, ratio };
+});
+
+// 辅助函数：获取统计信息
+const stats = computed(() => {
+  if (!currentPlayer.value)
+    return { level: 0, gold: 0, cs: 0, damage: 0, damageTaken: 0 };
+  return {
+    level: currentPlayer.value.champLevel,
+    gold: currentPlayer.value.goldEarned,
+    cs:
+      currentPlayer.value.totalMinionsKilled +
+      currentPlayer.value.neutralMinionsKilled,
+    damage: currentPlayer.value.totalDamageDealtToChampions,
+    damageTaken: currentPlayer.value.totalDamageTaken,
+  };
+});
+
+// 辅助函数：获取队列类型
+const queueType = computed(() => {
+  // 根据 queueId 映射到队列类型名称
+  const queueMap: Record<number, string> = {
+    420: '单双排位',
+    430: '匹配模式',
+    440: '灵活排位',
+    450: '极地大乱斗',
+    // 添加更多队列类型映射
+  };
+  return queueMap[props.match.json.queueId] || '未知模式';
+});
+
+// 搜索玩家战绩函数
 const searchPlayerHistory = async (playerName: string) => {
   if (!playerName || playerName === '未知玩家') {
     toast.error('无法查询该玩家的战绩');
     return;
   }
   console.log(`查询玩家：${playerName}`, `serverId: ${serverId}`);
-
   await matchHistoryStore.searchSummonerByName(playerName, serverId);
 };
 </script>
@@ -41,17 +173,17 @@ const searchPlayerHistory = async (playerName: string) => {
     class="group bg-card relative w-4xl overflow-hidden border-b transition-all"
     :class="{
       'border-emerald-200/70 bg-gradient-to-r from-emerald-50/30 to-emerald-50/10 dark:border-emerald-800/50 dark:from-emerald-950/20 dark:to-emerald-950/5':
-        match.result === 'victory',
+        gameResult === 'victory',
       'border-red-200/70 bg-gradient-to-r from-red-50/30 to-red-50/10 dark:border-red-800/50 dark:from-red-950/20 dark:to-red-950/5':
-        match.result === 'defeat',
+        gameResult === 'defeat',
     }"
   >
     <!-- 胜负状态指示条 -->
     <div
       class="absolute top-0 left-0 h-full w-[1.5px]"
       :class="{
-        'bg-emerald-500': match.result === 'victory',
-        'bg-red-500': match.result === 'defeat',
+        'bg-emerald-500': gameResult === 'victory',
+        'bg-red-500': gameResult === 'defeat',
       }"
     />
 
@@ -69,15 +201,19 @@ const searchPlayerHistory = async (playerName: string) => {
                 <!-- 英雄头像 + 等级 -->
                 <div class="relative flex-shrink-0">
                   <img
-                    :src="staticAssets.getChampionIcon(`${match.championId}`)"
-                    :alt="match.championName"
+                    :src="
+                      staticAssets.getChampionIcon(
+                        `${currentPlayer?.championId || 0}`
+                      )
+                    "
+                    :alt="currentPlayer?.championName || '未知英雄'"
                     class="ring-border/30 h-12 w-12 rounded object-cover ring-2"
                   />
                   <div
                     class="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white ring-2 ring-white dark:ring-gray-800"
                   >
                     <span class="font-tektur-numbers text-xs font-bold">
-                      {{ match.stats.level }}
+                      {{ stats.level }}
                     </span>
                   </div>
                 </div>
@@ -87,13 +223,13 @@ const searchPlayerHistory = async (playerName: string) => {
                   <!-- 召唤师技能 -->
                   <div class="flex flex-col gap-1">
                     <img
-                      :src="staticAssets.getSpellIcon(`${match.spells[0]}`)"
-                      :alt="`召唤师技能${match.spells[0]}`"
+                      :src="staticAssets.getSpellIcon(`${spells[0]}`)"
+                      :alt="`召唤师技能${spells[0]}`"
                       class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
                     />
                     <img
-                      :src="staticAssets.getSpellIcon(`${match.spells[1]}`)"
-                      :alt="`召唤师技能${match.spells[1]}`"
+                      :src="staticAssets.getSpellIcon(`${spells[1]}`)"
+                      :alt="`召唤师技能${spells[1]}`"
                       class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
                     />
                   </div>
@@ -102,9 +238,9 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div class="flex flex-col gap-1">
                     <div class="relative h-5 w-5">
                       <img
-                        v-if="match.runes[0]"
-                        :src="staticAssets.getRuneIcon(`${match.runes[0]}`)"
-                        :alt="`主要天赋系${match.runes[0]}`"
+                        v-if="runes[0]"
+                        :src="staticAssets.getRuneIcon(`${runes[0]}`)"
+                        :alt="`主要天赋系${runes[0]}`"
                         class="border-border/40 h-full w-full rounded object-cover shadow-sm"
                       />
                       <div
@@ -114,9 +250,9 @@ const searchPlayerHistory = async (playerName: string) => {
                     </div>
                     <div class="relative h-5 w-5">
                       <img
-                        v-if="match.runes[1]"
-                        :src="staticAssets.getRuneIcon(`${match.runes[1]}`)"
-                        :alt="`次要天赋系${match.runes[1]}`"
+                        v-if="runes[1]"
+                        :src="staticAssets.getRuneIcon(`${runes[1]}`)"
+                        :alt="`次要天赋系${runes[1]}`"
                         class="border-border/40 h-full w-full rounded object-cover shadow-sm"
                       />
                       <div
@@ -131,10 +267,14 @@ const searchPlayerHistory = async (playerName: string) => {
               <!-- 第二行：游戏模式和时间 -->
               <div class="text-left">
                 <h4 class="text-foreground text-sm font-semibold">
-                  {{ match.queueType }}
+                  {{ queueType }}
                 </h4>
                 <p class="text-muted-foreground text-xs">
-                  {{ formatDateToDay(match.createdAt as unknown as string) }}
+                  {{
+                    formatDateToDay(
+                      match.json.gameCreation as unknown as string
+                    )
+                  }}
                 </p>
               </div>
             </div>
@@ -144,23 +284,21 @@ const searchPlayerHistory = async (playerName: string) => {
               <!-- 第一行：KDA -->
               <div class="text-right">
                 <div class="font-tektur-numbers text-foreground font-bold">
-                  {{ match.kda.kills }}/{{ match.kda.deaths }}/{{
-                    match.kda.assists
-                  }}
+                  {{ kda.kills }}/{{ kda.deaths }}/{{ kda.assists }}
                 </div>
                 <Badge
                   variant="secondary"
                   class="font-tektur-numbers text-xs font-bold"
                   :class="{
                     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
-                      match.kda.ratio >= 3,
+                      kda.ratio >= 3,
                     'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
-                      match.kda.ratio >= 2 && match.kda.ratio < 3,
+                      kda.ratio >= 2 && kda.ratio < 3,
                     'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
-                      match.kda.ratio < 2,
+                      kda.ratio < 2,
                   }"
                 >
-                  {{ match.kda.ratio.toFixed(2) }}
+                  {{ kda.ratio.toFixed(2) }}
                 </Badge>
               </div>
 
@@ -168,10 +306,10 @@ const searchPlayerHistory = async (playerName: string) => {
               <div class="flex items-center justify-end gap-1 text-xs">
                 <Coins class="h-3 w-3 text-amber-500" />
                 <span class="font-tektur-numbers font-semibold">
-                  {{ formatNumber(match.stats.gold) }}
+                  {{ formatNumber(stats.gold) }}
                 </span>
                 <span class="font-tektur-numbers ml-2 font-semibold">
-                  {{ match.stats.cs }} CS
+                  {{ stats.cs }} CS
                 </span>
               </div>
 
@@ -180,13 +318,13 @@ const searchPlayerHistory = async (playerName: string) => {
                 <div class="flex items-center gap-1">
                   <Sword class="h-3 w-3 text-red-500" />
                   <span class="font-tektur-numbers font-semibold">
-                    {{ formatNumber(match.stats.damage) }}
+                    {{ formatNumber(stats.damage) }}
                   </span>
                 </div>
                 <div class="flex items-center gap-1">
                   <Shield class="h-3 w-3 text-blue-500" />
                   <span class="font-tektur-numbers font-semibold">
-                    {{ formatNumber(match.stats.damageTaken) }}
+                    {{ formatNumber(stats.damageTaken) }}
                   </span>
                 </div>
               </div>
@@ -201,9 +339,9 @@ const searchPlayerHistory = async (playerName: string) => {
               class="relative h-9 w-9"
             >
               <img
-                v-if="match.items[index]"
-                :src="staticAssets.getItemIcon(`${match.items[index]}`)"
-                :alt="`装备${match.items[index]}`"
+                v-if="items[index]"
+                :src="staticAssets.getItemIcon(`${items[index]}`)"
+                :alt="`装备${items[index]}`"
                 class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
               />
               <div
@@ -220,7 +358,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-28">
             <div class="space-y-0.5">
               <div
-                v-for="player in match.teams[0]?.players || []"
+                v-for="player in teams[0]?.players || []"
                 :key="player.puuid"
                 class="flex items-center gap-1 px-1 py-0.5"
                 :class="{
@@ -251,7 +389,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-20">
             <div class="space-y-0.5">
               <div
-                v-for="player in match.teams[0]?.players || []"
+                v-for="player in teams[0]?.players || []"
                 :key="`${player.puuid}-kda`"
                 class="flex h-6 items-center justify-center px-1 py-0.5"
                 :class="{
@@ -259,17 +397,11 @@ const searchPlayerHistory = async (playerName: string) => {
                 }"
               >
                 <span class="text-center text-xs font-medium">
-                  <span>
-                    {{ player.kda.kills }}
-                  </span>
+                  <span>{{ player.kda.kills }}</span>
                   /
-                  <span>
-                    {{ player.kda.deaths }}
-                  </span>
+                  <span>{{ player.kda.deaths }}</span>
                   /
-                  <span>
-                    {{ player.kda.assists }}
-                  </span>
+                  <span>{{ player.kda.assists }}</span>
                 </span>
               </div>
             </div>
@@ -279,7 +411,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-28">
             <div class="space-y-0.5">
               <div
-                v-for="player in match.teams[1]?.players || []"
+                v-for="player in teams[1]?.players || []"
                 :key="player.puuid"
                 class="flex items-center gap-1 px-1 py-0.5"
                 :class="{
@@ -310,7 +442,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-20">
             <div class="space-y-0.5">
               <div
-                v-for="player in match.teams[1]?.players || []"
+                v-for="player in teams[1]?.players || []"
                 :key="`${player.puuid}-kda`"
                 class="flex h-6 items-center justify-center px-1 py-0.5"
                 :class="{
@@ -318,17 +450,11 @@ const searchPlayerHistory = async (playerName: string) => {
                 }"
               >
                 <span class="text-center text-xs font-medium">
-                  <span>
-                    {{ player.kda.kills }}
-                  </span>
+                  <span>{{ player.kda.kills }}</span>
                   /
-                  <span>
-                    {{ player.kda.deaths }}
-                  </span>
+                  <span>{{ player.kda.deaths }}</span>
                   /
-                  <span>
-                    {{ player.kda.assists }}
-                  </span>
+                  <span>{{ player.kda.assists }}</span>
                 </span>
               </div>
             </div>
@@ -338,7 +464,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-22">
             <div class="space-y-0.5">
               <div
-                v-for="(player, index) in match.teams[0]?.players || []"
+                v-for="(player, index) in teams[0]?.players || []"
                 :key="`${player.puuid}-damage`"
                 class="flex h-6 items-center gap-1 rounded px-1 py-0.5"
               >
@@ -355,12 +481,12 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div
                     class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
                   >
-                    <template v-if="match.teams[1]?.players?.[index]">
+                    <template v-if="teams[1]?.players?.[index]">
                       <!-- 计算两个玩家的伤害，确定谁更高 -->
                       <template
                         v-if="
                           player.stats.damage >=
-                          match.teams[1].players[index].stats.damage
+                          teams[1].players[index].stats.damage
                         "
                       >
                         <!-- 蓝队玩家伤害更高，蓝色背景，粉色进度条表示敌方占比 -->
@@ -370,7 +496,7 @@ const searchPlayerHistory = async (playerName: string) => {
                           :style="{
                             width:
                               player.stats.damage > 0
-                                ? `${Math.min(100, (match.teams[1].players[index].stats.damage / player.stats.damage) * 100)}%`
+                                ? `${Math.min(100, (teams[1].players[index].stats.damage / player.stats.damage) * 100)}%`
                                 : '0%',
                           }"
                         ></div>
@@ -382,8 +508,8 @@ const searchPlayerHistory = async (playerName: string) => {
                           class="absolute top-0 left-0 h-full bg-blue-500 dark:bg-blue-900"
                           :style="{
                             width:
-                              match.teams[1].players[index].stats.damage > 0
-                                ? `${Math.min(100, (player.stats.damage / match.teams[1].players[index].stats.damage) * 100)}%`
+                              teams[1].players[index].stats.damage > 0
+                                ? `${Math.min(100, (player.stats.damage / teams[1].players[index].stats.damage) * 100)}%`
                                 : '0%',
                           }"
                         ></div>
@@ -401,7 +527,7 @@ const searchPlayerHistory = async (playerName: string) => {
           <div class="w-22">
             <div class="space-y-0.5">
               <div
-                v-for="(player, index) in match.teams[0]?.players || []"
+                v-for="(player, index) in teams[0]?.players || []"
                 :key="`${player.puuid}-defense`"
                 class="flex h-6 items-center gap-1 rounded px-1 py-0.5"
               >
@@ -418,12 +544,12 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div
                     class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
                   >
-                    <template v-if="match.teams[1]?.players?.[index]">
+                    <template v-if="teams[1]?.players?.[index]">
                       <!-- 计算两个玩家的承受伤害，确定谁更高 -->
                       <template
                         v-if="
                           player.stats.damageTaken >=
-                          match.teams[1].players[index].stats.damageTaken
+                          teams[1].players[index].stats.damageTaken
                         "
                       >
                         <!-- 蓝队玩家承受伤害更多，蓝色背景，粉色进度条表示敌方占比 -->
@@ -433,7 +559,7 @@ const searchPlayerHistory = async (playerName: string) => {
                           :style="{
                             width:
                               player.stats.damageTaken > 0
-                                ? `${Math.min(100, (match.teams[1].players[index].stats.damageTaken / player.stats.damageTaken) * 100)}%`
+                                ? `${Math.min(100, (teams[1].players[index].stats.damageTaken / player.stats.damageTaken) * 100)}%`
                                 : '0%',
                           }"
                         ></div>
@@ -445,9 +571,8 @@ const searchPlayerHistory = async (playerName: string) => {
                           class="absolute top-0 left-0 h-full bg-blue-500 dark:bg-blue-900"
                           :style="{
                             width:
-                              match.teams[1].players[index].stats.damageTaken >
-                              0
-                                ? `${Math.min(100, (player.stats.damageTaken / match.teams[1].players[index].stats.damageTaken) * 100)}%`
+                              teams[1].players[index].stats.damageTaken > 0
+                                ? `${Math.min(100, (player.stats.damageTaken / teams[1].players[index].stats.damageTaken) * 100)}%`
                                 : '0%',
                           }"
                         ></div>
@@ -477,7 +602,7 @@ const searchPlayerHistory = async (playerName: string) => {
 
     <!-- 展开的详细信息 -->
     <div v-if="isExpanded" class="bg-muted/20">
-      <MatchDetailView :game-id="match.gameId" />
+      <MatchDetailView :game="props.match" />
     </div>
   </div>
 </template>

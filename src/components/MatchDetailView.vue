@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Copy } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
-import { gameAssets } from '@/assets/data-assets';
 import {
   formatNumber,
   getRankMiniImageUrl,
@@ -22,10 +21,11 @@ import { useMatchHistoryStore } from '@/stores/match-history';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Skull, Coins, Sword, Shield } from 'lucide-vue-next';
-import { Game } from '@/types/match-history';
+import { Game } from '@/types/match-history-sgp';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
-  gameId: number;
+  game: Game;
 }
 
 const props = defineProps<Props>();
@@ -35,7 +35,7 @@ const router = useRouter();
 const matchHistoryStore = useMatchHistoryStore();
 
 // 详细比赛数据
-const matchDetail = ref<Game | null>(null);
+const matchDetail = ref<Game | null>(props.game);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
@@ -60,20 +60,17 @@ const processedTeams = computed((): ProcessedTeam[] => {
   );
 });
 
-// 获取详细比赛数据
-const loadMatchDetail = async () => {
-  if (isLoading.value) return;
+// 初始化数据加载
+const initializeData = async () => {
+  if (isLoading.value || !matchDetail.value) return;
 
   isLoading.value = true;
   error.value = null;
 
   try {
-    const detail = await summonerService.getMatchDetail(props.gameId);
-    matchDetail.value = detail;
-
     // 收集所有英雄ID和装备ID
-    const allChampionIds = collectAllChampionIds(detail);
-    const allItemIds = collectAllItemIds(detail);
+    const allChampionIds = collectAllChampionIds(matchDetail.value);
+    const allItemIds = collectAllItemIds(matchDetail.value);
 
     // 批量获取名称
     const [champNames, itemNamesMap] = await Promise.all([
@@ -88,10 +85,10 @@ const loadMatchDetail = async () => {
     isLoading.value = false;
 
     // 异步获取所有玩家的段位信息（不阻塞页面显示）
-    loadPlayerRanks(detail);
+    loadPlayerRanks(matchDetail.value);
   } catch (err: any) {
-    console.error('获取比赛详情失败:', err);
-    error.value = err.message || '获取比赛详情失败';
+    console.error('初始化数据失败:', err);
+    error.value = err.message || '初始化数据失败';
     isLoading.value = false;
   }
 };
@@ -100,16 +97,15 @@ const loadMatchDetail = async () => {
 const loadPlayerRanks = async (detail: Game) => {
   console.log('🔍 正在异步获取所有玩家段位信息...');
 
-  if (detail.participantIdentities) {
+  // 从 Game 对象的 json.participants 中获取玩家信息
+  if (detail.json?.participants) {
     // 使用 Promise.allSettled 并发获取所有玩家段位，避免单个失败影响其他
-    const rankPromises = detail.participantIdentities
-      .filter(identity => identity.player?.puuid)
-      .map(async identity => {
-        const puuid = identity.player!.puuid;
+    const rankPromises = detail.json.participants
+      .filter(participant => participant.puuid)
+      .map(async participant => {
+        const puuid = participant.puuid;
         const playerName =
-          identity.player!.summonerName ||
-          identity.player!.gameName ||
-          '未知玩家';
+          participant.summonerName || participant.riotIdGameName || '未知玩家';
 
         try {
           const rankInfo = await summonerService.getPlayerRankedInfo(puuid);
@@ -127,9 +123,9 @@ const loadPlayerRanks = async (detail: Game) => {
   }
 };
 
-// 组件挂载时加载数据
+// 组件挂载时初始化数据
 onMounted(() => {
-  loadMatchDetail();
+  initializeData();
 });
 
 // 复制玩家名称到剪贴板
@@ -180,7 +176,7 @@ const searchPlayerHistory = async (playerName: string) => {
           </div>
           <p class="text-destructive mb-4 text-sm">{{ error }}</p>
           <button
-            @click="loadMatchDetail"
+            @click="initializeData"
             class="text-muted-foreground text-sm underline-offset-4 hover:underline"
           >
             点击重试
@@ -230,7 +226,7 @@ const searchPlayerHistory = async (playerName: string) => {
                       class="relative"
                     >
                       <img
-                        :src="gameAssets.getChampionIcon(`${ban.championId}`)"
+                        :src="staticAssets.getChampionIcon(`${ban.championId}`)"
                         :alt="ban.championName"
                         :title="ban.championName"
                         class="h-10 w-10 rounded object-cover opacity-60 grayscale"
@@ -317,7 +313,9 @@ const searchPlayerHistory = async (playerName: string) => {
                   <!-- 英雄头像 + 等级 -->
                   <div class="relative flex-shrink-0">
                     <img
-                      :src="gameAssets.getChampionIcon(`${player.championId}`)"
+                      :src="
+                        staticAssets.getChampionIcon(`${player.championId}`)
+                      "
                       :alt="player.championName"
                       class="ring-border/30 h-12 w-12 rounded-lg object-cover ring-2"
                     />
@@ -336,12 +334,12 @@ const searchPlayerHistory = async (playerName: string) => {
                     <!-- 召唤师技能 -->
                     <div class="flex flex-col gap-1">
                       <img
-                        :src="gameAssets.getSpellIcon(`${player.spells[0]}`)"
+                        :src="staticAssets.getSpellIcon(`${player.spells[0]}`)"
                         :alt="`召唤师技能${player.spells[0]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                       />
                       <img
-                        :src="gameAssets.getSpellIcon(`${player.spells[1]}`)"
+                        :src="staticAssets.getSpellIcon(`${player.spells[1]}`)"
                         :alt="`召唤师技能${player.spells[1]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                       />
@@ -351,14 +349,14 @@ const searchPlayerHistory = async (playerName: string) => {
                     <div class="flex flex-col gap-1">
                       <img
                         v-if="player.runes[0]"
-                        :src="gameAssets.getRuneIcon(`${player.runes[0]}`)"
+                        :src="staticAssets.getRuneIcon(`${player.runes[0]}`)"
                         :alt="`主要天赋系${player.runes[0]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                         title="主要天赋系"
                       />
                       <img
                         v-if="player.runes[1]"
-                        :src="gameAssets.getRuneIcon(`${player.runes[1]}`)"
+                        :src="staticAssets.getRuneIcon(`${player.runes[1]}`)"
                         :alt="`次要天赋系${player.runes[1]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                         title="次要天赋系"
@@ -520,7 +518,7 @@ const searchPlayerHistory = async (playerName: string) => {
                     class="relative"
                   >
                     <img
-                      :src="gameAssets.getItemIcon(`${itemId}`)"
+                      :src="staticAssets.getItemIcon(`${itemId}`)"
                       :alt="itemNames.get(String(itemId)) || `装备${itemId}`"
                       :title="itemNames.get(String(itemId)) || `装备${itemId}`"
                       class="border-border/40 h-8 w-8 rounded object-cover shadow-sm"
@@ -535,7 +533,3 @@ const searchPlayerHistory = async (playerName: string) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 移除之前的 noto-sans-sc-record 样式，因为现在使用 Tektur 字体 */
-</style>
