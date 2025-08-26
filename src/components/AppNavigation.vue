@@ -3,16 +3,30 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { navigationItems } from '@/config/navigation';
 import SummonerSearch from './SummonerSearch.vue';
+import { useClientUserStore } from '@/stores/client-user';
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useClientUserStore();
 
 // 当前激活的路由
 const currentRoute = computed(() => route.name);
 
 // 导航到指定路由
-const navigateTo = (path: string) => {
-  router.push(path);
+const navigateTo = async (path: string) => {
+  if (path === '/') {
+    await router.push({
+      name: 'Home',
+      query: {
+        puuid: userStore.user?.puuid,
+        serverId: userStore.serverId,
+      },
+    });
+  } else {
+    await router.push({
+      path,
+    });
+  }
 };
 </script>
 

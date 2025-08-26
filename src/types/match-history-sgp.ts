@@ -1,3 +1,11 @@
+export interface SgpMatchHistoryResult {
+  games: Game[];
+  totalCount: number;
+  startIndex: number;
+  endIndex: number;
+  serverId: string;
+}
+
 export interface MatchHistorySgp {
   games: Game[];
 }

@@ -4,12 +4,14 @@ import { SummonerService } from '@/lib/service/summoner-service';
 import type { Room, Member } from '@/types/room';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
-import type { MatchHistory as MatchHistoryType } from '@/types/match-history';
+import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
+import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
+import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
 
 export interface MemberWithDetails extends Member {
   summonerData?: SummonerData;
   rankedStats?: RankedStats;
-  matchHistory?: MatchHistoryType;
+  matchHistory?: SgpMatchHistoryResult;
   isLoading?: boolean; // 详细信息的整体加载状态
   isLoadingSummonerData?: boolean;
   isLoadingRankedStats?: boolean;
@@ -27,6 +29,8 @@ export function useRoomManager() {
 
   const roomService = new RoomService();
   const summonerService = new SummonerService();
+  const sgpApi = new SimpleSgpApi();
+  const sgpMatchService = new SgpMatchService(sgpApi);
 
   // 计算属性
   const isInRoom = computed(() => !!currentRoom.value);
@@ -82,8 +86,11 @@ export function useRoomManager() {
           console.warn(`获取排位统计失败:`, error);
           return undefined;
         }),
-        summonerService
-          .getMatchHistory(summonerData.puuid, 0, 19)
+        sgpMatchService
+          .getMatchHistory(summonerData.puuid, 0, 19, {
+            serverId:
+              (await sgpMatchService._inferCurrentUserServerId()) as string,
+          })
           .catch(error => {
             console.warn(`获取比赛历史失败:`, error);
             return undefined;

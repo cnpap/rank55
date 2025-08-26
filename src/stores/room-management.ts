@@ -10,12 +10,15 @@ import { eventBus } from '@/lib/event-bus';
 import type { Room, Member } from '@/types/room';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
-import type { MatchHistory as MatchHistoryType } from '@/types/match-history';
+// 添加 SGP 服务导入
+import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
+import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
+import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
 
 export interface MemberWithDetails extends Member {
   summonerData?: SummonerData;
   rankedStats?: RankedStats;
-  matchHistory?: MatchHistoryType;
+  matchHistory?: SgpMatchHistoryResult;
   isLoading?: boolean;
   error?: string;
 }
@@ -43,6 +46,9 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
   // 服务实例
   const roomService = new RoomService();
   const summonerService = new SummonerService();
+  // 添加 SGP 服务实例
+  const sgpApi = new SimpleSgpApi();
+  const sgpMatchService = new SgpMatchService(sgpApi);
 
   // 游戏连接状态订阅
   let connectionUnsubscribe: (() => void) | null = null;
@@ -124,7 +130,7 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
     // 设置定时器
     pollTimer.value = setInterval(async () => {
       await checkRoomStatus();
-    }, 4000); // 每4秒轮询一次
+    }, 2000); // 每4秒轮询一次
 
     // 使用防抖机制立即执行一次检查
     debouncedCheckRoomStatus();
@@ -338,7 +344,7 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
         }
 
         let rankedStats: RankedStats | undefined;
-        let matchHistory: MatchHistoryType | undefined;
+        let matchHistory: SgpMatchHistoryResult | undefined;
 
         if (summonerData?.puuid) {
           // 获取排位统计
@@ -353,12 +359,16 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
             );
           }
 
-          // 获取最近20场比赛历史
+          // 获取最近20场比赛历史 - 使用 SGP 服务
           try {
-            matchHistory = await summonerService.getMatchHistory(
+            matchHistory = await sgpMatchService.getMatchHistory(
               summonerData.puuid,
               0,
-              19 // 获取最近20场
+              19, // 获取最近20场
+              {
+                serverId:
+                  (await sgpMatchService._inferCurrentUserServerId()) as string,
+              }
             );
           } catch (error) {
             console.warn(
@@ -465,43 +475,22 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
       const memberPromises = members.map(async (member, index) => {
         try {
           // 获取召唤师详细信息
-          let summonerData: SummonerData | undefined;
-          if (member.summonerId) {
-            summonerData = await summonerService.getSummonerByID(
-              member.summonerId
-            );
-          }
+          let summonerData = await summonerService.getSummonerByID(
+            member.summonerId
+          );
 
-          let rankedStats: RankedStats | undefined;
-          let matchHistory: MatchHistoryType | undefined;
-
-          if (summonerData?.puuid) {
-            // 获取排位统计
-            try {
-              rankedStats = await summonerService.getRankedStats(
-                summonerData.puuid
-              );
-            } catch (error) {
-              console.warn(
-                `获取成员 ${member.summonerName} 排位统计失败:`,
-                error
-              );
+          let rankedStats = await summonerService.getRankedStats(
+            summonerData.puuid
+          );
+          let matchHistory = await sgpMatchService.getMatchHistory(
+            summonerData.puuid,
+            0,
+            19, // 获取最近20场
+            {
+              serverId:
+                (await sgpMatchService._inferCurrentUserServerId()) as string,
             }
-
-            // 获取最近20场比赛历史
-            try {
-              matchHistory = await summonerService.getMatchHistory(
-                summonerData.puuid,
-                0,
-                19 // 获取最近20场
-              );
-            } catch (error) {
-              console.warn(
-                `获取成员 ${member.summonerName} 比赛历史失败:`,
-                error
-              );
-            }
-          }
+          );
 
           // 更新成员信息
           roomMembers.value[index] = {

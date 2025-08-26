@@ -38,9 +38,9 @@ export function useAutoAcceptGame() {
       }
 
       // 场景 0: None 状态 - 获取用户信息
-      if (phase === GameflowPhaseEnum.None) {
-        await connection.fetchCurrentUser();
-      }
+      await connection.fetchCurrentUser();
+      // if ([GameflowPhaseEnum.None, GameflowPhaseEnum.Lobby].includes(phase)) {
+      // }
 
       // 场景 1: 房间阶段 - 只有在房间管理页面时才执行房间逻辑
       if (phase === GameflowPhaseEnum.Lobby) {

@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
-import type { MatchHistory as MatchHistoryType } from '@/types/match-history';
 import type { SummonerData } from '@/types/summoner';
 import { formatGameDuration, getQueueName } from '@/lib/rank-helpers';
 import { processBriefMatch, type BriefMatchData } from '@/lib/match-helpers';
-import { gameAssets } from '@/assets/data-assets';
 import { formatDateToDay } from '@/utils/date-utils';
+import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
-  matchHistory: MatchHistoryType | null | undefined;
+  // matchHistory: MatchHistoryType | null | undefined;
+  matchHistory: SgpMatchHistoryResult | null | undefined;
   summoner: SummonerData | null | undefined;
   maxMatches?: number;
 }
@@ -20,11 +21,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 处理后的比赛数据
 const processedMatches = computed((): BriefMatchData[] => {
-  if (!props.matchHistory?.games?.games || !props.summoner) {
+  if (!props.matchHistory?.games || !props.summoner) {
     return [];
   }
 
-  const matches = props.matchHistory.games.games.slice(0, props.maxMatches);
+  const matches = props.matchHistory.games.slice(0, props.maxMatches);
   const result: BriefMatchData[] = [];
 
   for (const game of matches) {
@@ -95,7 +96,7 @@ const processedMatches = computed((): BriefMatchData[] => {
           <!-- 英雄头像 -->
           <div class="relative flex-shrink-0">
             <img
-              :src="gameAssets.getChampionIcon(`${match.championId}`)"
+              :src="staticAssets.getChampionIcon(`${match.championId}`)"
               :alt="`英雄${match.championId}`"
               class="ring-border/30 h-12 w-12 object-cover ring-2"
             />
@@ -106,12 +107,12 @@ const processedMatches = computed((): BriefMatchData[] => {
             <!-- 召唤师技能 -->
             <div class="flex flex-col gap-1">
               <img
-                :src="gameAssets.getSpellIcon(`${match.spells[0]}`)"
+                :src="staticAssets.getSpellIcon(`${match.spells[0]}`)"
                 :alt="`召唤师技能${match.spells[0]}`"
                 class="border-border/40 h-5 w-5 border object-cover shadow-sm"
               />
               <img
-                :src="gameAssets.getSpellIcon(`${match.spells[1]}`)"
+                :src="staticAssets.getSpellIcon(`${match.spells[1]}`)"
                 :alt="`召唤师技能${match.spells[1]}`"
                 class="border-border/40 h-5 w-5 border object-cover shadow-sm"
               />
@@ -123,7 +124,7 @@ const processedMatches = computed((): BriefMatchData[] => {
               <div class="relative h-5 w-5">
                 <img
                   v-if="match.runes[0]"
-                  :src="gameAssets.getRuneIcon(`${match.runes[0]}`)"
+                  :src="staticAssets.getRuneIcon(`${match.runes[0]}`)"
                   :alt="`主要天赋系${match.runes[0]}`"
                   class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
                   title="主要天赋系"
@@ -139,7 +140,7 @@ const processedMatches = computed((): BriefMatchData[] => {
               <div class="relative h-5 w-5">
                 <img
                   v-if="match.runes[1]"
-                  :src="gameAssets.getRuneIcon(`${match.runes[1]}`)"
+                  :src="staticAssets.getRuneIcon(`${match.runes[1]}`)"
                   :alt="`次要天赋系${match.runes[1]}`"
                   class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
                   title="次要天赋系"

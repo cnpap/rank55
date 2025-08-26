@@ -39,6 +39,7 @@ export function useGameConnection() {
       clientUserStore.setUser(summoner);
       const serverId = await sgpMatchService._inferCurrentUserServerId();
       clientUserStore.setServerId(serverId!);
+      matchHistoryStore.setSelectedServerId(serverId!);
       console.log(
         `👤 用户信息获取成功: ${summoner.displayName || summoner.gameName}`
       );
