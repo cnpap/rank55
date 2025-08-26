@@ -12,12 +12,9 @@ interface Props {
   // matchHistory: MatchHistoryType | null | undefined;
   matchHistory: SgpMatchHistoryResult | null | undefined;
   summoner: SummonerData | null | undefined;
-  maxMatches?: number;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  maxMatches: 5,
-});
+const props = defineProps<Props>();
 
 // 处理后的比赛数据
 const processedMatches = computed((): BriefMatchData[] => {
@@ -25,7 +22,7 @@ const processedMatches = computed((): BriefMatchData[] => {
     return [];
   }
 
-  const matches = props.matchHistory.games.slice(0, props.maxMatches);
+  const matches = props.matchHistory.games;
   const result: BriefMatchData[] = [];
 
   for (const game of matches) {

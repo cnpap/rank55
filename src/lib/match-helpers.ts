@@ -1,11 +1,5 @@
-import type {
-  Game,
-  Participant,
-  Team,
-  ParticipantIdentity,
-} from '@/types/match-history';
+import type { Game, Participant, Team } from '@/types/match-history-sgp';
 import type { SummonerData } from '@/types/summoner';
-import { extractPlayerNameFromIdentity } from './player-helpers';
 
 /**
  * KDA 数据接口
@@ -116,18 +110,18 @@ export function calculateKDA(
 
 /**
  * 收集玩家装备
- * @param stats 玩家统计数据
+ * @param participant SGP 参与者数据
  * @returns 装备ID数组（过滤掉空装备）
  */
-export function collectPlayerItems(stats: any): number[] {
+export function collectPlayerItems(participant: Participant): number[] {
   const items = [
-    stats?.item0,
-    stats?.item1,
-    stats?.item2,
-    stats?.item3,
-    stats?.item4,
-    stats?.item5,
-    stats?.item6,
+    participant?.item0,
+    participant?.item1,
+    participant?.item2,
+    participant?.item3,
+    participant?.item4,
+    participant?.item5,
+    participant?.item6,
   ].filter(item => item && item !== 0) as number[];
 
   return items;
@@ -135,27 +129,33 @@ export function collectPlayerItems(stats: any): number[] {
 
 /**
  * 计算补刀数（小兵 + 野怪）
- * @param stats 玩家统计数据
+ * @param participant SGP 参与者数据
  * @returns 总补刀数
  */
-export function calculateCS(stats: any): number {
-  const minionsKilled = stats?.totalMinionsKilled || 0;
-  const neutralMinionsKilled = stats?.neutralMinionsKilled || 0;
+export function calculateCS(participant: Participant): number {
+  const minionsKilled = participant?.totalMinionsKilled || 0;
+  const neutralMinionsKilled = participant?.neutralMinionsKilled || 0;
   return minionsKilled + neutralMinionsKilled;
 }
 
 /**
  * 获取玩家天赋信息
- * @param stats 玩家统计数据
+ * @param participant SGP 参与者数据
  * @returns [主要天赋系, 次要天赋系]
  */
-export function getPlayerRunes(stats: any): [number, number] {
-  return [stats?.perkPrimaryStyle || 0, stats?.perkSubStyle || 0];
+export function getPlayerRunes(participant: Participant): [number, number] {
+  const styles = participant?.perks?.styles || [];
+  const primaryStyle =
+    styles.find(style => style.selections?.length > 0)?.style || 0;
+  const subStyle =
+    styles.find((style, index) => index > 0 && style.selections?.length > 0)
+      ?.style || 0;
+  return [primaryStyle, subStyle];
 }
 
 /**
  * 查找指定召唤师在比赛中的参与者数据
- * @param game 比赛数据
+ * @param game SGP 比赛数据
  * @param summoner 召唤师数据
  * @returns 参与者数据，如果未找到则返回 null
  */
@@ -163,21 +163,11 @@ export function findPlayerInGame(
   game: Game,
   summoner: SummonerData
 ): Participant | null {
-  // 找到当前玩家的参与者ID
-  let currentParticipantID = 0;
-  if (game.participantIdentities && summoner) {
-    for (const identity of game.participantIdentities) {
-      if (identity.player?.summonerId === summoner.accountId) {
-        currentParticipantID = identity.participantId;
-        break;
-      }
-    }
-  }
-
-  // 找到对应的参与者数据
-  if (game.participants && currentParticipantID > 0) {
-    for (const participant of game.participants) {
-      if (participant.participantId === currentParticipantID) {
+  // SGP 数据结构中，参与者信息直接在 game.json.participants 中
+  if (game.json?.participants && summoner) {
+    for (const participant of game.json.participants) {
+      // SGP 使用 puuid 进行匹配
+      if (participant.puuid === summoner.puuid) {
         return participant;
       }
     }
@@ -188,7 +178,7 @@ export function findPlayerInGame(
 
 /**
  * 处理单场比赛的简要数据
- * @param game 比赛数据
+ * @param game SGP 比赛数据
  * @param summoner 召唤师数据
  * @param formatGameDuration 游戏时长格式化函数
  * @param getQueueName 队列名称获取函数
@@ -206,55 +196,49 @@ export function processBriefMatch(
     return null;
   }
 
-  const kills = currentPlayer.stats?.kills || 0;
-  const deaths = currentPlayer.stats?.deaths || 0;
-  const assists = currentPlayer.stats?.assists || 0;
+  const kills = currentPlayer.kills || 0;
+  const deaths = currentPlayer.deaths || 0;
+  const assists = currentPlayer.assists || 0;
   const kda = calculateKDA(kills, deaths, assists);
 
   return {
-    gameId: game.gameId,
+    gameId: game.json.gameId,
     championId: currentPlayer.championId,
-    result: currentPlayer.stats?.win ? 'victory' : 'defeat',
-    queueType: getQueueName(game.queueId),
-    duration: formatGameDuration(game.gameDuration),
-    createdAt: game.gameCreationDate,
+    result: currentPlayer.win ? 'victory' : 'defeat',
+    queueType: getQueueName(game.json.queueId),
+    duration: formatGameDuration(game.json.gameDuration),
+    createdAt: game.json.gameCreation.toString(),
     kda,
     spells: [currentPlayer.spell1Id, currentPlayer.spell2Id],
-    runes: getPlayerRunes(currentPlayer.stats),
+    runes: getPlayerRunes(currentPlayer),
   };
 }
 
 /**
  * 处理玩家数据
- * @param participant 参与者数据
- * @param identity 参与者身份信息
+ * @param participant SGP 参与者数据
  * @param championNames 英雄名称映射
  * @param playerRanks 玩家段位信息映射
  * @returns 处理后的玩家数据
  */
 export function processPlayer(
   participant: Participant,
-  identity: ParticipantIdentity | undefined,
   championNames: Map<string, string>,
   playerRanks: Map<string, [string, string, number]>
 ): ProcessedPlayer {
-  // 获取玩家身份信息
-  let playerName = '未知玩家';
-  let playerPuuid = '';
-
-  if (identity?.player) {
-    playerPuuid = identity.player.puuid || '';
-    playerName = extractPlayerNameFromIdentity(identity);
-  }
+  // SGP 数据中玩家信息直接在 participant 中
+  const playerName =
+    participant.riotIdGameName || participant.summonerName || '未知玩家';
+  const playerPuuid = participant.puuid || '';
 
   // 计算 KDA
-  const kills = participant.stats?.kills || 0;
-  const deaths = participant.stats?.deaths || 0;
-  const assists = participant.stats?.assists || 0;
+  const kills = participant.kills || 0;
+  const deaths = participant.deaths || 0;
+  const assists = participant.assists || 0;
   const kda = calculateKDA(kills, deaths, assists);
 
   // 收集装备
-  const items = collectPlayerItems(participant.stats);
+  const items = collectPlayerItems(participant);
 
   // 获取段位信息
   const rankInfo = playerRanks.get(playerPuuid) || ['获取中...', '', 0];
@@ -271,13 +255,13 @@ export function processPlayer(
     rankInfo,
     kda,
     spells: [participant.spell1Id, participant.spell2Id],
-    runes: getPlayerRunes(participant.stats),
+    runes: getPlayerRunes(participant),
     stats: {
-      level: participant.stats?.champLevel || 0,
-      cs: calculateCS(participant.stats),
-      gold: participant.stats?.goldEarned || 0,
-      damage: participant.stats?.totalDamageDealtToChampions || 0,
-      damageTaken: participant.stats?.totalDamageTaken || 0,
+      level: participant.champLevel || 0,
+      cs: calculateCS(participant),
+      gold: participant.goldEarned || 0,
+      damage: participant.totalDamageDealtToChampions || 0,
+      damageTaken: participant.totalDamageTaken || 0,
       items,
     },
   };
@@ -285,7 +269,7 @@ export function processPlayer(
 
 /**
  * 处理队伍禁用英雄
- * @param team 队伍数据
+ * @param team SGP 队伍数据
  * @param championNames 英雄名称映射
  * @returns 禁用英雄数组
  */
@@ -304,15 +288,15 @@ export function processTeamBans(
 
 /**
  * 获取队伍统计数据
- * @param team 队伍数据
+ * @param team SGP 队伍数据
  * @returns 队伍统计数据
  */
 export function getTeamStats(team: Team): TeamStats {
   return {
-    dragonKills: team.dragonKills || 0,
-    baronKills: team.baronKills || 0,
-    towerKills: team.towerKills || 0,
-    inhibitorKills: team.inhibitorKills || 0,
+    dragonKills: team.objectives?.dragon?.kills || 0,
+    baronKills: team.objectives?.baron?.kills || 0,
+    towerKills: team.objectives?.tower?.kills || 0,
+    inhibitorKills: team.objectives?.inhibitor?.kills || 0,
   };
 }
 
@@ -333,7 +317,7 @@ export function getTeamDisplayInfo(teamId: number): {
 
 /**
  * 处理比赛详情数据，转换为前端展示格式
- * @param matchDetail 比赛详情数据
+ * @param matchDetail SGP 比赛数据
  * @param championNames 英雄名称映射
  * @param playerRanks 玩家段位信息映射
  * @returns 处理后的队伍数据数组
@@ -345,31 +329,25 @@ export function processMatchDetail(
 ): ProcessedTeam[] {
   const teams: ProcessedTeam[] = [];
 
-  if (!matchDetail.teams) {
+  if (!matchDetail.json?.teams) {
     return teams;
   }
 
-  for (const team of matchDetail.teams) {
+  for (const team of matchDetail.json.teams) {
     const teamPlayers: ProcessedPlayer[] = [];
     const { name: teamName, color: teamColor } = getTeamDisplayInfo(
       team.teamId
     );
 
     // 获取该队伍的所有玩家
-    if (matchDetail.participants) {
-      const teamParticipants = matchDetail.participants.filter(
+    if (matchDetail.json.participants) {
+      const teamParticipants = matchDetail.json.participants.filter(
         p => p.teamId === team.teamId
       );
 
       for (const participant of teamParticipants) {
-        // 查找玩家身份信息
-        const identity = matchDetail.participantIdentities?.find(
-          id => id.participantId === participant.participantId
-        );
-
         const processedPlayer = processPlayer(
           participant,
-          identity,
           championNames,
           playerRanks
         );
@@ -385,7 +363,7 @@ export function processMatchDetail(
       teamId: team.teamId,
       teamName,
       teamColor,
-      win: team.win === 'Win',
+      win: team.win,
       players: teamPlayers,
       teamStats: getTeamStats(team),
       bans,
@@ -398,22 +376,22 @@ export function processMatchDetail(
 
 /**
  * 收集比赛中所有的英雄ID
- * @param matchDetail 比赛详情数据
+ * @param matchDetail SGP 比赛数据
  * @returns 英雄ID集合
  */
 export function collectAllChampionIds(matchDetail: Game): Set<number> {
   const allChampionIds = new Set<number>();
 
   // 收集参与者的英雄ID
-  if (matchDetail.participants) {
-    for (const participant of matchDetail.participants) {
+  if (matchDetail.json?.participants) {
+    for (const participant of matchDetail.json.participants) {
       allChampionIds.add(participant.championId);
     }
   }
 
   // 收集禁用英雄ID
-  if (matchDetail.teams) {
-    for (const team of matchDetail.teams) {
+  if (matchDetail.json?.teams) {
+    for (const team of matchDetail.json.teams) {
       if (team.bans) {
         for (const ban of team.bans) {
           if (ban.championId && ban.championId !== -1) {
@@ -429,15 +407,15 @@ export function collectAllChampionIds(matchDetail: Game): Set<number> {
 
 /**
  * 收集比赛中所有的装备ID
- * @param matchDetail 比赛详情数据
+ * @param matchDetail SGP 比赛数据
  * @returns 装备ID集合
  */
 export function collectAllItemIds(matchDetail: Game): Set<number> {
   const allItemIds = new Set<number>();
 
-  if (matchDetail.participants) {
-    for (const participant of matchDetail.participants) {
-      const items = collectPlayerItems(participant.stats);
+  if (matchDetail.json?.participants) {
+    for (const participant of matchDetail.json.participants) {
+      const items = collectPlayerItems(participant);
       items.forEach(item => allItemIds.add(item));
     }
   }
