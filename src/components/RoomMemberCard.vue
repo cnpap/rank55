@@ -257,8 +257,8 @@ const handleKick = () => {
         <!-- 战绩信息 -->
         <div v-else>
           <BriefMatchHistory
-            :match-history="member.matchHistory"
-            :summoner="member.summonerData"
+            :match-history="member.matchHistory!"
+            :summoner="member.summonerData!"
             :max-matches="20"
           />
         </div>
