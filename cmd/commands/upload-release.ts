@@ -319,7 +319,7 @@ export const uploadReleaseCommand = new Command('upload-release')
       console.log(`版本: ${version}`);
       console.log(`版本文件目录: ${baseUrl}/downloads/v${version}/`);
       console.log(`访问地址: ${baseUrl}/`);
-      console.log(`更新检查文件: ${baseUrl}/latest.yml`);
+      console.log(`更新检查文件: rank55.com/latest.yml`);
     } catch (error) {
       console.error(
         '上传发布文件失败:',

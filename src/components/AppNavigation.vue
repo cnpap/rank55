@@ -15,7 +15,7 @@ const currentRoute = computed(() => route.name);
 // 导航到指定路由
 const navigateTo = async (path: string) => {
   if (path === '/') {
-    await router.push({
+    await router.replace({
       name: 'Home',
       query: {
         puuid: userStore.user?.puuid,

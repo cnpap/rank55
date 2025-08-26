@@ -113,7 +113,13 @@ onUnmounted(() => {
           <keep-alive>
             <component
               :is="Component"
-              :key="route.meta?.keepAlive ? undefined : route.fullPath"
+              :key="
+                route.meta?.keepAlive
+                  ? route.name === 'Home'
+                    ? route.fullPath
+                    : route.name
+                  : route.fullPath
+              "
               v-if="route.meta?.keepAlive"
             />
           </keep-alive>

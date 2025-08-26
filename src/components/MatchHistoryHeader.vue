@@ -13,6 +13,7 @@ import type { GameModesFilter } from '@/types/match-history-ui';
 import type { Game } from '@/types/match-history-sgp';
 import { AcceptableValue } from 'reka-ui';
 import { GAME_MODE_TAGS } from '@/types/match-history-ui';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
   modelValue: GameModesFilter;
@@ -356,7 +357,11 @@ function getPositionIconUrl(iconName: string): string {
                 >
                   <div class="relative">
                     <img
-                      :src="getChampionAvatarUrl(champion.championId)"
+                      :src="
+                        staticAssets.getChampionIcon(
+                          champion.championId.toString()
+                        )
+                      "
                       :alt="`英雄${champion.championId}`"
                       class="h-8 w-8 border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
