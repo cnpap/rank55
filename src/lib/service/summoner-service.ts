@@ -1,19 +1,11 @@
 import { SummonerData } from '@/types/summoner';
 import { LCUClientInterface } from '../client/interface';
 import { RankedStats } from '@/types/ranked-stats';
-import { Game } from '@/types/match-history';
 import { BaseService } from './base-service';
 
 export class SummonerService extends BaseService {
   constructor(client?: LCUClientInterface) {
     super(client);
-  }
-
-  // 获取比赛详细数据
-  async getMatchDetail(gameID: number): Promise<Game> {
-    const endpoint = `/lol-match-history/v1/games/${gameID}`;
-    const data = await this.makeRequest<Game>('GET', endpoint);
-    return data;
   }
 
   // 获取当前召唤师信息

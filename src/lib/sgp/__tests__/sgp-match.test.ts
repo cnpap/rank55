@@ -8,7 +8,7 @@ import fs from 'fs';
 describe('SGP Match History', () => {
   let sgpApi: SimpleSgpApi;
   let sgpMatchService: SgpMatchService;
-  let lcuClient: any;
+  let lcuClient: LCUClient;
   let summonerService: SummonerService;
 
   beforeEach(async () => {
@@ -52,10 +52,14 @@ describe('SGP Match History', () => {
       });
 
       // 获取当前用户战绩（自动推断服务器）
-      const matchHistory = await sgpMatchService.getCurrentUserMatchHistory(
+      const matchHistory = await sgpMatchService.getMatchHistory(
         summoner.puuid,
         0,
-        20
+        20,
+        {
+          serverId:
+            (await sgpMatchService._inferCurrentUserServerId()) as string,
+        }
       );
 
       // 将返回结果保存到文件

@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
-import { SummonerService } from '../service/summoner-service';
 import { LCUClientInterface } from '../client/interface';
 import { RiotApiService } from '../service/riot-api-service';
 
 describe('SummonerService - Riot API', () => {
   let lcuClient: LCUClientInterface;
-  let summonerService: SummonerService;
   let riotApiService: RiotApiService;
 
   // 测试查找玩家账户别名（Riot API）
@@ -14,7 +12,6 @@ describe('SummonerService - Riot API', () => {
     beforeEach(async () => {
       try {
         lcuClient = await LCUClient.create();
-        summonerService = new SummonerService(lcuClient);
         riotApiService = new RiotApiService(lcuClient);
       } catch (error) {
         console.log(`⏭️ 跳过 Riot API 测试: ${error}`);
