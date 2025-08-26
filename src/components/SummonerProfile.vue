@@ -13,16 +13,16 @@ import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
 
 const props = defineProps<{
-  summonerData?: SummonerData;
+  summoner?: SummonerData;
   rankedStats?: RankedStats;
 }>();
 
 // 获取召唤师头像URL
 const profileIconUrl = computed(() => {
-  if (!props.summonerData?.profileIconId) {
+  if (!props.summoner?.profileIconId) {
     return staticAssets.getProfileIcon('1'); // 默认头像
   }
-  return staticAssets.getProfileIcon(String(props.summonerData.profileIconId));
+  return staticAssets.getProfileIcon(String(props.summoner.profileIconId));
 });
 
 // 计算排位信息
@@ -35,26 +35,26 @@ const rankInfos = computed(() => {
 
 // 获取完整游戏名称（包含标签）
 const fullGameName = computed(() => {
-  if (!props.summonerData) {
+  if (!props.summoner) {
     return 'Unknown Player';
   }
-  return getPlayerDisplayName(props.summonerData);
+  return getPlayerDisplayName(props.summoner);
 });
 
 // 获取召唤师名称部分（不包含标签）
 const summonerName = computed(() => {
-  if (!props.summonerData) {
+  if (!props.summoner) {
     return 'Unknown';
   }
-  return getPlayerName(props.summonerData);
+  return getPlayerName(props.summoner);
 });
 
 // 获取标签部分
 const tagLine = computed(() => {
-  if (!props.summonerData) {
+  if (!props.summoner) {
     return '';
   }
-  return getPlayerTagLine(props.summonerData);
+  return getPlayerTagLine(props.summoner);
 });
 
 // 复制召唤师名称到剪贴板
@@ -92,7 +92,7 @@ const copyPlayerName = async () => {
         <div class="flex items-center gap-1 text-sm">
           <span class="font-tektur-numbers">
             <span>LEVEL:</span>
-            {{ props.summonerData?.summonerLevel || 0 }}
+            {{ props.summoner?.summonerLevel || 0 }}
           </span>
         </div>
       </div>

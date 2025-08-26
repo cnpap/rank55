@@ -10,18 +10,19 @@ import {
 } from '@/lib/rank-helpers';
 import { copyToClipboard } from '@/lib/player-helpers';
 import {
-  processMatchDetail,
+  calculateKDA,
+  collectPlayerItems,
+  calculateCS,
+  getPlayerRunes,
   collectAllChampionIds,
   collectAllItemIds,
-  type ProcessedTeam,
 } from '@/lib/match-helpers';
 import { SummonerService } from '@/lib/service/summoner-service';
 import { BrowserDataLoader } from '@/lib/data-loader';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Skull, Coins, Sword, Shield } from 'lucide-vue-next';
-import { Game } from '@/types/match-history-sgp';
+import { Loader2, Coins, Sword, Shield } from 'lucide-vue-next';
+import { Game, Participant, Team } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
@@ -29,15 +30,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { game } = props;
 
 // 路由和store
 const router = useRouter();
 const matchHistoryStore = useMatchHistoryStore();
-
-// 详细比赛数据
-const matchDetail = ref<Game | null>(props.game);
-const isLoading = ref(false);
-const error = ref<string | null>(null);
 
 // 创建服务实例
 const summonerService = new SummonerService();
@@ -49,63 +46,94 @@ const itemNames = ref<Map<string, string>>(new Map());
 // 玩家段位信息缓存
 const playerRanks = ref<Map<string, [string, string, number]>>(new Map());
 
-// 计算处理后的队伍数据
-const processedTeams = computed((): ProcessedTeam[] => {
-  if (!matchDetail.value) return [];
-
-  return processMatchDetail(
-    matchDetail.value,
-    championNames.value,
-    playerRanks.value
-  );
+// 计算队伍数据（直接使用原始数据，按 teamId 排序）
+const teams = computed(() => {
+  if (!game.json?.teams) return [];
+  return [...game.json.teams].sort((a, b) => a.teamId - b.teamId);
 });
+
+// 获取队伍的参与者
+const getTeamParticipants = (teamId: number): Participant[] => {
+  if (!game.json?.participants) return [];
+  return game.json.participants.filter(p => p.teamId === teamId);
+};
+
+// 获取队伍显示信息
+const getTeamDisplayInfo = (teamId: number) => {
+  return {
+    name: teamId === 100 ? '蓝方' : '红方',
+    color: teamId === 100 ? 'blue' : 'red',
+  };
+};
+
+// 获取队伍统计数据
+const getTeamStats = (team: Team) => {
+  return {
+    dragonKills: team.objectives?.dragon?.kills || 0,
+    baronKills: team.objectives?.baron?.kills || 0,
+    towerKills: team.objectives?.tower?.kills || 0,
+    inhibitorKills: team.objectives?.inhibitor?.kills || 0,
+  };
+};
+
+// 获取队伍禁用英雄
+const getTeamBans = (team: Team) => {
+  return (team.bans || [])
+    .filter(ban => ban.championId && ban.championId !== -1)
+    .map(ban => ({
+      championId: ban.championId,
+      championName:
+        championNames.value.get(String(ban.championId)) ||
+        `英雄${ban.championId}`,
+    }));
+};
+
+// 获取玩家名称
+const getPlayerName = (participant: Participant): string => {
+  return participant.riotIdGameName || participant.summonerName || '未知玩家';
+};
+
+// 获取英雄名称
+const getChampionName = (championId: number): string => {
+  return championNames.value.get(String(championId)) || `英雄${championId}`;
+};
+
+// 获取玩家段位信息
+const getPlayerRankInfo = (puuid: string): [string, string, number] => {
+  return playerRanks.value.get(puuid) || ['获取中...', '', 0];
+};
 
 // 初始化数据加载
 const initializeData = async () => {
-  if (isLoading.value || !matchDetail.value) return;
+  // 收集所有英雄ID和装备ID
+  const allChampionIds = collectAllChampionIds(game);
+  const allItemIds = collectAllItemIds(game);
 
-  isLoading.value = true;
-  error.value = null;
+  // 批量获取名称
+  const [champNames, itemNamesMap] = await Promise.all([
+    dataLoader.getChampionNames(Array.from(allChampionIds)),
+    dataLoader.getItemNames(Array.from(allItemIds)),
+  ]);
 
-  try {
-    // 收集所有英雄ID和装备ID
-    const allChampionIds = collectAllChampionIds(matchDetail.value);
-    const allItemIds = collectAllItemIds(matchDetail.value);
+  championNames.value = champNames;
+  itemNames.value = itemNamesMap;
 
-    // 批量获取名称
-    const [champNames, itemNamesMap] = await Promise.all([
-      dataLoader.getChampionNames(Array.from(allChampionIds)),
-      dataLoader.getItemNames(Array.from(allItemIds)),
-    ]);
-
-    championNames.value = champNames;
-    itemNames.value = itemNamesMap;
-
-    // 先设置加载完成状态，让页面显示基本信息
-    isLoading.value = false;
-
-    // 异步获取所有玩家的段位信息（不阻塞页面显示）
-    loadPlayerRanks(matchDetail.value);
-  } catch (err: any) {
-    console.error('初始化数据失败:', err);
-    error.value = err.message || '初始化数据失败';
-    isLoading.value = false;
-  }
+  // 异步获取所有玩家的段位信息（不阻塞页面显示）
+  loadPlayerRanks();
 };
 
 // 异步加载玩家段位信息
-const loadPlayerRanks = async (detail: Game) => {
+const loadPlayerRanks = async () => {
   console.log('🔍 正在异步获取所有玩家段位信息...');
 
   // 从 Game 对象的 json.participants 中获取玩家信息
-  if (detail.json?.participants) {
+  if (game.json?.participants) {
     // 使用 Promise.allSettled 并发获取所有玩家段位，避免单个失败影响其他
-    const rankPromises = detail.json.participants
+    const rankPromises = game.json.participants
       .filter(participant => participant.puuid)
       .map(async participant => {
         const puuid = participant.puuid;
-        const playerName =
-          participant.summonerName || participant.riotIdGameName || '未知玩家';
+        const playerName = getPlayerName(participant);
 
         try {
           const rankInfo = await summonerService.getPlayerRankedInfo(puuid);
@@ -134,22 +162,15 @@ const copyPlayerName = async (playerName: string) => {
 };
 
 // 搜索玩家战绩
-const searchPlayerHistory = async (playerName: string) => {
-  if (!playerName || playerName === '未知玩家') {
-    toast.error('无法查询该玩家的战绩');
-    return;
-  }
-
+const searchPlayerHistory = async (puuid: string) => {
   try {
     // 使用store的搜索功能
-    await matchHistoryStore.searchSummonerByName(playerName);
+    await matchHistoryStore.navigateByPuuid(puuid);
 
     // 搜索成功后跳转到首页
     if (router.currentRoute.value.name !== 'Home') {
       router.push('/');
     }
-
-    toast.success(`正在查询 ${playerName} 的战绩`);
   } catch (error) {
     console.error('搜索玩家失败:', error);
     toast.error('搜索玩家失败，请重试');
@@ -159,43 +180,19 @@ const searchPlayerHistory = async (playerName: string) => {
 
 <template>
   <div class="space-y-6">
-    <!-- 加载状态 -->
-    <div v-if="isLoading" class="flex items-center justify-center py-12">
-      <div class="text-muted-foreground flex items-center gap-3">
-        <Loader2 class="h-5 w-5 animate-spin" />
-        <span class="text-sm font-medium">加载详细数据中...</span>
-      </div>
-    </div>
-
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="flex items-center justify-center py-12">
-      <Card class="w-full max-w-md">
-        <CardContent class="pt-6 text-center">
-          <div class="text-destructive mb-4">
-            <Skull class="mx-auto h-8 w-8" />
-          </div>
-          <p class="text-destructive mb-4 text-sm">{{ error }}</p>
-          <button
-            @click="initializeData"
-            class="text-muted-foreground text-sm underline-offset-4 hover:underline"
-          >
-            点击重试
-          </button>
-        </CardContent>
-      </Card>
-    </div>
-
     <!-- 详细数据展示 -->
-    <div v-else-if="matchDetail && processedTeams.length > 0" class="space-y-6">
+    <div class="space-y-6">
       <!-- 队伍对战表格 -->
       <div>
-        <div v-for="team in processedTeams" :key="team.teamId">
+        <div v-for="team in teams" :key="team.teamId">
           <!-- 队伍标题 -->
           <div
             class="flex items-center justify-between border-b px-3 py-1 pl-4"
             :class="{
-              'bg-blue-50/80 dark:bg-blue-950/30': team.teamColor === 'blue',
-              'bg-red-50/80 dark:bg-red-950/30': team.teamColor === 'red',
+              'bg-blue-50/80 dark:bg-blue-950/30':
+                getTeamDisplayInfo(team.teamId).color === 'blue',
+              'bg-red-50/80 dark:bg-red-950/30':
+                getTeamDisplayInfo(team.teamId).color === 'red',
             }"
           >
             <div class="flex items-center gap-4">
@@ -217,11 +214,11 @@ const searchPlayerHistory = async (playerName: string) => {
             </div>
             <div class="flex items-center gap-2">
               <!-- 禁用英雄 -->
-              <div v-if="team.bans.length > 0">
+              <div v-if="getTeamBans(team).length > 0">
                 <div class="flex items-center gap-4">
                   <div class="flex gap-2">
                     <div
-                      v-for="ban in team.bans"
+                      v-for="ban in getTeamBans(team)"
                       :key="ban.championId"
                       class="relative"
                     >
@@ -251,7 +248,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   <p
                     class="font-tektur-numbers text-foreground text-lg font-bold"
                   >
-                    {{ team.teamStats.dragonKills }}
+                    {{ getTeamStats(team).dragonKills }}
                   </p>
                 </div>
                 <div>
@@ -259,7 +256,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   <p
                     class="font-tektur-numbers text-foreground text-lg font-bold"
                   >
-                    {{ team.teamStats.baronKills }}
+                    {{ getTeamStats(team).baronKills }}
                   </p>
                 </div>
                 <div>
@@ -267,7 +264,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   <p
                     class="font-tektur-numbers text-foreground text-lg font-bold"
                   >
-                    {{ team.teamStats.towerKills }}
+                    {{ getTeamStats(team).towerKills }}
                   </p>
                 </div>
                 <div>
@@ -275,7 +272,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   <p
                     class="font-tektur-numbers text-foreground text-lg font-bold"
                   >
-                    {{ team.teamStats.inhibitorKills }}
+                    {{ getTeamStats(team).inhibitorKills }}
                   </p>
                 </div>
               </div>
@@ -285,8 +282,10 @@ const searchPlayerHistory = async (playerName: string) => {
           <!-- 玩家数据表格 -->
           <div
             :class="{
-              'bg-blue-50/80 dark:bg-blue-950/30': team.teamColor === 'blue',
-              'bg-red-50/80 dark:bg-red-950/30': team.teamColor === 'red',
+              'bg-blue-50/80 dark:bg-blue-950/30':
+                getTeamDisplayInfo(team.teamId).color === 'blue',
+              'bg-red-50/80 dark:bg-red-950/30':
+                getTeamDisplayInfo(team.teamId).color === 'red',
             }"
             class="overflow-x-auto"
           >
@@ -303,8 +302,8 @@ const searchPlayerHistory = async (playerName: string) => {
 
             <!-- 玩家数据行 -->
             <div
-              v-for="player in team.players"
-              :key="player.participantId"
+              v-for="participant in getTeamParticipants(team.teamId)"
+              :key="participant.participantId"
               class="hover:bg-muted/70 border-border/50 grid grid-cols-[2.5fr_1fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-0.5 pl-4 transition-colors last:border-b-0"
             >
               <!-- 玩家信息 -->
@@ -314,9 +313,11 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div class="relative flex-shrink-0">
                     <img
                       :src="
-                        staticAssets.getChampionIcon(`${player.championId}`)
+                        staticAssets.getChampionIcon(
+                          `${participant.championId}`
+                        )
                       "
-                      :alt="player.championName"
+                      :alt="getChampionName(participant.championId)"
                       class="ring-border/30 h-12 w-12 rounded-lg object-cover ring-2"
                     />
                     <!-- 等级显示在头像右下角 -->
@@ -324,7 +325,7 @@ const searchPlayerHistory = async (playerName: string) => {
                       class="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white ring-2 ring-white dark:ring-gray-800"
                     >
                       <span class="font-tektur-numbers text-xs font-bold">
-                        {{ player.stats.level }}
+                        {{ participant.champLevel || 0 }}
                       </span>
                     </div>
                   </div>
@@ -334,13 +335,17 @@ const searchPlayerHistory = async (playerName: string) => {
                     <!-- 召唤师技能 -->
                     <div class="flex flex-col gap-1">
                       <img
-                        :src="staticAssets.getSpellIcon(`${player.spells[0]}`)"
-                        :alt="`召唤师技能${player.spells[0]}`"
+                        :src="
+                          staticAssets.getSpellIcon(`${participant.spell1Id}`)
+                        "
+                        :alt="`召唤师技能${participant.spell1Id}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                       />
                       <img
-                        :src="staticAssets.getSpellIcon(`${player.spells[1]}`)"
-                        :alt="`召唤师技能${player.spells[1]}`"
+                        :src="
+                          staticAssets.getSpellIcon(`${participant.spell2Id}`)
+                        "
+                        :alt="`召唤师技能${participant.spell2Id}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                       />
                     </div>
@@ -348,16 +353,24 @@ const searchPlayerHistory = async (playerName: string) => {
                     <!-- 天赋系 -->
                     <div class="flex flex-col gap-1">
                       <img
-                        v-if="player.runes[0]"
-                        :src="staticAssets.getRuneIcon(`${player.runes[0]}`)"
-                        :alt="`主要天赋系${player.runes[0]}`"
+                        v-if="getPlayerRunes(participant)[0]"
+                        :src="
+                          staticAssets.getRuneIcon(
+                            `${getPlayerRunes(participant)[0]}`
+                          )
+                        "
+                        :alt="`主要天赋系${getPlayerRunes(participant)[0]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                         title="主要天赋系"
                       />
                       <img
-                        v-if="player.runes[1]"
-                        :src="staticAssets.getRuneIcon(`${player.runes[1]}`)"
-                        :alt="`次要天赋系${player.runes[1]}`"
+                        v-if="getPlayerRunes(participant)[1]"
+                        :src="
+                          staticAssets.getRuneIcon(
+                            `${getPlayerRunes(participant)[1]}`
+                          )
+                        "
+                        :alt="`次要天赋系${getPlayerRunes(participant)[1]}`"
                         class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
                         title="次要天赋系"
                       />
@@ -368,23 +381,23 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
                       <button
-                        @click="searchPlayerHistory(player.playerName)"
+                        @click="searchPlayerHistory(participant.puuid)"
                         class="text-foreground hover:text-primary cursor-pointer truncate font-medium transition-colors hover:underline"
                         :disabled="
-                          player.playerName === '未知玩家' ||
+                          getPlayerName(participant) === '未知玩家' ||
                           matchHistoryStore.isSearching
                         "
                         :title="
-                          player.playerName === '未知玩家'
+                          getPlayerName(participant) === '未知玩家'
                             ? '无法查询该玩家'
-                            : `点击查询 ${player.playerName} 的战绩`
+                            : `点击查询 ${getPlayerName(participant)} 的战绩`
                         "
                       >
-                        {{ player.playerName }}
+                        {{ getPlayerName(participant) }}
                       </button>
                       <button
-                        v-if="player.playerName !== '未知玩家'"
-                        @click="copyPlayerName(player.playerName)"
+                        v-if="getPlayerName(participant) !== '未知玩家'"
+                        @click="copyPlayerName(getPlayerName(participant))"
                         class="text-muted-foreground hover:text-foreground flex-shrink-0 rounded p-1 transition-colors"
                         title="复制玩家名称"
                       >
@@ -392,27 +405,39 @@ const searchPlayerHistory = async (playerName: string) => {
                       </button>
                     </div>
                     <p class="text-muted-foreground truncate text-xs">
-                      {{ player.championName }}
+                      {{ getChampionName(participant.championId) }}
                     </p>
                     <!-- 段位信息 -->
                     <div class="flex items-center gap-1">
                       <!-- 段位图标 -->
                       <img
                         v-if="
-                          player.rankInfo &&
-                          !player.rankInfo[0].includes('未定级') &&
-                          !player.rankInfo[0].includes('获取失败') &&
-                          !player.rankInfo[0].includes('加载中')
+                          getPlayerRankInfo(participant.puuid) &&
+                          !getPlayerRankInfo(participant.puuid)[0].includes(
+                            '未定级'
+                          ) &&
+                          !getPlayerRankInfo(participant.puuid)[0].includes(
+                            '获取失败'
+                          ) &&
+                          !getPlayerRankInfo(participant.puuid)[0].includes(
+                            '加载中'
+                          )
                         "
-                        :src="getRankMiniImageUrl(player.rankInfo[0] || '')"
-                        :alt="`段位图标 ${player.rankInfo[0]}`"
+                        :src="
+                          getRankMiniImageUrl(
+                            getPlayerRankInfo(participant.puuid)[0] || ''
+                          )
+                        "
+                        :alt="`段位图标 ${getPlayerRankInfo(participant.puuid)[0]}`"
                         class="h-4 w-4 object-contain"
                       />
                       <!-- 加载中的小图标 -->
                       <Loader2
                         v-else-if="
-                          player.rankInfo &&
-                          player.rankInfo[0].includes('加载中')
+                          getPlayerRankInfo(participant.puuid) &&
+                          getPlayerRankInfo(participant.puuid)[0].includes(
+                            '加载中'
+                          )
                         "
                         class="text-muted-foreground h-3 w-3 animate-spin"
                       />
@@ -420,22 +445,28 @@ const searchPlayerHistory = async (playerName: string) => {
                         class="font-tektur-numbers text-muted-foreground text-xs"
                         :class="{
                           'text-muted-foreground/60':
-                            player.rankInfo &&
-                            player.rankInfo[0].includes('加载中'),
+                            getPlayerRankInfo(participant.puuid) &&
+                            getPlayerRankInfo(participant.puuid)[0].includes(
+                              '加载中'
+                            ),
                         }"
                       >
                         <template
                           v-if="
-                            player.rankInfo &&
-                            player.rankInfo[0].includes('加载中')
+                            getPlayerRankInfo(participant.puuid) &&
+                            getPlayerRankInfo(participant.puuid)[0].includes(
+                              '加载中'
+                            )
                           "
                         >
                           加载中...
                         </template>
                         <template v-else>
-                          {{ getTierName(player.rankInfo[0]) }}
-                          {{ player.rankInfo[1] }}
-                          {{ player.rankInfo[2] }}LP
+                          {{
+                            getTierName(getPlayerRankInfo(participant.puuid)[0])
+                          }}
+                          {{ getPlayerRankInfo(participant.puuid)[1] }}
+                          {{ getPlayerRankInfo(participant.puuid)[2] }}LP
                         </template>
                       </span>
                     </div>
@@ -449,23 +480,46 @@ const searchPlayerHistory = async (playerName: string) => {
               >
                 <div class="space-y-1">
                   <p class="font-tektur-numbers text-sm font-medium">
-                    {{ player.kda.kills }}/{{ player.kda.deaths }}/{{
-                      player.kda.assists
-                    }}
+                    {{ participant.kills || 0 }}/{{
+                      participant.deaths || 0
+                    }}/{{ participant.assists || 0 }}
                   </p>
                   <Badge
                     variant="secondary"
                     class="font-tektur-numbers text-xs"
                     :class="{
                       'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
-                        player.kda.ratio >= 3,
+                        calculateKDA(
+                          participant.kills || 0,
+                          participant.deaths || 0,
+                          participant.assists || 0
+                        ).ratio >= 3,
                       'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
-                        player.kda.ratio >= 2 && player.kda.ratio < 3,
+                        calculateKDA(
+                          participant.kills || 0,
+                          participant.deaths || 0,
+                          participant.assists || 0
+                        ).ratio >= 2 &&
+                        calculateKDA(
+                          participant.kills || 0,
+                          participant.deaths || 0,
+                          participant.assists || 0
+                        ).ratio < 3,
                       'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
-                        player.kda.ratio < 1,
+                        calculateKDA(
+                          participant.kills || 0,
+                          participant.deaths || 0,
+                          participant.assists || 0
+                        ).ratio < 1,
                     }"
                   >
-                    {{ player.kda.ratio.toFixed(1) }}
+                    {{
+                      calculateKDA(
+                        participant.kills || 0,
+                        participant.deaths || 0,
+                        participant.assists || 0
+                      ).ratio.toFixed(1)
+                    }}
                   </Badge>
                 </div>
               </div>
@@ -478,11 +532,11 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div class="flex items-center gap-1">
                     <Coins class="h-3 w-3 text-yellow-500" />
                     <span class="font-tektur-numbers text-xs">
-                      {{ formatNumber(player.stats.gold) }}
+                      {{ formatNumber(participant.goldEarned || 0) }}
                     </span>
                   </div>
                   <p class="font-tektur-numbers text-muted-foreground text-xs">
-                    {{ player.stats.cs }} CS
+                    {{ calculateCS(participant) }} CS
                   </p>
                 </div>
               </div>
@@ -495,7 +549,11 @@ const searchPlayerHistory = async (playerName: string) => {
                   <div class="flex items-center gap-1">
                     <Sword class="h-3 w-3 text-red-500" />
                     <span class="font-tektur-numbers text-xs">
-                      {{ formatNumber(player.stats.damage) }}
+                      {{
+                        formatNumber(
+                          participant.totalDamageDealtToChampions || 0
+                        )
+                      }}
                     </span>
                   </div>
                   <div class="flex items-center gap-1">
@@ -503,7 +561,7 @@ const searchPlayerHistory = async (playerName: string) => {
                     <span
                       class="font-tektur-numbers text-muted-foreground text-xs"
                     >
-                      {{ formatNumber(player.stats.damageTaken) }}
+                      {{ formatNumber(participant.totalDamageTaken || 0) }}
                     </span>
                   </div>
                 </div>
@@ -513,7 +571,7 @@ const searchPlayerHistory = async (playerName: string) => {
               <div class="flex items-center justify-center">
                 <div class="flex flex-wrap gap-1">
                   <div
-                    v-for="itemId in player.stats.items"
+                    v-for="itemId in collectPlayerItems(participant)"
                     :key="itemId"
                     class="relative"
                   >

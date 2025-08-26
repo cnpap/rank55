@@ -37,20 +37,14 @@ export function useMatchHistoryState() {
   });
 
   // 计算属性：从本地状态获取数据
-  const currentSummoner = computed(() => searchResult.value.summoner);
+  const summoner = computed(() => searchResult.value.summoner);
   const rankedStats = computed(() => searchResult.value.rankedStats);
   const matchHistory = computed(() => searchResult.value.matchHistory);
   const errorMessage = computed(() => searchResult.value.error);
-  const hasAnyData = computed(
-    () => !!(currentSummoner.value || errorMessage.value)
-  );
+  const hasAnyData = computed(() => !!(summoner.value || errorMessage.value));
   const showMatchHistory = computed(() => {
-    return !!(currentSummoner.value && rankedStats.value && matchHistory.value);
+    return !!(summoner.value && rankedStats.value && matchHistory.value);
   });
-
-  // 计算属性：数据状态
-  const hasData = computed(() => Boolean(matchHistory.value?.length));
-  const hasSummoner = computed(() => Boolean(currentSummoner.value));
 
   // 状态操作方法
   const clearSearchResult = () => {
@@ -91,14 +85,12 @@ export function useMatchHistoryState() {
     gameModesFilter,
 
     // 计算属性
-    currentSummoner,
+    summoner,
     rankedStats,
     matchHistory,
     errorMessage,
     hasAnyData,
     showMatchHistory,
-    hasData,
-    hasSummoner,
 
     // 方法
     clearSearchResult,

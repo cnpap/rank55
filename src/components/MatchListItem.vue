@@ -6,10 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Coins, Sword, Shield } from 'lucide-vue-next';
 import MatchDetailView from './MatchDetailView.vue';
 import { staticAssets } from '@/assets/data-assets';
-import { toast } from 'vue-sonner';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { inject, computed } from 'vue';
-import { useClientUserStore } from '@/stores/client-user';
 
 interface Props {
   match: Game;
@@ -22,19 +20,14 @@ interface Emits {
 
 const props = defineProps<Props>();
 defineEmits<Emits>();
+const puuid = inject<string>('puuid');
 
 const matchHistoryStore = useMatchHistoryStore();
-const clientUser = useClientUserStore();
 const serverId = inject<string>('serverId');
 
 // 辅助函数：获取当前玩家的参与者信息
 const currentPlayer = computed(() => {
-  return props.match.json.participants.find(
-    p =>
-      // 这里需要根据实际的当前玩家标识逻辑来判断
-      // 可能需要通过 puuid 或其他标识符来确定
-      p.puuid === clientUser.user.puuid
-  );
+  return props.match.json.participants.find(p => p.puuid === puuid);
 });
 
 // 辅助函数：获取游戏结果
@@ -55,7 +48,7 @@ const teams = computed(() => {
         championId: p.championId,
         championName: p.championName,
         displayName: p.riotIdGameName || p.summonerName,
-        isCurrentPlayer: p.puuid === clientUser.user.puuid,
+        isCurrentPlayer: p.puuid === puuid,
         kda: {
           kills: p.kills,
           deaths: p.deaths,
@@ -73,7 +66,7 @@ const teams = computed(() => {
         championId: p.championId,
         championName: p.championName,
         displayName: p.riotIdGameName || p.summonerName,
-        isCurrentPlayer: p.puuid === clientUser.user.puuid,
+        isCurrentPlayer: p.puuid === puuid,
         kda: {
           kills: p.kills,
           deaths: p.deaths,
@@ -158,13 +151,8 @@ const queueType = computed(() => {
 });
 
 // 搜索玩家战绩函数
-const searchPlayerHistory = async (playerName: string) => {
-  if (!playerName || playerName === '未知玩家') {
-    toast.error('无法查询该玩家的战绩');
-    return;
-  }
-  console.log(`查询玩家：${playerName}`, `serverId: ${serverId}`);
-  await matchHistoryStore.searchSummonerByName(playerName, serverId);
+const searchPlayerHistory = async (puuid: string) => {
+  await matchHistoryStore.navigateByPuuid(puuid, serverId);
 };
 </script>
 
@@ -371,7 +359,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   class="h-4 w-4 flex-shrink-0 object-cover"
                 />
                 <button
-                  @click="searchPlayerHistory(player.displayName)"
+                  @click="searchPlayerHistory(player.puuid)"
                   class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
                   :title="`点击查询 ${player.displayName} 的战绩`"
                   :disabled="
@@ -424,7 +412,7 @@ const searchPlayerHistory = async (playerName: string) => {
                   class="h-4 w-4 flex-shrink-0 object-cover"
                 />
                 <button
-                  @click="searchPlayerHistory(player.displayName)"
+                  @click="searchPlayerHistory(player.puuid)"
                   class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
                   :title="`点击查询 ${player.displayName} 的战绩`"
                   :disabled="

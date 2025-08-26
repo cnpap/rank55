@@ -14,6 +14,7 @@ import { MatchDataLoader } from '@/lib/match-data-loader';
 const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
 provide('serverId', serverId);
+provide('puuid', puuid);
 
 const userStore = useClientUserStore();
 const matchHistoryStore = useMatchHistoryStore();
@@ -26,14 +27,12 @@ const {
   pageSize,
   expandedMatches,
   gameModesFilter,
-  currentSummoner,
+  summoner,
   rankedStats,
   matchHistory,
   errorMessage,
   hasAnyData,
   showMatchHistory,
-  hasData,
-  hasSummoner,
   clearSearchResult,
   setError,
   setSearchResult,
@@ -200,7 +199,7 @@ onMounted(async () => {
                 >
                   <div class="pl-4">
                     <SummonerProfileComponent
-                      :summoner-data="currentSummoner"
+                      :summoner="summoner"
                       :ranked-stats="rankedStats"
                     />
                   </div>
@@ -211,7 +210,7 @@ onMounted(async () => {
                     :matches="matchHistory"
                     :current-page="currentPage"
                     :page-size="pageSize"
-                    :current-user-puuid="currentSummoner?.puuid || ''"
+                    :current-user-puuid="puuid || ''"
                     :total-matches="searchResult.totalCount"
                     :is-sticky="isSticky"
                     @update:model-value="handleUpdateGameModesFilter"
@@ -220,11 +219,12 @@ onMounted(async () => {
                   />
                 </div>
                 <!-- 历史战绩 - 直接使用 MatchListItem -->
-                <div v-if="showMatchHistory && matchHistory && currentSummoner">
+                <div v-if="showMatchHistory && matchHistory">
                   <MatchListItem
                     v-for="match in matchHistory"
                     :key="match.json.gameId"
                     :match="match"
+                    :current-user-puuid="puuid || ''"
                     :is-expanded="expandedMatches.has(match.json.gameId)"
                     @toggle-detail="handleToggleMatchDetail(match.json.gameId)"
                   />
