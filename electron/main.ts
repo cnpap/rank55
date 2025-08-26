@@ -149,6 +149,33 @@ ipcMain.handle(
   }
 );
 
+// LCU 二进制请求处理程序
+ipcMain.handle(
+  'lcu-binary-request',
+  async (
+    _,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    endpoint: string,
+    options?: RequestOptions,
+    retryCount?: number
+  ) => {
+    try {
+      const client = await ensureLCUClient();
+      return await client.makeBinaryRequest(
+        method,
+        endpoint,
+        options,
+        retryCount
+      );
+    } catch (error) {
+      console.error('LCU 二进制请求失败:', error);
+      // 如果请求失败，尝试重新初始化客户端
+      lcuClient = null;
+      throw error;
+    }
+  }
+);
+
 ipcMain.handle('lcu-is-connected', async () => {
   try {
     if (!lcuClient) {

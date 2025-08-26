@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import {
   Select,
   SelectContent,
@@ -46,9 +46,6 @@ const pageSizeOptions = [
   { value: 20, label: '20条' },
   { value: 50, label: '50条' },
 ];
-
-// 当前选中的游戏模式
-const selectedGameMode = ref('all');
 
 // 位置映射 - 添加固定顺序
 const positionMap = {
@@ -221,7 +218,7 @@ function handlePageSizeChange(size: AcceptableValue) {
 
 // 获取英雄头像URL
 function getChampionAvatarUrl(championId: number): string {
-  return `/public/dynamic/avatar/${championId}.png`;
+  return `./public/dynamic/avatar/${championId}.png`;
 }
 
 // 获取位置图标URL

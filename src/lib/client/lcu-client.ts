@@ -167,7 +167,8 @@ export class LCUClient implements LCUClientInterface {
     authToken: string,
     options: RequestOptions = {},
     retryCount: number = 0,
-    isRiotApi: boolean = false
+    isRiotApi: boolean = false,
+    expectBinary: boolean = false // 新增参数
   ): Promise<any> {
     return new Promise(async (resolve, reject) => {
       // 处理查询参数
@@ -192,16 +193,21 @@ export class LCUClient implements LCUClientInterface {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Basic ${Buffer.from(`riot:${authToken}`).toString('base64')}`,
-          ...options.headers, // 合并自定义头部
+          ...options.headers,
         },
         rejectUnauthorized: false,
       };
 
       const req = https.request(requestOptions, res => {
+        const chunks: Buffer[] = [];
         let data = '';
 
         res.on('data', chunk => {
-          data += chunk;
+          if (expectBinary) {
+            chunks.push(chunk);
+          } else {
+            data += chunk;
+          }
         });
 
         res.on('end', async () => {
@@ -223,7 +229,8 @@ export class LCUClient implements LCUClientInterface {
                 isRiotApi ? this.riotClientAuthToken : this.authToken,
                 options,
                 retryCount + 1,
-                isRiotApi
+                isRiotApi,
+                expectBinary
               );
               resolve(result);
               return;
@@ -234,17 +241,31 @@ export class LCUClient implements LCUClientInterface {
           }
 
           if (res.statusCode && res.statusCode >= 400) {
+            const errorData = expectBinary
+              ? Buffer.concat(chunks).toString()
+              : data;
             reject(
-              new Error(`API请求失败，状态码: ${res.statusCode}, 响应: ${data}`)
+              new Error(
+                `API请求失败，状态码: ${res.statusCode}, 响应: ${errorData}`
+              )
             );
             return;
           }
 
           try {
-            const result = data ? JSON.parse(data) : null;
-            resolve(result);
+            if (expectBinary) {
+              const result = Buffer.concat(chunks);
+              resolve(result);
+            } else {
+              const result = data ? JSON.parse(data) : null;
+              resolve(result);
+            }
           } catch (error) {
-            reject(new Error(`解析响应失败: ${error}`));
+            if (expectBinary) {
+              reject(new Error(`处理二进制响应失败: ${error}`));
+            } else {
+              reject(new Error(`解析响应失败: ${error}`));
+            }
           }
         });
       });
@@ -267,7 +288,8 @@ export class LCUClient implements LCUClientInterface {
               isRiotApi ? this.riotClientAuthToken : this.authToken,
               options,
               retryCount + 1,
-              isRiotApi
+              isRiotApi,
+              expectBinary
             );
             resolve(result);
             return;
@@ -288,7 +310,7 @@ export class LCUClient implements LCUClientInterface {
     });
   }
 
-  // 重构 makeRequest 方法
+  // 重构现有的 makeRequest 方法
   async makeRequest<T = unknown>(
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
@@ -302,11 +324,31 @@ export class LCUClient implements LCUClientInterface {
       this.authToken,
       options,
       retryCount,
-      false
+      false,
+      false // 不期望二进制响应
     );
   }
 
-  // 重构 makeRiotRequest 方法
+  // 新增：二进制请求方法
+  async makeBinaryRequest(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options: RequestOptions = {},
+    retryCount: number = 0
+  ): Promise<Buffer> {
+    return this.makeHttpRequest(
+      method,
+      this.baseURL,
+      endpoint,
+      this.authToken,
+      options,
+      retryCount,
+      false,
+      true // 期望二进制响应
+    );
+  }
+
+  // 重构现有的 makeRiotRequest 方法
   async makeRiotRequest<T = unknown>(
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
@@ -321,7 +363,8 @@ export class LCUClient implements LCUClientInterface {
       this.riotClientAuthToken,
       options,
       retryCount,
-      true
+      true,
+      false // 不期望二进制响应
     );
   }
 

@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     endpoint: string,
     options?: RequestOptions
   ) => ipcRenderer.invoke('riot-request', method, endpoint, options),
+  lcuBinaryRequest: (
+    method: 'GET' | 'POST',
+    endpoint: string,
+    options?: RequestOptions
+  ) => ipcRenderer.invoke('lcu-binary-request', method, endpoint, options),
   lcuIsConnected: () => ipcRenderer.invoke('lcu-is-connected'),
 
   // 新增：获取 LCU 凭据信息

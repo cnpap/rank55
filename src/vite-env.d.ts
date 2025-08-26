@@ -26,6 +26,12 @@ declare global {
         endpoint: string,
         options: RequestOptions = {}
       ) => Promise<any>;
+      lcuBinaryRequest: (
+        method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+        endpoint: string,
+        options: RequestOptions = {},
+        retryCount?: number
+      ) => Promise<Buffer>;
       lcuIsConnected: () => Promise<boolean>;
       // 新增：获取 LCU 凭据信息
       getLcuCredentials: () => Promise<LCUCredentials>;

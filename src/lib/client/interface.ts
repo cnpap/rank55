@@ -10,6 +10,12 @@ export interface LCUClientInterface {
     endpoint: string,
     options?: RequestOptions
   ): Promise<T>;
+  makeBinaryRequest(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    options?: RequestOptions,
+    retryCount?: number
+  ): Promise<Buffer>;
   isConnected(): Promise<boolean>;
   // 新增：获取客户端凭据信息
   getCredentials(): {
