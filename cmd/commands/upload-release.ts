@@ -252,9 +252,9 @@ export const uploadReleaseCommand = new Command('upload-release')
         const filePath = join(releaseDir, file);
 
         // latest 文件上传到两个位置
-        // 1. 版本目录
+        // 1. 版本目录 - 修复：downloads目录中的文件应该使用ucloudUs3Client
         const versionKey = `downloads/v${version}/${file}`;
-        await uploadFile(filePath, versionKey, bucketName, true); // 使用 ucloudDomainClient
+        await uploadFile(filePath, versionKey, bucketName, false); // 修改为false，使用ucloudUs3Client
 
         // 2. 根目录（用于自动更新检查）
         if (file === 'latest.yml') {
@@ -305,9 +305,9 @@ export const uploadReleaseCommand = new Command('upload-release')
           await upload.done();
           console.log(`  ✓ 上传成功: ${rootKey} (已修改路径)`);
         } else {
-          // 其他 latest 文件直接上传
+          // 其他 latest 文件直接上传到根目录 - 修复：应该使用ucloudDomainClient和rankpub bucket
           const rootKey = file;
-          await uploadFile(filePath, rootKey, bucketName); // 使用 ucloudDomainClient
+          await uploadFile(filePath, rootKey, 'rankpub', true); // 修改为true，使用ucloudDomainClient
         }
       }
 
