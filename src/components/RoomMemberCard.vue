@@ -255,12 +255,38 @@ const handleKick = () => {
         </div>
 
         <!-- 战绩信息 -->
-        <div v-else>
+        <div v-else-if="member.matchHistory && member.summonerData">
           <BriefMatchHistory
-            :match-history="member.matchHistory!"
-            :summoner="member.summonerData!"
+            :match-history="member.matchHistory"
+            :summoner="member.summonerData"
             :max-matches="20"
           />
+        </div>
+
+        <!-- 数据加载完成但无战绩数据 -->
+        <div v-else class="flex h-full items-center justify-center">
+          <div class="flex flex-col items-center justify-center space-y-3">
+            <div
+              class="flex h-8 w-8 items-center justify-center border border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
+            >
+              <svg
+                class="h-4 w-4 text-slate-500 dark:text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <p class="text-xs font-medium text-slate-600 dark:text-slate-400">
+              暂无战绩数据
+            </p>
+          </div>
         </div>
       </div>
     </div>

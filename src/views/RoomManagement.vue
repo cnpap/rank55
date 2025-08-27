@@ -1,19 +1,55 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
+import { useGameState } from '@/lib/composables/useGameState';
+import { RoomService } from '@/lib/service/room-service';
+import { SummonerService } from '@/lib/service/summoner-service';
+import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
+import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
+import type { Room, Member } from '@/types/room';
+import type { SummonerData } from '@/types/summoner';
+import type { RankedStats } from '@/types/ranked-stats';
+import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
 import RoomMemberCard from '@/components/RoomMemberCard.vue';
 import RoomEmptySlot from '@/components/RoomEmptySlot.vue';
 import RoomEmptyState from '@/components/RoomEmptyState.vue';
 
-const {
-  isLoading,
-  isInRoom,
-  roomLeader,
-  otherMembers,
-  kickMember,
-  errorMessage,
-  clearError,
-} = useAutoAcceptGame();
+export interface MemberWithDetails extends Member {
+  summonerData?: SummonerData;
+  rankedStats?: RankedStats;
+  matchHistory?: SgpMatchHistoryResult;
+  isLoading?: boolean;
+  isLoadingSummonerData?: boolean;
+  isLoadingRankedStats?: boolean;
+  isLoadingMatchHistory?: boolean;
+  error?: string;
+}
+
+// 使用游戏状态
+const { isInRoom, isConnected } = useGameState();
+
+// 房间管理状态
+const currentRoom = ref<Room | null>(null);
+const roomMembers = ref<MemberWithDetails[]>([]);
+const isLoadingRoom = ref(false);
+const isLoadingMembers = ref(false);
+const errorMessage = ref<string | null>(null);
+const isUpdating = ref(false);
+const updateTimer = ref<NodeJS.Timeout | null>(null);
+
+// 服务实例
+const roomService = new RoomService();
+const summonerService = new SummonerService();
+const sgpApi = new SimpleSgpApi();
+const sgpMatchService = new SgpMatchService(sgpApi);
+
+// 计算属性
+const isLoading = computed(() => isLoadingRoom.value || isLoadingMembers.value);
+const roomLeader = computed(() =>
+  roomMembers.value.find(member => member.isLeader)
+);
+const otherMembers = computed(() =>
+  roomMembers.value.filter(member => !member.isLeader)
+);
 
 // 创建5个位置的数组，房主在第一个位置，其他成员按顺序填充，空位用null表示
 const roomSlots = computed(() => {
@@ -32,7 +68,199 @@ const roomSlots = computed(() => {
   return slots;
 });
 
+// 获取成员详细信息
+const fetchMembersDetails = async (members: Member[]): Promise<void> => {
+  // 第一阶段：立即显示基本信息
+  roomMembers.value = members.map(member => ({
+    ...member,
+    isLoading: false,
+  }));
+
+  // 第二阶段：并行加载召唤师基本数据
+  const summonerPromises = members.map(async (member, index) => {
+    if (!member.summonerId) return;
+
+    try {
+      const summonerData = await summonerService.getSummonerByID(
+        member.summonerId
+      );
+      if (roomMembers.value[index]) {
+        roomMembers.value[index] = {
+          ...roomMembers.value[index],
+          summonerData,
+        };
+      }
+      return { index, summonerData };
+    } catch (error) {
+      console.warn(`获取成员 ${member.summonerName} 召唤师数据失败:`, error);
+      return null;
+    }
+  });
+
+  const summonerResults = await Promise.all(summonerPromises);
+
+  // 第三阶段：基于召唤师数据加载排位和历史记录
+  summonerResults.forEach(async result => {
+    if (!result?.summonerData?.puuid) return;
+
+    const { index, summonerData } = result;
+
+    // 并行加载排位统计和比赛历史
+    Promise.all([
+      summonerService.getRankedStats(summonerData.puuid).catch(error => {
+        console.warn(`获取排位统计失败:`, error);
+        return undefined;
+      }),
+      sgpMatchService
+        .getMatchHistory(summonerData.puuid, 0, 19, {
+          serverId:
+            (await sgpMatchService._inferCurrentUserServerId()) as string,
+        })
+        .catch(error => {
+          console.warn(`获取比赛历史失败:`, error);
+          return undefined;
+        }),
+    ]).then(([rankedStats, matchHistory]) => {
+      if (roomMembers.value[index]) {
+        roomMembers.value[index] = {
+          ...roomMembers.value[index],
+          rankedStats,
+          matchHistory,
+        };
+      }
+    });
+  });
+};
+
+// 更新房间信息
+const updateRoom = async (): Promise<void> => {
+  // 防止并发调用
+  if (isUpdating.value) {
+    console.log('🏠 房间更新中，跳过本次调用');
+    return;
+  }
+
+  try {
+    isUpdating.value = true;
+    isLoadingRoom.value = true;
+
+    const inLobby = await roomService.isInLobby();
+    if (!inLobby) {
+      currentRoom.value = null;
+      roomMembers.value = [];
+      errorMessage.value = '当前不在游戏房间中';
+      return;
+    }
+
+    const room = await roomService.getCurrentLobby();
+    currentRoom.value = room;
+    clearError();
+
+    isLoadingMembers.value = true;
+    const members = await roomService.getLobbyMembers();
+
+    // 改进的成员变化检测逻辑
+    const currentMemberIds = members.map(m => String(m.summonerId)).sort();
+    const existingMemberIds = roomMembers.value
+      .map(m => String(m.summonerId))
+      .sort();
+
+    // 更严格的比较
+    const hasChanges =
+      currentMemberIds.length !== existingMemberIds.length ||
+      !currentMemberIds.every((id, index) => id === existingMemberIds[index]);
+
+    if (hasChanges) {
+      console.log(
+        `🏠 房间成员发生变化，重新获取详细信息: ${members.length} 名成员`
+      );
+      await fetchMembersDetails(members);
+    } else {
+      console.log(`🏠 房间成员无变化: ${members.length} 名成员`);
+      // 更安全的更新逻辑
+      roomMembers.value = roomMembers.value.map(existingMember => {
+        const updatedMember = members.find(
+          m => m.summonerId === existingMember.summonerId
+        );
+        if (updatedMember) {
+          return {
+            ...existingMember,
+            ...updatedMember,
+            // 保留详细信息
+            summonerData: existingMember.summonerData,
+            rankedStats: existingMember.rankedStats,
+            matchHistory: existingMember.matchHistory,
+            isLoading: existingMember.isLoading,
+            error: existingMember.error,
+          };
+        }
+        return existingMember;
+      });
+    }
+  } catch (error: any) {
+    console.error('更新房间信息失败:', error);
+    errorMessage.value = error.message || '获取房间信息失败';
+  } finally {
+    isLoadingRoom.value = false;
+    isLoadingMembers.value = false;
+    isUpdating.value = false;
+  }
+};
+
 // 踢出成员
+const kickMember = async (summonerId: number): Promise<void> => {
+  try {
+    await roomService.kickMember(summonerId);
+    await updateRoom();
+  } catch (error: any) {
+    console.error('踢出成员失败:', error);
+    errorMessage.value = error.message || '踢出成员失败';
+  }
+};
+
+// 清除错误信息
+const clearError = () => {
+  errorMessage.value = null;
+};
+
+// 重置房间状态
+const resetRoom = () => {
+  currentRoom.value = null;
+  roomMembers.value = [];
+  isLoadingRoom.value = false;
+  isLoadingMembers.value = false;
+  clearError();
+};
+
+// 开始房间状态轮询
+const startRoomPolling = () => {
+  if (updateTimer.value) return;
+
+  console.log('🏠 开始房间状态轮询');
+  updateTimer.value = setInterval(() => {
+    if (isInRoom.value && isConnected.value) {
+      updateRoom();
+    } else {
+      resetRoom();
+    }
+  }, 3000);
+
+  // 立即执行一次
+  if (isInRoom.value && isConnected.value) {
+    updateRoom();
+  }
+};
+
+// 停止房间状态轮询
+const stopRoomPolling = () => {
+  if (updateTimer.value) {
+    clearInterval(updateTimer.value);
+    updateTimer.value = null;
+    console.log('🛑 停止房间状态轮询');
+  }
+};
+
+// 处理踢出成员
 const handleKickMember = async (summonerId: number) => {
   if (confirm('确定要踢出这个成员吗？')) {
     await kickMember(summonerId);
@@ -43,6 +271,32 @@ const handleKickMember = async (summonerId: number) => {
 const handleClearError = () => {
   clearError();
 };
+
+// 监听房间状态变化
+watch(isInRoom, newValue => {
+  if (newValue && isConnected.value) {
+    updateRoom();
+  } else {
+    resetRoom();
+  }
+});
+
+// 监听连接状态变化
+watch(isConnected, newValue => {
+  if (!newValue) {
+    resetRoom();
+  } else if (isInRoom.value) {
+    updateRoom();
+  }
+});
+
+onMounted(() => {
+  startRoomPolling();
+});
+
+onUnmounted(() => {
+  stopRoomPolling();
+});
 </script>
 
 <template>

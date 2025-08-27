@@ -231,17 +231,11 @@ function getPositionIconUrl(iconName: string): string {
 <template>
   <div class="mx-auto max-w-4xl">
     <!-- 整体布局：左侧筛选分页 + 右侧信息统计 -->
-    <div class="flex h-30 items-center justify-between gap-6">
+    <div class="flex h-24 items-center justify-between gap-6">
       <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
-      <div class="flex-shrink-0 space-y-3 p-4">
+      <div class="flex-shrink-0 space-y-1 p-4">
         <!-- 第一行：筛选器 -->
         <div class="flex items-center gap-3">
-          <div
-            class="flex w-16 items-center gap-2 text-slate-600 dark:text-slate-300"
-          >
-            <Filter class="h-4 w-4" />
-            <span class="text-sm font-medium">筛选</span>
-          </div>
           <Select
             :model-value="modelValue.selectedTag"
             @update:model-value="handleGameModeChange"
@@ -263,7 +257,6 @@ function getPositionIconUrl(iconName: string): string {
 
         <!-- 第二行：分页控制 -->
         <div class="flex items-center gap-3">
-          <div class="w-16"></div>
           <!-- 占位符，与上面的标签区域对齐 -->
           <!-- 每页显示数量 -->
           <Select
@@ -319,11 +312,6 @@ function getPositionIconUrl(iconName: string): string {
           <div class="flex-shrink-0">
             <!-- 第一行：最近对局统计（与筛选器对齐） -->
             <div class="mb-3 flex h-8 items-center gap-3">
-              <span
-                class="text-sm font-medium text-slate-600 dark:text-slate-300"
-              >
-                最近对局
-              </span>
               <div class="font-tektur-numbers flex items-center gap-4 text-sm">
                 <span
                   class="font-medium text-emerald-600 dark:text-emerald-400"
@@ -344,11 +332,6 @@ function getPositionIconUrl(iconName: string): string {
 
             <!-- 第二行：常用英雄头像（与分页控制对齐） -->
             <div class="flex h-8 items-center gap-3">
-              <span
-                class="text-sm font-medium text-slate-600 dark:text-slate-300"
-              >
-                常用英雄
-              </span>
               <div class="flex items-center gap-2">
                 <div
                   v-for="champion in recentChampions"
@@ -405,7 +388,7 @@ function getPositionIconUrl(iconName: string): string {
         <div class="w-40 flex-shrink-0">
           <div class="flex flex-col items-center gap-2">
             <!-- 设置固定高度的容器，让柱状图占满高度 -->
-            <div class="flex h-30 items-end">
+            <div class="flex h-24 items-end">
               <div
                 v-for="stat in positionStats"
                 :key="stat.position"

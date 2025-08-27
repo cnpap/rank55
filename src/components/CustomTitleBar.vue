@@ -58,7 +58,7 @@ const handleDoubleClick = () => {
         style="-webkit-app-region: no-drag"
       >
         <!-- 用户信息区域 -->
-        <div class="flex items-center gap-2 px-2">
+        <div class="flex items-center gap-2">
           <!-- 用户头像和信息 -->
           <div
             v-if="isLoggedIn"
@@ -82,6 +82,7 @@ const handleDoubleClick = () => {
               </div>
               <!-- 等级标识 -->
               <div
+                v-if="Boolean(summonerLevel)"
                 class="bg-primary text-primary-foreground absolute -right-2 -bottom-1.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-sm px-1 text-xs"
                 style="font-size: 10px; line-height: 1"
               >
@@ -90,7 +91,7 @@ const handleDoubleClick = () => {
             </div>
             <!-- 用户名 -->
             <span
-              class="text-foreground max-w-[100px] truncate text-xs font-medium"
+              class="text-foreground min-w-[20px] truncate text-xs font-medium"
             >
               {{ displayName }}
             </span>

@@ -65,7 +65,7 @@ const copyPlayerName = async () => {
 
 <template>
   <!-- 召唤师基本信息和排位信息在同一行 -->
-  <div class="flex h-30 items-center justify-between gap-6">
+  <div class="flex h-22 items-center justify-between gap-6">
     <!-- 头像和基本信息 -->
     <div class="flex items-center gap-4">
       <img

@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import 'vue-sonner/style.css';
 import CustomTitleBar from '@/components/CustomTitleBar.vue';
 import Loading from '@/components/Loading.vue';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import { eventBus } from '@/lib/event-bus';
 import { watch } from 'vue';
@@ -18,7 +18,14 @@ const isVersionsLoaded = ref(false);
 const isVersionsLoading = ref(true);
 
 // 使用自动接受游戏功能
-useAutoAcceptGame();
+const { isInRoom, isConnected, clientUser } = useAutoAcceptGame();
+
+// 通过 provide 向子组件提供房间状态
+provide('gameState', {
+  isInRoom,
+  isConnected,
+  clientUser,
+});
 
 // 重新加载页面的方法
 const handleReload = () => {
