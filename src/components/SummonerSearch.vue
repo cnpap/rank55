@@ -180,6 +180,7 @@ const searchFromFriend = async (friend: SimpleFriend) => {
     `${friend.gameName}#${friend.tagLine}`,
     userStore.serverId
   );
+  selectedServerId.value = userStore.serverId;
   await handleSearch();
 };
 

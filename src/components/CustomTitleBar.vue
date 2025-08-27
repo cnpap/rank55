@@ -71,18 +71,18 @@ const handleDoubleClick = () => {
                 v-if="profileIconUrl"
                 :src="profileIconUrl"
                 :alt="displayName"
-                class="border-border h-6 w-6 rounded-full border"
+                class="border-border h-6 w-6 border"
                 @error="() => {}"
               />
               <div
                 v-else
-                class="bg-muted border-border flex h-6 w-6 items-center justify-center rounded-full border"
+                class="bg-muted border-border flex h-6 w-6 items-center justify-center border"
               >
                 <User class="text-muted-foreground h-3 w-3" />
               </div>
               <!-- 等级标识 -->
               <div
-                class="bg-primary text-primary-foreground absolute -right-1 -bottom-1 flex h-[14px] min-w-[14px] items-center justify-center rounded-full px-1 text-xs"
+                class="bg-primary text-primary-foreground absolute -right-2 -bottom-1.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-sm px-1 text-xs"
                 style="font-size: 10px; line-height: 1"
               >
                 {{ summonerLevel }}

@@ -114,13 +114,6 @@ const isBookmarked = (index: number) => {
         <div
           class="invisible flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
         >
-          <div v-if="isBookmarked(index)" class="flex items-center">
-            <svg class="h-3 w-3" viewBox="0 0 20 20">
-              <path
-                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-              />
-            </svg>
-          </div>
           <span>{{ item.serverName }}</span>
           <span>{{ item.name }}</span>
         </div>
@@ -133,19 +126,12 @@ const isBookmarked = (index: number) => {
             isHovered(index) ? 'z-50' : 'z-10',
             isBookmarked(index)
               ? isHovered(index)
-                ? 'border-amber-300/60 from-amber-50/30 to-amber-100/50 shadow-amber-500/10'
-                : 'border-amber-200/40 from-amber-50/20 to-amber-100/30'
+                ? 'border-amber-300/60 shadow-amber-500/10'
+                : 'border-amber-200/40'
               : isHovered(index)
-                ? 'border-border/40 from-card/50 to-card/80 shadow-primary/5'
-                : 'border-border/20 from-card/30 to-card/60',
+                ? 'border-border/40 shadow-primary/5'
+                : 'border-border/20',
           ]"
-          style="
-            background: linear-gradient(
-              135deg,
-              var(--tw-gradient-from),
-              var(--tw-gradient-to)
-            );
-          "
           @click="handleHistoryClick(item)"
           @mouseenter="handleMouseEnter(index)"
           @mouseleave="handleMouseLeave(index)"
@@ -155,22 +141,6 @@ const isBookmarked = (index: number) => {
             class="relative z-10 flex items-center gap-2 px-3 py-2 text-xs transition-all duration-300 ease-out"
             :class="isHovered(index) ? 'pr-16' : ''"
           >
-            <!-- 标记状态指示器 -->
-            <div
-              v-if="isBookmarked(index)"
-              class="flex flex-shrink-0 items-center"
-            >
-              <svg
-                class="h-3 w-3 text-amber-500 drop-shadow-sm"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                />
-              </svg>
-            </div>
-
             <span
               class="flex-shrink-0 transition-colors duration-300"
               :class="
@@ -204,10 +174,10 @@ const isBookmarked = (index: number) => {
             <button
               @click="handleToggleBookmark($event, item, index)"
               :disabled="isSearching"
-              class="flex h-6 w-6 items-center justify-center rounded-md backdrop-blur-sm transition-all duration-200 hover:scale-110"
+              class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md backdrop-blur-sm transition-all duration-200"
               :class="[
                 isBookmarked(index)
-                  ? 'bg-amber-500/20 text-amber-600 hover:bg-amber-500/30'
+                  ? 'border border-transparent bg-transparent text-amber-600 hover:border-amber-500'
                   : 'text-muted-foreground hover:text-foreground bg-black/10 hover:bg-black/20',
               ]"
               :title="isBookmarked(index) ? '取消标记' : '标记收藏'"
@@ -229,7 +199,12 @@ const isBookmarked = (index: number) => {
             <button
               @click="handleDelete($event, item, index)"
               :disabled="isSearching"
-              class="text-muted-foreground flex h-6 w-6 items-center justify-center rounded-md bg-black/10 backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-red-500/20 hover:text-red-600"
+              :class="[
+                'flex h-6 w-6 cursor-pointer items-center justify-center rounded-md backdrop-blur-sm transition-all duration-200',
+                isBookmarked(index) && isHovered(index)
+                  ? 'bg-white/80 text-gray-700 shadow-md hover:bg-red-500/90 hover:text-white'
+                  : 'text-muted-foreground bg-black/10 hover:bg-red-500/20 hover:text-red-600',
+              ]"
               title="删除记录"
             >
               <svg
