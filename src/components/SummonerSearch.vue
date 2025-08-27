@@ -142,7 +142,10 @@ const handleSearch = async () => {
   if (!summonerName.value.name.trim()) return;
 
   try {
-    await matchHistoryStore.searchSummonerByName(summonerName.value.name);
+    await matchHistoryStore.searchSummonerByName(
+      summonerName.value.name,
+      selectedServerId.value
+    );
     // 搜索成功后关闭弹出框
     isDropdownOpen.value = false;
   } catch (error: any) {
@@ -294,7 +297,7 @@ defineExpose({
       <!-- 弹出框内容 - 使用子组件 -->
       <div
         v-if="isDropdownOpen"
-        class="font-tektur-numbers border-border/50 from-background/95 to-background/90 animate-in fade-in-0 zoom-in-95 absolute top-full left-0 z-50 mt-0.5 w-120 border bg-gradient-to-b p-4 backdrop-blur-sm duration-100"
+        class="font-tektur-numbers border-border/50 from-background/95 to-background/90 animate-in fade-in-0 zoom-in-95 absolute top-full left-0 z-50 mt-0.5 w-160 border bg-gradient-to-b p-4 backdrop-blur-sm duration-100"
       >
         <div
           class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/30 max-h-[28rem] overflow-y-auto"
@@ -342,7 +345,9 @@ defineExpose({
 
           <!-- 加载状态 -->
           <div v-if="isLoadingFriends" class="p-4 text-center">
-            <Loading size="sm" />
+            <div class="flex justify-center">
+              <Loading size="sm" />
+            </div>
             <p class="text-muted-foreground mt-2 text-xs">加载好友列表中...</p>
           </div>
         </div>

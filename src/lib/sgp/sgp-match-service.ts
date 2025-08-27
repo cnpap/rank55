@@ -33,11 +33,6 @@ export class SgpMatchService extends BaseService {
         'GET',
         '/entitlements/v1/token'
       );
-      console.log('获取到的token响应:', {
-        hasAccessToken: !!response.accessToken,
-        tokenLength: response.accessToken?.length || 0,
-        tokenPrefix: response.accessToken?.substring(0, 20) + '...',
-      });
       return response.accessToken;
     } catch (error) {
       console.warn('获取entitlement token失败:', error);

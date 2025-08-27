@@ -110,10 +110,10 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
         return;
       }
 
-      // 如果提供了召唤师名称，添加到搜索历史（避免重复）
+      // 如果提供了召唤师名称，添加到搜索历史（避免重复，应该使用 puuid 来判断重复）
       if (summonerName) {
         const existingIndex = searchHistory.value.findIndex(
-          item => item.name === summonerName && item.serverId === targetServerId
+          item => item.puuid === puuid
         );
 
         if (existingIndex !== -1) {
@@ -163,6 +163,10 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     summonerName: string,
     serverId?: string
   ): Promise<void> => {
+    console.log(
+      `searchSummonerByName: ${summonerName}`,
+      `serverId: ${serverId}`
+    );
     summonerName = summonerName.trim();
 
     // 验证用户ID格式

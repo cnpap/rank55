@@ -18,7 +18,6 @@ provide('puuid', puuid);
 
 const userStore = useClientUserStore();
 const matchHistoryStore = useMatchHistoryStore();
-console.log(1231231231222222);
 
 // 使用解耦的状态管理
 const {

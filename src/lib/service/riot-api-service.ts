@@ -42,7 +42,8 @@ export class RiotApiService extends BaseService {
           params: { gameName, tagLine },
         }
       );
-      console.log(data);
+
+      console.log('lookupPlayerAccount 输出:', { gameName, tagLine }, data);
 
       return data;
     } catch (error: any) {
