@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch, onMounted } from 'vue';
 import { Crown, Copy } from 'lucide-vue-next';
 import BriefMatchHistory from './BriefMatchHistory.vue';
 import Loading from '@/components/Loading.vue';
+import { useMatchHistoryQuery } from '@/lib/composables/useMatchHistoryQuery';
 import type { MemberWithDetails } from '@/stores/room-management';
 import {
   getPlayerDisplayName,
@@ -26,26 +27,41 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+// 使用战绩查询 hook
+const {
+  isLoading: isLoadingMatchHistory,
+  summoner: queriedSummoner,
+  rankedStats: queriedRankedStats,
+  matchHistory,
+  errorMessage,
+  loadCompleteMatchData,
+} = useMatchHistoryQuery({
+  puuid: props.member.summonerData!.puuid,
+});
+
 // 获取正确的玩家名称
 const displayName = computed(() => {
-  // 优先使用 summonerData 中的名称
-  const name = getPlayerDisplayName(
-    props.member.summonerData,
-    props.member.summonerName
-  );
+  // 优先使用查询到的召唤师数据，然后是传入的数据
+  const summonerData = queriedSummoner.value || props.member.summonerData;
+  const name = getPlayerDisplayName(summonerData, props.member.summonerName);
   return name !== '未知玩家'
     ? name
     : props.member.summonerName?.trim() || '未知玩家';
 });
 
+// 获取排位信息 - 优先使用查询到的数据
+const currentRankedStats = computed(() => {
+  return queriedRankedStats.value || props.member.rankedStats;
+});
+
 // 获取单双排位信息
 const soloRankInfo = computed(() => {
-  return getRankInfoFromQueueMap(props.member.rankedStats, 'RANKED_SOLO_5x5');
+  return getRankInfoFromQueueMap(currentRankedStats.value, 'RANKED_SOLO_5x5');
 });
 
 // 获取灵活排位信息
 const flexRankInfo = computed(() => {
-  return getRankInfoFromQueueMap(props.member.rankedStats, 'RANKED_FLEX_SR');
+  return getRankInfoFromQueueMap(currentRankedStats.value, 'RANKED_FLEX_SR');
 });
 
 // 格式化单双排位显示
@@ -60,6 +76,21 @@ const formatFlexRank = computed(() => {
   return formatRankDisplay(tier, division, leaguePoints);
 });
 
+// 计算当前使用的召唤师数据
+const currentSummoner = computed(() => {
+  return queriedSummoner.value || props.member.summonerData;
+});
+
+// 计算是否正在加载
+const isLoading = computed(() => {
+  return isLoadingMatchHistory.value || props.member.isLoading;
+});
+
+// 计算错误信息
+const currentError = computed(() => {
+  return errorMessage.value || props.member.error;
+});
+
 // 复制玩家名称到剪贴板
 const copyPlayerName = async () => {
   await copyToClipboard(displayName.value, '玩家名称已复制到剪贴板');
@@ -71,6 +102,30 @@ const handleKick = () => {
     emit('kick', props.member.summonerId);
   }
 };
+
+// 监听成员数据变化，当有 puuid 时加载战绩
+watch(
+  () => props.member.summonerData?.puuid,
+  async newPuuid => {
+    if (newPuuid) {
+      try {
+        // 这里需要获取服务器ID，可以从全局状态或其他地方获取
+        // 暂时使用一个默认值，实际使用时需要传入正确的服务器ID
+        await loadCompleteMatchData();
+      } catch (error) {
+        console.warn(`加载成员 ${displayName.value} 战绩失败:`, error);
+      }
+    }
+  },
+  { immediate: true }
+);
+
+// 组件挂载时如果已有 puuid 则加载数据
+onMounted(() => {
+  if (props.member.summonerData?.puuid) {
+    loadCompleteMatchData();
+  }
+});
 </script>
 
 <template>
@@ -211,10 +266,7 @@ const handleKick = () => {
     >
       <div class="h-full overflow-y-auto">
         <!-- 加载状态 -->
-        <div
-          v-if="member.isLoading"
-          class="flex h-full items-center justify-center"
-        >
+        <div v-if="isLoading" class="flex h-full items-center justify-center">
           <div class="flex flex-col items-center justify-center space-y-3">
             <Loading size="md" class="text-primary" />
             <p class="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -225,7 +277,7 @@ const handleKick = () => {
 
         <!-- 错误状态 -->
         <div
-          v-else-if="member.error"
+          v-else-if="currentError"
           class="flex h-full items-center justify-center"
         >
           <div class="flex flex-col items-center justify-center space-y-3">
@@ -249,16 +301,16 @@ const handleKick = () => {
             <p
               class="max-w-28 text-center text-xs leading-tight font-medium text-red-600 dark:text-red-400"
             >
-              {{ member.error }}
+              {{ currentError }}
             </p>
           </div>
         </div>
 
         <!-- 战绩信息 -->
-        <div v-else-if="member.matchHistory && member.summonerData">
+        <div v-else-if="matchHistory && currentSummoner">
           <BriefMatchHistory
-            :match-history="member.matchHistory"
-            :summoner="member.summonerData"
+            :match-history="matchHistory"
+            :summoner="currentSummoner"
             :max-matches="20"
           />
         </div>

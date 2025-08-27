@@ -9,16 +9,13 @@ import {
   getPlayerRunes,
 } from '@/lib/match-helpers';
 import { formatDateToDay } from '@/utils/date-utils';
-import {
-  SgpMatchHistoryResult,
-  type Game,
-  type Participant,
-} from '@/types/match-history-sgp';
+import { type Game, type Participant } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
-  matchHistory: SgpMatchHistoryResult;
+  matchHistory: Game[];
   summoner: SummonerData;
+  maxMatches?: number;
 }
 
 const props = defineProps<Props>();
@@ -27,8 +24,10 @@ const props = defineProps<Props>();
 const validMatches = computed(
   (): Array<{ game: Game; player: Participant }> => {
     const result: Array<{ game: Game; player: Participant }> = [];
+    const maxCount = props.maxMatches || props.matchHistory.length;
 
-    for (const game of props.matchHistory.games) {
+    for (let i = 0; i < Math.min(props.matchHistory.length, maxCount); i++) {
+      const game = props.matchHistory[i];
       const currentPlayer = findPlayerInGame(game, props.summoner);
       if (currentPlayer) {
         result.push({ game, player: currentPlayer });

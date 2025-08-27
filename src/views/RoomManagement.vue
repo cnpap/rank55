@@ -3,8 +3,6 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useGameState } from '@/lib/composables/useGameState';
 import { RoomService } from '@/lib/service/room-service';
 import { SummonerService } from '@/lib/service/summoner-service';
-import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
-import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
 import type { Room, Member } from '@/types/room';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
@@ -39,16 +37,15 @@ const updateTimer = ref<NodeJS.Timeout | null>(null);
 // 服务实例
 const roomService = new RoomService();
 const summonerService = new SummonerService();
-const sgpApi = new SimpleSgpApi();
-const sgpMatchService = new SgpMatchService(sgpApi);
 
 // 计算属性
 const isLoading = computed(() => isLoadingRoom.value || isLoadingMembers.value);
-const roomLeader = computed(() =>
-  roomMembers.value.find(member => member.isLeader)
+const roomLeader = computed(
+  () => roomMembers.value.find(member => member.isLeader) as MemberWithDetails
 );
-const otherMembers = computed(() =>
-  roomMembers.value.filter(member => !member.isLeader)
+const otherMembers = computed(
+  () =>
+    roomMembers.value.filter(member => !member.isLeader) as MemberWithDetails[]
 );
 
 // 创建5个位置的数组，房主在第一个位置，其他成员按顺序填充，空位用null表示
@@ -65,7 +62,7 @@ const roomSlots = computed(() => {
     slots[i + 1] = otherMembersList[i];
   }
 
-  return slots;
+  return slots as MemberWithDetails[];
 });
 
 // 获取成员详细信息
@@ -99,36 +96,26 @@ const fetchMembersDetails = async (members: Member[]): Promise<void> => {
 
   const summonerResults = await Promise.all(summonerPromises);
 
-  // 第三阶段：基于召唤师数据加载排位和历史记录
+  // 第三阶段：只加载排位统计，战绩由各个 RoomMemberCard 自己处理
   summonerResults.forEach(async result => {
     if (!result?.summonerData?.puuid) return;
 
     const { index, summonerData } = result;
 
-    // 并行加载排位统计和比赛历史
-    Promise.all([
-      summonerService.getRankedStats(summonerData.puuid).catch(error => {
-        console.warn(`获取排位统计失败:`, error);
-        return undefined;
-      }),
-      sgpMatchService
-        .getMatchHistory(summonerData.puuid, 0, 19, {
-          serverId:
-            (await sgpMatchService._inferCurrentUserServerId()) as string,
-        })
-        .catch(error => {
-          console.warn(`获取比赛历史失败:`, error);
-          return undefined;
-        }),
-    ]).then(([rankedStats, matchHistory]) => {
+    // 只加载排位统计
+    try {
+      const rankedStats = await summonerService.getRankedStats(
+        summonerData.puuid
+      );
       if (roomMembers.value[index]) {
         roomMembers.value[index] = {
           ...roomMembers.value[index],
           rankedStats,
-          matchHistory,
         };
       }
-    });
+    } catch (error) {
+      console.warn(`获取排位统计失败:`, error);
+    }
   });
 };
 
@@ -352,7 +339,7 @@ onUnmounted(() => {
       >
         <!-- 有成员的情况 -->
         <RoomMemberCard
-          v-if="member"
+          v-if="member && member.summonerData"
           :member="member"
           :is-leader="index === 0"
           :can-kick="index !== 0"

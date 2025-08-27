@@ -18,10 +18,9 @@ export interface MatchHistoryQueryResult {
 
 // Hook 配置选项
 export interface MatchHistoryQueryOptions {
-  serverId: string;
+  serverId?: string;
   puuid: string;
   initialPageSize?: number;
-  autoLoad?: boolean;
 }
 
 /**
@@ -29,10 +28,13 @@ export interface MatchHistoryQueryOptions {
  * 提供分页、过滤、数据加载等完整功能
  */
 export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
-  const { serverId, puuid, initialPageSize = 20, autoLoad = true } = options;
+  let { serverId, puuid } = options;
 
   const userStore = useClientUserStore();
   const matchHistoryStore = useMatchHistoryStore();
+  if (!serverId) {
+    serverId = userStore.serverId;
+  }
 
   // 基础状态
   const queryResult = ref<MatchHistoryQueryResult>({
@@ -45,7 +47,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
   const isLoading = ref(false);
   const currentPage = ref(1);
-  const pageSize = ref(initialPageSize);
+  const pageSize = ref(20);
   const expandedMatches = ref(new Set<number>());
 
   // 游戏模式过滤器
@@ -232,7 +234,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   const reset = (): void => {
     clearQueryResult();
     currentPage.value = 1;
-    pageSize.value = initialPageSize;
+    pageSize.value = 20;
     expandedMatches.value.clear();
     gameModesFilter.selectedTag = 'all';
   };

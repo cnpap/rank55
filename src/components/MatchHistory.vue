@@ -35,8 +35,6 @@ const {
 } = useMatchHistoryQuery({
   serverId,
   puuid,
-  initialPageSize: 20,
-  autoLoad: false, // 手动控制加载时机
 });
 
 // 使用UI交互逻辑
