@@ -109,11 +109,23 @@ const isBookmarked = (item: SearchHistoryItem) => {
     <!-- flex布局，自适应每行显示数量 -->
     <div class="flex flex-wrap gap-2">
       <!-- 占位容器，保持布局稳定 -->
-      <div v-for="(item, index) in searchHistory" :key="index" class="relative">
+      <div
+        v-for="(item, index) in searchHistory"
+        :key="item.puuid"
+        class="relative"
+      >
         <!-- 原始占位元素，保持布局不变 -->
         <div
           class="invisible flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
         >
+          <!-- 为收藏的战绩预留星星空间 -->
+          <svg
+            v-if="isBookmarked(item)"
+            class="h-3 w-3 flex-shrink-0"
+            viewBox="0 0 20 20"
+          >
+            <path />
+          </svg>
           <span>{{ item.serverName }}</span>
           <span>{{ item.name.split('#')[0] }}</span>
         </div>
@@ -126,10 +138,10 @@ const isBookmarked = (item: SearchHistoryItem) => {
             isHovered(index) ? 'z-50' : 'z-10',
             isBookmarked(item)
               ? isHovered(index)
-                ? 'border-amber-300/60 shadow-amber-500/10'
+                ? 'shadow-amber-500/10 dark:border-amber-300/60'
                 : 'border-amber-200/40'
               : isHovered(index)
-                ? 'border-border/40 shadow-primary/5'
+                ? 'dark:border-border/40 shadow-primary/5'
                 : 'border-border/20',
           ]"
           @click="handleHistoryClick(item)"
@@ -140,6 +152,17 @@ const isBookmarked = (item: SearchHistoryItem) => {
           <div
             class="relative z-10 flex items-center gap-2 px-3 py-2 text-xs transition-all duration-300 ease-out"
           >
+            <!-- 收藏标识 - 仅在已收藏时显示 -->
+            <svg
+              v-if="isBookmarked(item)"
+              class="h-3 w-3 flex-shrink-0 text-amber-600 transition-colors duration-300"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+              />
+            </svg>
             <span
               class="flex-shrink-0 transition-colors duration-300"
               :class="

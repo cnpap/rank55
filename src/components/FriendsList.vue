@@ -68,10 +68,6 @@ const handleFriendClick = (friend: SimpleFriend) => {
             class="text-foreground group-hover:text-foreground text-xs font-medium transition-colors duration-300 group-hover:brightness-110"
             >{{ friend.gameName }}</span
           >
-          <span
-            class="text-muted-foreground/60 group-hover:text-muted-foreground text-xs transition-colors duration-300"
-            >#{{ friend.tagLine }}</span
-          >
         </div>
 
         <!-- 精致的内发光效果 - 根据状态调整颜色 -->

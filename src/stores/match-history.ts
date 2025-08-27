@@ -257,9 +257,38 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
 
   // 切换收藏状态
   const toggleBookmark = (puuid: string) => {
-    const item = searchHistory.value.find(item => item.puuid === puuid);
-    if (item) {
+    const itemIndex = searchHistory.value.findIndex(
+      item => item.puuid === puuid
+    );
+    if (itemIndex !== -1) {
+      const item = searchHistory.value[itemIndex];
+      const wasBookmarked = item.isBookmarked;
+
+      // 切换收藏状态
       item.isBookmarked = !item.isBookmarked;
+
+      // 如果是新收藏的项目，需要重新排序
+      if (!wasBookmarked && item.isBookmarked) {
+        // 从原位置移除
+        searchHistory.value.splice(itemIndex, 1);
+        // 插入到最前面（所有收藏项目的第一位）
+        searchHistory.value.unshift(item);
+      } else if (wasBookmarked && !item.isBookmarked) {
+        // 如果是取消收藏，从原位置移除
+        searchHistory.value.splice(itemIndex, 1);
+        // 找到第一个非收藏项的位置
+        const firstNonBookmarkedIndex = searchHistory.value.findIndex(
+          item => !item.isBookmarked
+        );
+        if (firstNonBookmarkedIndex === -1) {
+          // 如果所有项都是收藏的，放到最后
+          searchHistory.value.push(item);
+        } else {
+          // 插入到第一个非收藏项的位置
+          searchHistory.value.splice(firstNonBookmarkedIndex, 0, item);
+        }
+      }
+
       saveSearchHistory();
     }
   };
