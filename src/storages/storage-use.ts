@@ -20,6 +20,7 @@ export interface SearchHistoryItem {
   serverId: string;
   serverName: string;
   puuid: string; // 添加 puuid 字段，设为可选以保持向后兼容
+  isBookmarked?: boolean; // 添加收藏标记字段
 }
 
 export type PositionSettings = Record<AssignedPosition, PositionSetting>;

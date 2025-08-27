@@ -42,6 +42,16 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   let sgpApi: SimpleSgpApi = new SimpleSgpApi();
   let sgpMatchService: SgpMatchService = new SgpMatchService(sgpApi);
 
+  // 获取排序后的搜索历史（收藏的在前面）
+  const sortedSearchHistory = computed(() => {
+    return [...searchHistory.value].sort((a, b) => {
+      // 收藏的项目排在前面
+      if (a.isBookmarked && !b.isBookmarked) return -1;
+      if (!a.isBookmarked && b.isBookmarked) return 1;
+      // 如果都是收藏或都不是收藏，保持原有顺序
+      return 0;
+    });
+  });
   // 获取可用服务器列表
   const availableServers = computed((): ServerOption[] => {
     const servers: ServerOption[] = [];
@@ -120,10 +130,29 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
           // 如果已存在，移动到最前面并更新 puuid
           const existingItem = searchHistory.value.splice(existingIndex, 1)[0];
           existingItem.puuid = puuid;
-          searchHistory.value.unshift(existingItem);
+          // 如果是收藏项，直接放到最前面；否则放到非收藏项的最前面
+          if (existingItem.isBookmarked) {
+            searchHistory.value.unshift(existingItem);
+          } else {
+            // 找到第一个非收藏项的位置
+            const firstNonBookmarkedIndex = searchHistory.value.findIndex(
+              item => !item.isBookmarked
+            );
+            if (firstNonBookmarkedIndex === -1) {
+              // 如果所有项都是收藏的，放到最后
+              searchHistory.value.push(existingItem);
+            } else {
+              // 插入到第一个非收藏项的位置
+              searchHistory.value.splice(
+                firstNonBookmarkedIndex,
+                0,
+                existingItem
+              );
+            }
+          }
         } else {
-          // 如果不存在，添加新项到最前面
-          searchHistory.value.unshift({
+          // 如果不存在，添加新项
+          const newItem = {
             name: summonerName,
             serverId: targetServerId,
             serverName:
@@ -131,10 +160,33 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
                 server => server.id === targetServerId
               )?.name || '',
             puuid: puuid,
-          });
-          // 限制历史记录数量为10条
-          if (searchHistory.value.length > 10) {
-            searchHistory.value = searchHistory.value.slice(0, 10);
+            isBookmarked: false, // 新添加的项默认不收藏
+          };
+
+          // 找到第一个非收藏项的位置，新项插入到非收藏项的最前面
+          const firstNonBookmarkedIndex = searchHistory.value.findIndex(
+            item => !item.isBookmarked
+          );
+          if (firstNonBookmarkedIndex === -1) {
+            // 如果所有项都是收藏的，放到最后
+            searchHistory.value.push(newItem);
+          } else {
+            // 插入到第一个非收藏项的位置
+            searchHistory.value.splice(firstNonBookmarkedIndex, 0, newItem);
+          }
+
+          // 限制非收藏历史记录数量为10条（不包括收藏的）
+          const nonBookmarkedItems = searchHistory.value.filter(
+            item => !item.isBookmarked
+          );
+          const bookmarkedItems = searchHistory.value.filter(
+            item => item.isBookmarked
+          );
+
+          if (nonBookmarkedItems.length > 10) {
+            // 保留收藏项和最新的10条非收藏项
+            const latestNonBookmarked = nonBookmarkedItems.slice(0, 10);
+            searchHistory.value = [...bookmarkedItems, ...latestNonBookmarked];
           }
         }
 
@@ -203,6 +255,24 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     saveSearchHistory();
   };
 
+  // 切换收藏状态
+  const toggleBookmark = (puuid: string) => {
+    const item = searchHistory.value.find(item => item.puuid === puuid);
+    if (item) {
+      item.isBookmarked = !item.isBookmarked;
+      saveSearchHistory();
+    }
+  };
+
+  // 删除历史记录
+  const deleteHistoryItem = (puuid: string) => {
+    const index = searchHistory.value.findIndex(item => item.puuid === puuid);
+    if (index !== -1) {
+      searchHistory.value.splice(index, 1);
+      saveSearchHistory();
+    }
+  };
+
   const getServices = () => {
     return {
       summonerService,
@@ -214,7 +284,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   return {
     // 状态
     isSearching,
-    searchHistory,
+    searchHistory: sortedSearchHistory,
     selectedServerId,
 
     // 计算属性
@@ -227,6 +297,8 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     navigateToPlayer,
     validateUserIdFormat,
     clearSearchHistory,
+    toggleBookmark,
+    deleteHistoryItem,
     getServices,
   };
 });

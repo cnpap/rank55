@@ -95,9 +95,9 @@ const handleDelete = (event: Event, item: SearchHistoryItem, index: number) => {
   emit('deleteHistory', item, index);
 };
 
-// 判断是否已标记（前3个默认标记）
-const isBookmarked = (index: number) => {
-  return index < 3;
+// 判断是否已标记（使用 item 的 isBookmarked 字段）
+const isBookmarked = (item: SearchHistoryItem) => {
+  return item.isBookmarked || false;
 };
 </script>
 
@@ -115,7 +115,7 @@ const isBookmarked = (index: number) => {
           class="invisible flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
         >
           <span>{{ item.serverName }}</span>
-          <span>{{ item.name }}</span>
+          <span>{{ item.name.split('#')[0] }}</span>
         </div>
 
         <!-- 实际显示的可交互元素，绝对定位覆盖在占位元素上，悬停时提升层级 -->
@@ -124,7 +124,7 @@ const isBookmarked = (index: number) => {
           :class="[
             isSearching ? 'cursor-not-allowed opacity-50' : '',
             isHovered(index) ? 'z-50' : 'z-10',
-            isBookmarked(index)
+            isBookmarked(item)
               ? isHovered(index)
                 ? 'border-amber-300/60 shadow-amber-500/10'
                 : 'border-amber-200/40'
@@ -136,10 +136,9 @@ const isBookmarked = (index: number) => {
           @mouseenter="handleMouseEnter(index)"
           @mouseleave="handleMouseLeave(index)"
         >
-          <!-- 主要内容区域 - 悬停时扩展宽度 -->
+          <!-- 主要内容区域 - 移除悬停时的宽度变化 -->
           <div
             class="relative z-10 flex items-center gap-2 px-3 py-2 text-xs transition-all duration-300 ease-out"
-            :class="isHovered(index) ? 'pr-16' : ''"
           >
             <span
               class="flex-shrink-0 transition-colors duration-300"
@@ -157,18 +156,14 @@ const isBookmarked = (index: number) => {
                   ? 'text-foreground brightness-110'
                   : 'text-foreground/80',
               ]"
-              >{{ item.name }}</span
+              >{{ item.name.split('#')[0] }}</span
             >
           </div>
 
-          <!-- 操作按钮区域 - 悬停时从右侧滑入 -->
+          <!-- 操作按钮区域 - 直接覆盖在右侧，悬停时显示 -->
           <div
-            class="absolute top-1 right-1 z-20 flex gap-1 transition-all duration-300 ease-out"
-            :class="[
-              isHovered(index)
-                ? 'translate-x-0 opacity-100'
-                : 'translate-x-full opacity-0',
-            ]"
+            class="absolute top-1 right-1 z-20 flex gap-1 transition-all duration-200 ease-out"
+            :class="[isHovered(index) ? 'opacity-100' : 'opacity-0']"
           >
             <!-- 标记/取消标记按钮 -->
             <button
@@ -176,16 +171,16 @@ const isBookmarked = (index: number) => {
               :disabled="isSearching"
               class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md backdrop-blur-sm transition-all duration-200"
               :class="[
-                isBookmarked(index)
-                  ? 'border border-transparent bg-transparent text-amber-600 hover:border-amber-500'
-                  : 'text-muted-foreground hover:text-foreground bg-black/10 hover:bg-black/20',
+                isBookmarked(item)
+                  ? 'bg-background/90 border border-transparent text-amber-600 shadow-sm hover:border-amber-500'
+                  : 'text-muted-foreground hover:text-foreground bg-background/80 hover:bg-background/90 shadow-sm',
               ]"
-              :title="isBookmarked(index) ? '取消标记' : '标记收藏'"
+              :title="isBookmarked(item) ? '取消标记' : '标记收藏'"
             >
               <svg
                 class="h-3 w-3"
-                :fill="isBookmarked(index) ? 'currentColor' : 'none'"
-                :stroke="isBookmarked(index) ? 'none' : 'currentColor'"
+                :fill="isBookmarked(item) ? 'currentColor' : 'none'"
+                :stroke="isBookmarked(item) ? 'none' : 'currentColor'"
                 stroke-width="2"
                 viewBox="0 0 20 20"
               >
@@ -199,12 +194,7 @@ const isBookmarked = (index: number) => {
             <button
               @click="handleDelete($event, item, index)"
               :disabled="isSearching"
-              :class="[
-                'flex h-6 w-6 cursor-pointer items-center justify-center rounded-md backdrop-blur-sm transition-all duration-200',
-                isBookmarked(index) && isHovered(index)
-                  ? 'bg-white/80 text-gray-700 shadow-md hover:bg-red-500/90 hover:text-white'
-                  : 'text-muted-foreground bg-black/10 hover:bg-red-500/20 hover:text-red-600',
-              ]"
+              class="bg-background/80 text-muted-foreground flex h-6 w-6 cursor-pointer items-center justify-center rounded-md shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-red-500/90 hover:text-white"
               title="删除记录"
             >
               <svg
@@ -227,7 +217,7 @@ const isBookmarked = (index: number) => {
           <div
             class="absolute inset-0 rounded-lg transition-all duration-500 ease-out"
             :class="[
-              isBookmarked(index)
+              isBookmarked(item)
                 ? isHovered(index)
                   ? 'bg-gradient-to-br from-amber-500/5 via-amber-500/2 to-transparent'
                   : 'bg-gradient-to-br from-amber-500/0 via-amber-500/0 to-amber-500/0'
@@ -241,7 +231,7 @@ const isBookmarked = (index: number) => {
           <div
             class="absolute inset-0 rounded-lg border border-transparent transition-all duration-300 ease-out"
             :class="[
-              isBookmarked(index)
+              isBookmarked(item)
                 ? isHovered(index)
                   ? 'border-amber-500/20'
                   : ''

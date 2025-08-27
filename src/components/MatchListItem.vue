@@ -48,6 +48,8 @@ const teams = computed(() => {
         championId: p.championId,
         championName: p.championName,
         displayName: p.riotIdGameName || p.summonerName,
+        summonerName:
+          `${p.riotIdGameName}#${p.riotIdTagline}` || p.summonerName,
         isCurrentPlayer: p.puuid === puuid,
         kda: {
           kills: p.kills,
@@ -66,6 +68,8 @@ const teams = computed(() => {
         championId: p.championId,
         championName: p.championName,
         displayName: p.riotIdGameName || p.summonerName,
+        summonerName:
+          `${p.riotIdGameName}#${p.riotIdTagline}` || p.summonerName,
         isCurrentPlayer: p.puuid === puuid,
         kda: {
           kills: p.kills,
@@ -151,8 +155,9 @@ const queueType = computed(() => {
 });
 
 // 搜索玩家战绩函数
-const searchPlayerHistory = async (puuid: string) => {
-  await matchHistoryStore.navigateByPuuid(puuid, serverId);
+const searchPlayerHistory = async (displayName: string) => {
+  console.log(`displayName: ${displayName}`);
+  await matchHistoryStore.searchSummonerByName(displayName, serverId);
 };
 </script>
 
@@ -359,9 +364,9 @@ const searchPlayerHistory = async (puuid: string) => {
                   class="h-4 w-4 flex-shrink-0 object-cover"
                 />
                 <button
-                  @click="searchPlayerHistory(player.puuid)"
+                  @click="searchPlayerHistory(player.summonerName)"
                   class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
-                  :title="`点击查询 ${player.displayName} 的战绩`"
+                  :title="`点击查询 ${player.summonerName} 的战绩`"
                   :disabled="
                     player.displayName === '未知玩家' ||
                     matchHistoryStore.isSearching
@@ -412,7 +417,7 @@ const searchPlayerHistory = async (puuid: string) => {
                   class="h-4 w-4 flex-shrink-0 object-cover"
                 />
                 <button
-                  @click="searchPlayerHistory(player.puuid)"
+                  @click="searchPlayerHistory(player.summonerName)"
                   class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
                   :title="`点击查询 ${player.displayName} 的战绩`"
                   :disabled="

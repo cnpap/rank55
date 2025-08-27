@@ -174,6 +174,15 @@ const searchFromHistory = async (item: SearchHistoryItem) => {
   await handleSearch();
 };
 
+// 切换收藏状态
+const toggleBookmark = (item: SearchHistoryItem, index: number) => {
+  matchHistoryStore.toggleBookmark(item.puuid);
+};
+
+// 删除历史记录
+const deleteHistory = (item: SearchHistoryItem, index: number) => {
+  matchHistoryStore.deleteHistoryItem(item.puuid);
+};
 // 从好友列表搜索
 const searchFromFriend = async (friend: SimpleFriend) => {
   await matchHistoryStore.searchSummonerByName(
@@ -308,6 +317,8 @@ defineExpose({
             :search-history="searchHistory"
             :is-searching="isSearching"
             @search-from-history="searchFromHistory"
+            @toggle-bookmark="toggleBookmark"
+            @delete-history="deleteHistory"
           />
 
           <!-- 分隔线 -->

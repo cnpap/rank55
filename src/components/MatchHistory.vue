@@ -172,22 +172,26 @@ onMounted(async () => {
               <!-- 错误信息 -->
               <div
                 v-if="errorMessage"
-                class="border-destructive/20 bg-destructive/5 text-destructive flex items-center gap-2 rounded-lg border p-3 text-sm"
+                class="flex h-full items-center justify-center"
               >
-                <svg
-                  class="h-4 w-4 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <div
+                  class="border-destructive/20 bg-destructive/5 text-destructive flex max-w-md items-center gap-2 rounded-lg border p-3 text-sm"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-                {{ errorMessage }}
+                  <svg
+                    class="h-4 w-4 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  {{ errorMessage }}
+                </div>
               </div>
 
               <div v-else>
