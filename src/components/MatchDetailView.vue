@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { Copy } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
@@ -35,6 +35,8 @@ const { game } = props;
 // 路由和store
 const router = useRouter();
 const matchHistoryStore = useMatchHistoryStore();
+
+const serverId = inject<string>('serverId');
 
 // 创建服务实例
 const summonerService = new SummonerService();
@@ -162,10 +164,10 @@ const copyPlayerName = async (playerName: string) => {
 };
 
 // 搜索玩家战绩
-const searchPlayerHistory = async (puuid: string) => {
+const searchPlayerHistory = async (name: string) => {
   try {
     // 使用store的搜索功能
-    await matchHistoryStore.navigateByPuuid(puuid);
+    await matchHistoryStore.searchSummonerByName(name, serverId);
 
     // 搜索成功后跳转到首页
     if (router.currentRoute.value.name !== 'Home') {
@@ -381,7 +383,11 @@ const searchPlayerHistory = async (puuid: string) => {
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
                       <button
-                        @click="searchPlayerHistory(participant.puuid)"
+                        @click="
+                          searchPlayerHistory(
+                            `${participant.riotIdGameName}#${participant.riotIdTagline}`
+                          )
+                        "
                         class="text-foreground hover:text-primary cursor-pointer truncate font-medium transition-colors hover:underline"
                         :disabled="
                           getPlayerName(participant) === '未知玩家' ||
