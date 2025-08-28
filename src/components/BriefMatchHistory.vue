@@ -148,7 +148,7 @@ const validMatches = computed(
 
             <!-- 游戏开始时间 (在小屏幕时隐藏) -->
             <span class="text-muted-foreground hidden text-xs xl:block">
-              {{ formatDateToDay(game.json.gameCreation.toString()) }}
+              {{ formatDateToDay(game.json.gameCreation) }}
             </span>
           </div>
 

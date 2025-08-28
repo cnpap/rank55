@@ -8,7 +8,7 @@
  * @param timestamp 时间戳字符串
  * @returns 格式化后的日期字符串
  */
-export function formatDateToDay(timestamp: string): string {
+export function formatDateToDay(timestamp: string | number): string {
   const date = new Date(timestamp);
   const now = new Date();
   const diffTime = now.getTime() - date.getTime();

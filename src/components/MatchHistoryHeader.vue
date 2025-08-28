@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Filter } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import type { GameModesFilter } from '@/types/match-history-ui';
 import type { Game } from '@/types/match-history-sgp';
 import { AcceptableValue } from 'reka-ui';
@@ -21,7 +21,6 @@ interface Props {
   currentPage: number;
   pageSize: number;
   currentUserPuuid: string; // 新增：当前用户的puuid
-  isSticky?: boolean;
 }
 
 interface Emits {
@@ -217,11 +216,6 @@ function handlePageSizeChange(size: AcceptableValue) {
   emit('update:currentPage', 1);
 }
 
-// 获取英雄头像URL
-function getChampionAvatarUrl(championId: number): string {
-  return `./public/dynamic/avatar/${championId}.png`;
-}
-
 // 获取位置图标URL
 function getPositionIconUrl(iconName: string): string {
   return `./role/${iconName}.png`;
@@ -240,7 +234,7 @@ function getPositionIconUrl(iconName: string): string {
             :model-value="modelValue.selectedTag"
             @update:model-value="handleGameModeChange"
           >
-            <SelectTrigger class="h-8 w-50 text-sm">
+            <SelectTrigger class="h-8 w-48 text-sm">
               <SelectValue placeholder="选择模式" />
             </SelectTrigger>
             <SelectContent>
@@ -256,7 +250,7 @@ function getPositionIconUrl(iconName: string): string {
         </div>
 
         <!-- 第二行：分页控制 -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1">
           <!-- 占位符，与上面的标签区域对齐 -->
           <!-- 每页显示数量 -->
           <Select
