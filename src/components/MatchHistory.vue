@@ -16,10 +16,6 @@ provide('puuid', puuid);
 // 使用新的战绩查询 hook
 const {
   isLoading,
-  currentPage,
-  pageSize,
-  expandedMatches,
-  gameModesFilter,
   summoner,
   rankedStats,
   matchHistory,
@@ -28,10 +24,6 @@ const {
   showMatchHistory,
   queryResult,
   loadCompleteMatchData,
-  changeGameModeFilter,
-  goToPage,
-  changePageSize,
-  toggleMatchDetail,
 } = useMatchHistoryQuery({
   serverId,
   puuid,
@@ -39,25 +31,6 @@ const {
 
 // 使用UI交互逻辑
 const { isSticky, sentinelRef } = useMatchHistoryUI();
-
-// 处理游戏模式过滤器更新
-function handleUpdateGameModesFilter(newFilter: any) {
-  changeGameModeFilter(newFilter);
-}
-
-// 处理对局详情切换
-function handleToggleMatchDetail(gameId: number) {
-  toggleMatchDetail(gameId);
-}
-
-// 处理分页变化
-function handlePageChangeWrapper(page: number) {
-  goToPage(page);
-}
-
-function handlePageSizeChangeWrapper(size: number) {
-  changePageSize(size);
-}
 
 // 组件挂载时加载数据
 onMounted(async () => {
@@ -130,16 +103,10 @@ onMounted(async () => {
 
                   <!-- 头部组件 -->
                   <MatchHistoryHeader
-                    :model-value="gameModesFilter"
                     :matches="matchHistory"
-                    :current-page="currentPage"
-                    :page-size="pageSize"
                     :current-user-puuid="puuid || ''"
                     :total-matches="queryResult.totalCount"
                     :is-sticky="isSticky"
-                    @update:model-value="handleUpdateGameModesFilter"
-                    @update:current-page="handlePageChangeWrapper"
-                    @update:page-size="handlePageSizeChangeWrapper"
                   />
                 </div>
                 <!-- 历史战绩 - 直接使用 MatchListItem -->
@@ -149,8 +116,6 @@ onMounted(async () => {
                     :key="`${match.json.gameId}-${index}`"
                     :match="match"
                     :current-user-puuid="puuid || ''"
-                    :is-expanded="expandedMatches.has(match.json.gameId)"
-                    @toggle-detail="handleToggleMatchDetail(match.json.gameId)"
                   />
                 </div>
               </div>

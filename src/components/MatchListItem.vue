@@ -8,18 +8,21 @@ import MatchDetailView from './MatchDetailView.vue';
 import { staticAssets } from '@/assets/data-assets';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { inject, computed } from 'vue';
+import { ref } from 'vue';
 
 interface Props {
   match: Game;
-  isExpanded: boolean;
-}
-
-interface Emits {
-  (e: 'toggle-detail'): void;
 }
 
 const props = defineProps<Props>();
-defineEmits<Emits>();
+
+// 组件内部管理展开状态
+const isExpanded = ref(false);
+
+const toggleDetail = () => {
+  isExpanded.value = !isExpanded.value;
+};
+
 const puuid = inject<string>('puuid');
 
 const matchHistoryStore = useMatchHistoryStore();
@@ -583,7 +586,7 @@ const searchPlayerHistory = async (displayName: string) => {
 
       <!-- 展开按钮 -->
       <button
-        @click="$emit('toggle-detail')"
+        @click="toggleDetail"
         class="border-border/20 bg-primary hover:bg-primary/90 flex h-8 w-8 cursor-pointer items-center justify-center border p-0 transition-colors"
       >
         <ChevronDown

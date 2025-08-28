@@ -7,30 +7,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import type { GameModesFilter } from '@/types/match-history-ui';
 import type { Game } from '@/types/match-history-sgp';
 import { AcceptableValue } from 'reka-ui';
 import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 import { staticAssets } from '@/assets/data-assets';
+import { useGameModeFilterControl } from '@/lib/composables/useMatchHistoryQuery';
+import PaginationControl from './PaginationControl.vue';
 
 interface Props {
-  modelValue: GameModesFilter;
   matches: Game[];
-  currentPage: number;
-  pageSize: number;
-  currentUserPuuid: string; // 新增：当前用户的puuid
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: GameModesFilter): void;
-  (e: 'update:currentPage', page: number): void;
-  (e: 'update:pageSize', size: number): void;
+  currentUserPuuid: string;
+  totalMatches?: number;
+  isSticky?: boolean;
 }
 
 const props = defineProps<Props>();
-const emit = defineEmits<Emits>();
+
+// 通过 inject 获取过滤控制
+const gameModeFilterControl = useGameModeFilterControl();
 
 // 游戏模式选项 - 使用新的tag系统
 const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
@@ -39,13 +33,6 @@ const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
     label,
   })
 );
-
-// 每页显示数量选项
-const pageSizeOptions = [
-  { value: 10, label: '10条' },
-  { value: 20, label: '20条' },
-  { value: 50, label: '50条' },
-];
 
 // 位置映射 - 添加固定顺序
 const positionMap = {
@@ -197,28 +184,10 @@ const recentChampions = computed(() => {
 
 // 处理游戏模式变更
 function handleGameModeChange(value: AcceptableValue) {
-  const newFilter: GameModesFilter = {
+  const newFilter = {
     selectedTag: value as string,
   };
-
-  emit('update:modelValue', newFilter);
-}
-
-// 处理分页
-function goToPage(page: number) {
-  if (page >= 1) {
-    emit('update:currentPage', page);
-  }
-}
-
-function handlePageSizeChange(size: AcceptableValue) {
-  emit('update:pageSize', Number(size));
-  emit('update:currentPage', 1);
-}
-
-// 获取位置图标URL
-function getPositionIconUrl(iconName: string): string {
-  return `./role/${iconName}.png`;
+  gameModeFilterControl.changeGameModeFilter(newFilter);
 }
 </script>
 
@@ -231,7 +200,7 @@ function getPositionIconUrl(iconName: string): string {
         <!-- 第一行：筛选器 -->
         <div class="flex items-center gap-3">
           <Select
-            :model-value="modelValue.selectedTag"
+            :model-value="gameModeFilterControl.gameModesFilter.selectedTag"
             @update:model-value="handleGameModeChange"
           >
             <SelectTrigger class="h-8 w-48 text-sm">
@@ -250,53 +219,7 @@ function getPositionIconUrl(iconName: string): string {
         </div>
 
         <!-- 第二行：分页控制 -->
-        <div class="flex items-center gap-1">
-          <!-- 占位符，与上面的标签区域对齐 -->
-          <!-- 每页显示数量 -->
-          <Select
-            :model-value="String(pageSize)"
-            @update:model-value="handlePageSizeChange"
-          >
-            <SelectTrigger class="h-8 w-20 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="option in pageSizeOptions"
-                :key="option.value"
-                :value="String(option.value)"
-              >
-                {{ option.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <!-- 分页按钮 -->
-          <div class="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 w-8 border-slate-200 p-0 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
-              :disabled="currentPage <= 1"
-              @click="goToPage(currentPage - 1)"
-            >
-              <ChevronLeft class="h-4 w-4" />
-            </Button>
-
-            <div class="px-3 py-1 text-sm text-slate-600 dark:text-slate-300">
-              {{ currentPage }}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-8 w-8 border-slate-200 p-0"
-              @click="goToPage(currentPage + 1)"
-            >
-              <ChevronRight class="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <PaginationControl />
       </div>
 
       <div class="flex w-128 items-center justify-between">
@@ -415,7 +338,7 @@ function getPositionIconUrl(iconName: string): string {
                   >
                     <div class="relative">
                       <img
-                        :src="getPositionIconUrl(stat.icon)"
+                        :src="`./role/${stat.icon}.png`"
                         :alt="stat.name"
                         :class="[
                           'h-5 w-5 object-contain brightness-0 invert transition-opacity',

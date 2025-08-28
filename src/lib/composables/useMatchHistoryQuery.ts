@@ -1,4 +1,12 @@
-import { ref, computed, reactive } from 'vue';
+import {
+  ref,
+  computed,
+  reactive,
+  provide,
+  Ref,
+  ComputedRef,
+  inject,
+} from 'vue';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
 import type { Game } from '@/types/match-history-sgp';
@@ -22,6 +30,29 @@ export interface MatchHistoryQueryOptions {
   puuid: string;
   initialPageSize?: number;
 }
+
+// 分页控制对象接口
+export interface PaginationControl {
+  currentPage: Ref<number>;
+  pageSize: Ref<number>;
+  totalPages: ComputedRef<number>;
+  hasNextPage: ComputedRef<boolean>;
+  hasPrevPage: ComputedRef<boolean>;
+  goToPrevPage: () => Promise<void>;
+  goToNextPage: () => Promise<void>;
+  changePageSize: (newSize: number) => Promise<void>;
+}
+
+// 游戏模式过滤控制对象接口
+export interface GameModeFilterControl {
+  gameModesFilter: GameModesFilter;
+  changeGameModeFilter: (newFilter: GameModesFilter) => Promise<void>;
+  updateGameModesFilter: (newFilter: GameModesFilter) => void;
+}
+
+// Provider keys
+export const PAGINATION_CONTROL_KEY = Symbol('paginationControl');
+export const GAME_MODE_FILTER_CONTROL_KEY = Symbol('gameModeFilterControl');
 
 /**
  * 战绩查询通用 Hook
@@ -48,7 +79,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   const isLoading = ref(false);
   const currentPage = ref(1);
   const pageSize = ref(20);
-  const expandedMatches = ref(new Set<number>());
 
   // 游戏模式过滤器
   const gameModesFilter = reactive<GameModesFilter>({
@@ -82,7 +112,10 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
   // 是否有下一页
   const hasNextPage = computed(() => {
-    return currentPage.value < totalPages.value;
+    if (queryResult.value.totalCount === 0) {
+      return false;
+    }
+    return queryResult.value.totalCount === pageSize.value;
   });
 
   // 是否有上一页
@@ -112,11 +145,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     };
   };
 
-  // 设置查询结果
-  const setQueryResult = (result: MatchHistoryQueryResult) => {
-    queryResult.value = result;
-  };
-
   // 更新游戏模式过滤器
   const updateGameModesFilter = (newFilter: GameModesFilter) => {
     Object.assign(gameModesFilter, newFilter);
@@ -134,8 +162,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
         puuid,
         pageSize.value
       );
-
-      setQueryResult(result);
+      queryResult.value = result;
       currentPage.value = 1;
     } catch (error: any) {
       console.error('获取完整战绩数据失败:', error);
@@ -176,17 +203,8 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     }
   };
 
-  // 刷新当前页数据
-  const refreshCurrentPage = async (): Promise<void> => {
-    await loadMatchHistoryPage();
-  };
-
   // 跳转到指定页
   const goToPage = async (page: number): Promise<void> => {
-    if (page < 1 || page > totalPages.value || page === currentPage.value) {
-      return;
-    }
-
     currentPage.value = page;
     await loadMatchHistoryPage();
   };
@@ -221,23 +239,36 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     await loadMatchHistoryPage(newFilter.selectedTag);
   };
 
-  // 切换对局详情展开状态
-  const toggleMatchDetail = (gameId: number): void => {
-    if (expandedMatches.value.has(gameId)) {
-      expandedMatches.value.delete(gameId);
-    } else {
-      expandedMatches.value.add(gameId);
-    }
-  };
-
   // 重置所有状态
   const reset = (): void => {
     clearQueryResult();
     currentPage.value = 1;
     pageSize.value = 20;
-    expandedMatches.value.clear();
     gameModesFilter.selectedTag = 'all';
   };
+
+  // 创建分页控制对象
+  const paginationControl: PaginationControl = {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToPrevPage,
+    goToNextPage,
+    changePageSize,
+  };
+
+  // 创建游戏模式过滤控制对象
+  const gameModeFilterControl: GameModeFilterControl = {
+    gameModesFilter,
+    changeGameModeFilter,
+    updateGameModesFilter,
+  };
+
+  // 通过 provide 向下级组件传递控制对象
+  provide(PAGINATION_CONTROL_KEY, paginationControl);
+  provide(GAME_MODE_FILTER_CONTROL_KEY, gameModeFilterControl);
 
   return {
     // 状态
@@ -245,7 +276,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     isLoading,
     currentPage,
     pageSize,
-    expandedMatches,
     gameModesFilter,
 
     // 计算属性
@@ -262,17 +292,41 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     // 方法
     loadCompleteMatchData,
     loadMatchHistoryPage,
-    refreshCurrentPage,
-    goToPage,
     goToPrevPage,
     goToNextPage,
     changePageSize,
     changeGameModeFilter,
-    toggleMatchDetail,
     clearQueryResult,
     setError,
-    setQueryResult,
     updateGameModesFilter,
     reset,
+
+    // 控制对象
+    paginationControl,
+    gameModeFilterControl,
   };
+}
+
+// 用于子组件注入分页控制的 hook
+export function usePaginationControl(): PaginationControl {
+  const paginationControl = inject<PaginationControl>(PAGINATION_CONTROL_KEY);
+  if (!paginationControl) {
+    throw new Error(
+      'usePaginationControl must be used within a component that provides pagination control'
+    );
+  }
+  return paginationControl as PaginationControl;
+}
+
+// 用于子组件注入游戏模式过滤控制的 hook
+export function useGameModeFilterControl(): GameModeFilterControl {
+  const gameModeFilterControl = inject<GameModeFilterControl>(
+    GAME_MODE_FILTER_CONTROL_KEY
+  );
+  if (!gameModeFilterControl) {
+    throw new Error(
+      'useGameModeFilterControl must be used within a component that provides game mode filter control'
+    );
+  }
+  return gameModeFilterControl as GameModeFilterControl;
 }
