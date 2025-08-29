@@ -141,17 +141,6 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
 
   // 智能监控控制 - 添加防抖
   const updateMonitoringState = () => {
-    console.log(
-      '更新房间监控状态 - 应用焦点:',
-      appHasFocus.value,
-      '房间页面:',
-      isOnRoomPage.value,
-      '应该监控:',
-      shouldMonitor.value,
-      '当前轮询状态:',
-      isPolling.value
-    );
-
     if (shouldMonitor.value && !isPolling.value) {
       console.log('开始房间监控 - 应用有焦点且在房间管理页面');
       startPolling();

@@ -1,18 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { Game } from '@/types/match-history-sgp';
-import { AcceptableValue } from 'reka-ui';
-import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 import { staticAssets } from '@/assets/data-assets';
-import { useGameModeFilterControl } from '@/lib/composables/useMatchHistoryQuery';
 import PaginationControl from './PaginationControl.vue';
+import GameModeFilterControl from './GameModeFilterControl.vue';
 
 interface Props {
   matches: Game[];
@@ -22,17 +13,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-// 通过 inject 获取过滤控制
-const gameModeFilterControl = useGameModeFilterControl();
-
-// 游戏模式选项 - 使用新的tag系统
-const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
-  ([value, label]) => ({
-    value,
-    label,
-  })
-);
 
 // 位置映射 - 添加固定顺序
 const positionMap = {
@@ -181,14 +161,6 @@ const recentChampions = computed(() => {
     .sort((a, b) => b.games - a.games)
     .slice(0, 5);
 });
-
-// 处理游戏模式变更
-function handleGameModeChange(value: AcceptableValue) {
-  const newFilter = {
-    selectedTag: value as string,
-  };
-  gameModeFilterControl.changeGameModeFilter(newFilter);
-}
 </script>
 
 <template>
@@ -198,25 +170,7 @@ function handleGameModeChange(value: AcceptableValue) {
       <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
       <div class="flex-shrink-0 space-y-1 p-4">
         <!-- 第一行：筛选器 -->
-        <div class="flex items-center gap-3">
-          <Select
-            :model-value="gameModeFilterControl.gameModesFilter.selectedTag"
-            @update:model-value="handleGameModeChange"
-          >
-            <SelectTrigger class="h-8 w-48 text-sm">
-              <SelectValue placeholder="选择模式" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="option in gameModeOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <GameModeFilterControl />
 
         <!-- 第二行：分页控制 -->
         <PaginationControl />

@@ -49,7 +49,6 @@ export class SessionStorageService {
     };
 
     await this.db.put('gameflowSessions', sessionData);
-    console.log(`✅ GameflowSession ${sessionData.id} 已持久化到 IDB`);
   }
 
   async getGameflowSession(sessionId: string): Promise<GameflowSession | null> {

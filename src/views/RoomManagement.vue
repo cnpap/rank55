@@ -196,13 +196,8 @@ const updateRoom = async (): Promise<void> => {
 
 // 踢出成员
 const kickMember = async (summonerId: number): Promise<void> => {
-  try {
-    await roomService.kickMember(summonerId);
-    await updateRoom();
-  } catch (error: any) {
-    console.error('踢出成员失败:', error);
-    errorMessage.value = error.message || '踢出成员失败';
-  }
+  await roomService.kickMember(summonerId);
+  await updateRoom();
 };
 
 // 清除错误信息

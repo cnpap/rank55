@@ -180,6 +180,15 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
     isLoading.value = true;
 
+    console.log(
+      `loadMatchHistoryPage: ${puuid}`,
+      serverId,
+      puuid,
+      currentPage.value,
+      pageSize.value,
+      tag
+    );
+
     try {
       const result = await dataLoader.loadMatchHistoryPage(
         serverId,

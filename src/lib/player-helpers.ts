@@ -69,7 +69,7 @@ export function getPlayerDisplayName(
   if (summonerData.gameName && summonerData.tagLine) {
     return `${summonerData.gameName}#${summonerData.tagLine}`;
   }
-
+  console.log(`getPlayerDisplayName`, summonerData);
   // 否则使用其他可用的名称字段
   return (
     summonerData.displayName ||
@@ -97,6 +97,8 @@ export function getPlayerName(
   if (summonerData.gameName) {
     return summonerData.gameName;
   }
+
+  console.log(`getPlayerName`, summonerData);
 
   return (
     summonerData.displayName ||

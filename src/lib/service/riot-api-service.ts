@@ -30,9 +30,6 @@ export class RiotApiService extends BaseService {
       gameName = parts[0].trim();
       tagLine = parts[1].trim();
     }
-    console.log(
-      `lookupPlayerAccount 输入: gameName=${gameName}, tagLine=${tagLine}`
-    );
     try {
       const endpoint = '/player-account/aliases/v1/lookup';
       const data = await this.makeRiotRequest<PlayerAccountAlias[]>(
@@ -42,8 +39,6 @@ export class RiotApiService extends BaseService {
           params: { gameName, tagLine },
         }
       );
-
-      console.log('lookupPlayerAccount 输出:', { gameName, tagLine }, data);
 
       return data;
     } catch (error: any) {

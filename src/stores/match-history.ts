@@ -215,10 +215,6 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     summonerName: string,
     serverId?: string
   ): Promise<void> => {
-    console.log(
-      `searchSummonerByName: ${summonerName}`,
-      `serverId: ${serverId}`
-    );
     summonerName = summonerName.trim();
 
     // 验证用户ID格式
@@ -232,6 +228,10 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
       const playerAccountAlias = (
         await riotApiService.lookupPlayerAccount(summonerName)
       )[0];
+
+      if (!playerAccountAlias) {
+        throw new Error('未找到该召唤师');
+      }
 
       // 使用通用导航函数
       await navigateToPlayer(playerAccountAlias.puuid, serverId, summonerName);

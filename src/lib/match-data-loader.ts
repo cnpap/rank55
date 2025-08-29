@@ -42,6 +42,9 @@ export class MatchDataLoader {
         [puuid],
         this.serverId
       );
+      if (summoners.length === 0) {
+        throw new Error('未找到该召唤师');
+      }
       const firstSummoner = summoners[0];
       return {
         gameName: '',
@@ -79,7 +82,6 @@ export class MatchDataLoader {
       const participant = sgpResult.games[0].json.participants.find(
         (p: any) => p.puuid === puuid
       );
-      console.log(summoner, participant);
       summoner.gameName = participant!.riotIdGameName;
       summoner.tagLine = participant!.riotIdTagline;
 
