@@ -47,94 +47,25 @@ export function useChampSelectMembers() {
     return slots as (ChampSelectMemberWithDetails | null)[];
   });
 
-  // 获取英雄选择成员详细信息
+  // 获取英雄选择成员详细信息 - 修改为增量更新
   const fetchChampSelectMembersDetails = async (
     myTeam: RankTeam[]
   ): Promise<void> => {
-    // 第一阶段：立即显示基本信息
-    champSelectMembers.value = myTeam.map(member => ({
-      summonerId: member.summonerId,
-      summonerName: member.gameName || `Player${member.summonerId}`,
-      puuid: member.puuid,
-      assignedPosition: member.assignedPosition,
-      cellId: member.cellId,
-      championId: member.championId,
-      isLeader: member.cellId === 0, // 通常 cellId 0 是房主
-      isLoading: false,
-    }));
-
-    // 第二阶段：并行加载召唤师基本数据
-    const summonerPromises = myTeam.map(async (member, index) => {
-      if (!member.summonerId) return;
-
-      try {
-        const summonerData = await summonerService.getSummonerByID(
-          member.summonerId
-        );
-        if (champSelectMembers.value[index]) {
-          champSelectMembers.value[index] = {
-            ...champSelectMembers.value[index],
-            summonerData,
-          };
-        }
-        return { index, summonerData };
-      } catch (error) {
-        console.warn(`获取成员 ${member.gameName} 召唤师数据失败:`, error);
-        return null;
-      }
-    });
-
-    const summonerResults = await Promise.all(summonerPromises);
-
-    // 第三阶段：加载排位统计
-    summonerResults.forEach(async result => {
-      if (!result?.summonerData?.puuid) return;
-
-      const { index, summonerData } = result;
-
-      try {
-        const rankedStats = await summonerService.getRankedStats(
-          summonerData.puuid
-        );
-        if (champSelectMembers.value[index]) {
-          champSelectMembers.value[index] = {
-            ...champSelectMembers.value[index],
-            rankedStats,
-          };
-        }
-      } catch (error) {
-        console.warn(`获取排位统计失败:`, error);
-      }
-    });
-  };
-
-  // 更新英雄选择成员数据
-  const updateChampSelectMembers = async (): Promise<void> => {
-    champSelectError.value = null;
-
-    // 获取英雄选择会话数据
-    const session: ChampSelectSession =
-      await banPickService.getChampSelectSession();
-    const { myTeam } = session;
-
-    // 检查成员是否有变化
-    const currentMemberIds = myTeam.map(m => String(m.summonerId)).sort();
-    const existingMemberIds = champSelectMembers.value
-      .map(m => String(m.summonerId))
-      .sort();
-
-    const hasChanges =
-      currentMemberIds.length !== existingMemberIds.length ||
-      !currentMemberIds.every((id, index) => id === existingMemberIds[index]);
-
-    if (hasChanges) {
-      console.log(
-        `🎯 英雄选择成员发生变化，重新获取详细信息: ${myTeam.length} 名成员`
-      );
-      await fetchChampSelectMembersDetails(myTeam);
-    } else {
-      console.log(`🎯 英雄选择成员无变化: ${myTeam.length} 名成员`);
-      // 更新基本信息但保留详细数据
+    // 创建当前成员的映射
+    const currentMemberMap = new Map(
+      champSelectMembers.value.map(m => [m.summonerId, m])
+    );
+    const newMemberMap = new Map(myTeam.map(m => [m.summonerId, m]));
+  
+    // 找出新增的成员
+    const newMembers = myTeam.filter(m => !currentMemberMap.has(m.summonerId));
+    // 找出离开的成员
+    const leftMemberIds = champSelectMembers.value
+      .filter(m => !newMemberMap.has(m.summonerId))
+      .map(m => m.summonerId);
+  
+    // 如果没有变化，只更新基本信息（英雄ID、位置等）
+    if (newMembers.length === 0 && leftMemberIds.length === 0) {
       champSelectMembers.value = champSelectMembers.value.map(
         existingMember => {
           const updatedMember = myTeam.find(
@@ -150,6 +81,113 @@ export function useChampSelectMembers() {
           return existingMember;
         }
       );
+      return;
+    }
+  
+    console.log(
+      `🎯 英雄选择成员变动: 新增 ${newMembers.length} 人，离开 ${leftMemberIds.length} 人`
+    );
+  
+    // 移除离开的成员
+    if (leftMemberIds.length > 0) {
+      champSelectMembers.value = champSelectMembers.value.filter(
+        m => !leftMemberIds.includes(m.summonerId)
+      );
+    }
+  
+    // 如果没有新成员，直接返回
+    if (newMembers.length === 0) {
+      return;
+    }
+  
+    // 为新成员添加基本信息
+    const newMembersWithDetails: ChampSelectMemberWithDetails[] = newMembers.map(member => ({
+      summonerId: member.summonerId,
+      summonerName: member.gameName || `Player${member.summonerId}`,
+      puuid: member.puuid,
+      assignedPosition: member.assignedPosition,
+      cellId: member.cellId,
+      championId: member.championId,
+      isLeader: member.cellId === 0,
+      isLoading: false,
+    }));
+  
+    // 添加新成员到列表
+    champSelectMembers.value = [...champSelectMembers.value, ...newMembersWithDetails];
+  
+    // 只为新成员加载详细信息
+    const summonerPromises = newMembers.map(async (member, index) => {
+      if (!member.summonerId) return;
+  
+      try {
+        const summonerData = await summonerService.getSummonerByID(
+          member.summonerId
+        );
+        
+        // 找到对应的成员并更新
+        const memberIndex = champSelectMembers.value.findIndex(
+          m => m.summonerId === member.summonerId
+        );
+        if (memberIndex !== -1) {
+          champSelectMembers.value[memberIndex] = {
+            ...champSelectMembers.value[memberIndex],
+            summonerData,
+          };
+        }
+        return { summonerId: member.summonerId, summonerData };
+      } catch (error) {
+        console.warn(`获取成员 ${member.gameName} 召唤师数据失败:`, error);
+        return null;
+      }
+    });
+  
+    const summonerResults = await Promise.all(summonerPromises);
+  
+    // 为新成员加载排位统计
+    const rankedPromises = summonerResults.map(async result => {
+      if (!result?.summonerData?.puuid) return null;
+  
+      const { summonerId, summonerData } = result;
+      try {
+        const rankedStats = await summonerService.getRankedStats(
+          summonerData.puuid
+        );
+        
+        // 找到对应的成员并更新排位统计
+        const memberIndex = champSelectMembers.value.findIndex(
+          m => m.summonerId === summonerId
+        );
+        if (memberIndex !== -1) {
+          champSelectMembers.value[memberIndex] = {
+            ...champSelectMembers.value[memberIndex],
+            rankedStats,
+          };
+        }
+        return { summonerId, rankedStats };
+      } catch (error) {
+        console.warn(`获取排位统计失败:`, error);
+        return null;
+      }
+    });
+  
+    await Promise.all(rankedPromises);
+  };
+
+  // 更新英雄选择成员数据
+  const updateChampSelectMembers = async (): Promise<void> => {
+    champSelectError.value = null;
+  
+    try {
+      // 获取英雄选择会话数据
+      const session: ChampSelectSession =
+        await banPickService.getChampSelectSession();
+      const { myTeam } = session;
+  
+      // 直接调用优化后的增量更新函数
+      await fetchChampSelectMembersDetails(myTeam);
+    } catch (error) {
+      console.error('更新英雄选择成员失败:', error);
+      champSelectError.value = '获取英雄选择数据失败';
     }
   };
 
