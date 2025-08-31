@@ -27,13 +27,6 @@ export function useGamePhaseHandler() {
       await autoActionService.executePrePickAction(session);
     }
 
-    // 检查游戏是否即将开始
-    const gameWillStart = await gamePhaseManager.checkGameStartCondition();
-    if (gameWillStart) {
-      console.log('🎮 游戏即将开始，session 已持久化');
-      return;
-    }
-
     // 处理当前进行中的操作
     const action = flatActions.find(
       a => a.isInProgress && a.actorCellId === localPlayerCellId
@@ -87,13 +80,6 @@ export function useGamePhaseHandler() {
     }
   };
 
-  const handleGameStartPhase = async (): Promise<void> => {
-    const gameStarted = await gamePhaseManager.checkGameStartCondition();
-    if (gameStarted) {
-      console.log('🎮 游戏已开始，session 已持久化');
-    }
-  };
-
   const resetPhaseState = () => {
     gamePhaseManager.resetActionState();
     lastPhase.value = null;
@@ -104,7 +90,7 @@ export function useGamePhaseHandler() {
     gamePhaseManager,
     autoActionService,
     handleChampSelectPhase,
-    handleGameStartPhase,
+    handleGameStartPhase: gamePhaseManager.handleGameStartPhase,
     resetPhaseState,
   };
 }

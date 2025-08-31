@@ -45,23 +45,13 @@ export class GamePhaseManager {
     return phase;
   }
 
-  async checkGameStartCondition(): Promise<boolean> {
-    // 直接检查游戏阶段是否为 GameStart
-    const currentPhase = await this.gameflowService.getGameflowPhase();
+  async handleGameStartPhase() {
+    // 使用 gameflowService 获取完整的游戏会话信息
+    const gameflowSession = await this.gameflowService.getGameflowSession();
 
-    if (currentPhase === GameflowPhaseEnum.GameStart) {
-      console.log('🎮 检测到游戏开始阶段，正在获取完整的游戏会话信息...');
-
-      // 使用 gameflowService 获取完整的游戏会话信息
-      const gameflowSession = await this.gameflowService.getGameflowSession();
-
-      // 从 gameflowSession 中提取需要的信息来构建 ChampSelectSession
-      // 或者直接保存 gameflowSession
-      await this.sessionStorage.saveGameflowSession(gameflowSession);
-      return true;
-    }
-
-    return false;
+    // 从 gameflowSession 中提取需要的信息来构建 ChampSelectSession
+    // 或者直接保存 gameflowSession
+    await this.sessionStorage.saveGameflowSession(gameflowSession);
   }
 
   setActionState(type: 'ban' | 'pick'): void {
