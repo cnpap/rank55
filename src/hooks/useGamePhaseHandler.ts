@@ -90,7 +90,6 @@ export function useGamePhaseHandler() {
     gamePhaseManager,
     autoActionService,
     handleChampSelectPhase,
-    handleGameStartPhase: gamePhaseManager.handleGameStartPhase,
     resetPhaseState,
   };
 }

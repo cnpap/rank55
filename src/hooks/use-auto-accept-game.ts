@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { useGameConnection } from './useGameConnection';
 import { useGamePhaseHandler } from './useGamePhaseHandler';
@@ -39,31 +39,34 @@ export function useAutoAcceptGame() {
       await connection.fetchCurrentUser();
 
       // 场景 1: 房间阶段 - 只检测是否在房间中
-      if (phase === GameflowPhaseEnum.Lobby) {
-        try {
-          const inLobby = await roomService.isInLobby();
-          isInRoom.value = inLobby;
-        } catch (error) {
-          isInRoom.value = false;
+      if (
+        [
+          GameflowPhaseEnum.Lobby,
+          GameflowPhaseEnum.Matchmaking,
+          GameflowPhaseEnum.ReadyCheck,
+          GameflowPhaseEnum.ChampSelect,
+        ].includes(phase)
+      ) {
+        isInRoom.value = await roomService.isInLobby();
+
+        // 场景 2: 准备检查阶段
+        if (phase === GameflowPhaseEnum.ReadyCheck) {
+          await phaseHandler.autoActionService.executeReadyCheckAction();
+          return;
         }
-        return;
-      }
 
-      // 场景 2: 准备检查阶段
-      if (phase === GameflowPhaseEnum.ReadyCheck) {
-        await phaseHandler.autoActionService.executeReadyCheckAction();
-        return;
-      }
+        // 场景 3: 英雄选择阶段
+        if (phase === GameflowPhaseEnum.ChampSelect) {
+          await phaseHandler.handleChampSelectPhase();
+          return;
+        }
 
-      // 场景 3: 英雄选择阶段
-      if (phase === GameflowPhaseEnum.ChampSelect) {
-        await phaseHandler.handleChampSelectPhase();
         return;
       }
 
       // 场景 4: 游戏开始阶段
       if (phase === GameflowPhaseEnum.GameStart) {
-        await phaseHandler.handleGameStartPhase();
+        await phaseHandler.gamePhaseManager.handleGameStartPhase();
         return;
       }
 

@@ -252,7 +252,7 @@ const formatValue = (value: number) => {
               </span>
             </span>
 
-            <span class="flex w-20 items-center">
+            <span class="flex w-17 items-center">
               <!-- 数值 -->
               <span
                 class="w-8 text-xs font-medium"

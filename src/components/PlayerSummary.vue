@@ -197,8 +197,11 @@ const queueType = computed(() => {
                 kda.ratio < 2,
             }"
           >
-            {{ currentPlayer?.challenges.kda.toFixed(2) }}
-            <!-- {{ kda.ratio.toFixed(2) }} -->
+            {{
+              currentPlayer?.challenges
+                ? currentPlayer.challenges.kda.toFixed(2)
+                : 'N/A'
+            }}
           </Badge>
         </div>
 

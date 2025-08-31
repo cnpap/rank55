@@ -57,6 +57,13 @@ const handleKick = () => {
 const handleCopyName = async () => {
   await copyToClipboard(props.displayName, '玩家名称已复制到剪贴板');
 };
+// 在 script setup 部分添加计算属性
+const avatarIconId = computed(() => {
+  // 优先使用 summonerData 中的 profileIconId，然后是 member 的 summonerIconId
+  return (
+    props.member.summonerData?.profileIconId || props.member.summonerIconId || 1
+  );
+});
 </script>
 
 <template>
@@ -113,7 +120,7 @@ const handleCopyName = async () => {
 
           <!-- 头像 -->
           <img
-            :src="staticAssets.getProfileIcon(`${member.summonerIconId}`)"
+            :src="staticAssets.getProfileIcon(`${avatarIconId}`)"
             :alt="displayName"
             class="relative h-11 w-11 object-cover"
           />

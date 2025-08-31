@@ -16,8 +16,8 @@ import FriendsList from '@/components/FriendsList.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { SearchHistoryItem } from '@/storages/storage-use';
 import { useClientUserStore } from '@/stores/client-user';
-import { FriendService, Friend } from '@/lib/service/friend-service';
-import { SimpleFriend } from '@/types/friend';
+import { FriendService } from '@/lib/service/friend-service';
+import { Friend, SimpleFriend } from '@/types/friend';
 
 // Props 定义
 interface Props {
@@ -126,7 +126,7 @@ const selectedServerId = computed({
 
 // 转换好友数据为简化格式
 const simplifiedFriends = computed(() => {
-  return friends.value.map(friend => ({
+  return friends.value.map((friend: Friend) => ({
     id: friend.id,
     gameName: friend.gameName,
     tagLine: friend.gameTag,
@@ -295,6 +295,7 @@ defineExpose({
             :disabled="!summonerName.name.trim() || isSearching"
             class="absolute top-1/2 right-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"
             size="sm"
+            variant="outline"
           >
             <span v-if="isSearching" class="flex items-center gap-1">
               <Loading size="xs" />

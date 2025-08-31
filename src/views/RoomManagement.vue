@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useGameState } from '@/lib/composables/useGameState';
+import { useChampSelectMembers } from '@/hooks/useChampSelectMembers';
 import { RoomService } from '@/lib/service/room-service';
 import { SummonerService } from '@/lib/service/summoner-service';
+import { GamePhaseManager } from '@/lib/service/game-phase-manager';
+import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import type { Room, Member } from '@/types/room';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
@@ -25,6 +28,16 @@ export interface MemberWithDetails extends Member {
 // 使用游戏状态
 const { isInRoom, isConnected } = useGameState();
 
+// 使用英雄选择成员数据
+const {
+  isLoadingChampSelect,
+  champSelectError,
+  champSelectSlots,
+  updateChampSelectMembers,
+  resetChampSelectState,
+  isInChampSelect,
+} = useChampSelectMembers();
+
 // 房间管理状态
 const currentRoom = ref<Room | null>(null);
 const roomMembers = ref<MemberWithDetails[]>([]);
@@ -33,13 +46,25 @@ const isLoadingMembers = ref(false);
 const errorMessage = ref<string | null>(null);
 const isUpdating = ref(false);
 const updateTimer = ref<NodeJS.Timeout | null>(null);
+const currentGamePhase = ref<GameflowPhaseEnum | null>(null);
 
 // 服务实例
 const roomService = new RoomService();
 const summonerService = new SummonerService();
+const gamePhaseManager = new GamePhaseManager();
 
 // 计算属性
-const isLoading = computed(() => isLoadingRoom.value || isLoadingMembers.value);
+const isLoading = computed(
+  () =>
+    isLoadingRoom.value || isLoadingMembers.value || isLoadingChampSelect.value
+);
+const isInChampSelectPhase = computed(
+  () => currentGamePhase.value === GameflowPhaseEnum.ChampSelect
+); // 直接根据游戏阶段判断
+const currentError = computed(
+  () => errorMessage.value || champSelectError.value
+);
+
 const roomLeader = computed(
   () => roomMembers.value.find(member => member.isLeader) as MemberWithDetails
 );
@@ -48,21 +73,62 @@ const otherMembers = computed(
     roomMembers.value.filter(member => !member.isLeader) as MemberWithDetails[]
 );
 
-// 创建5个位置的数组，房主在第一个位置，其他成员按顺序填充，空位用null表示
-const roomSlots = computed(() => {
-  const slots = Array(5).fill(null);
+// 统一的显示槽位 - 根据当前阶段选择数据源
+const displaySlots = computed(() => {
+  if (isInChampSelectPhase.value) {
+    // 英雄选择阶段：使用 champSelectSlots
+    return champSelectSlots.value.map(member => {
+      if (!member) return null;
+      // 转换为 MemberWithDetails 格式以兼容现有组件
+      return {
+        summonerId: member.summonerId,
+        summonerName: member.summonerName,
+        isLeader: member.isLeader,
+        summonerData: member.summonerData,
+        rankedStats: member.rankedStats,
+        isLoading: member.isLoading,
+        error: member.error,
+        // 添加房间成员的其他必需字段，使用默认值
+        allowedChangeActivity: false,
+        allowedInviteOthers: false,
+        allowedKickOthers: false,
+        allowedStartActivity: false,
+        allowedToggleInvite: false,
+        autoFillEligible: false,
+        autoFillProtectedForPromos: false,
+        autoFillProtectedForSoloing: false,
+        autoFillProtectedForStreaking: false,
+        botChampionId: 0,
+        botDifficulty: '',
+        botId: '',
+        firstPositionPreference: '',
+        isBot: false,
+        isOwner: member.isLeader,
+        isSpectator: false,
+        puuid: member.puuid,
+        ready: true,
+        secondPositionPreference: '',
+        showGhostedBanner: false,
+        summonerIconId: member.summonerData?.profileIconId || 0,
+        summonerLevel: member.summonerData?.summonerLevel || 0,
+        teamId: 1,
+      } as unknown as MemberWithDetails;
+    });
+  } else {
+    // 房间阶段：使用原有逻辑
+    const slots = Array(5).fill(null);
+    if (roomLeader.value) {
+      slots[0] = roomLeader.value;
+    }
 
-  if (roomLeader.value) {
-    slots[0] = roomLeader.value;
+    // 填充其他成员到剩余位置
+    const otherMembersList = otherMembers.value;
+    for (let i = 0; i < Math.min(otherMembersList.length, 4); i++) {
+      slots[i + 1] = otherMembersList[i];
+    }
+
+    return slots as (MemberWithDetails | null)[];
   }
-
-  // 填充其他成员到剩余位置
-  const otherMembersList = otherMembers.value;
-  for (let i = 0; i < Math.min(otherMembersList.length, 4); i++) {
-    slots[i + 1] = otherMembersList[i];
-  }
-
-  return slots as MemberWithDetails[];
 });
 
 // 获取成员详细信息
@@ -220,16 +286,17 @@ const startRoomPolling = () => {
 
   console.log('🏠 开始房间状态轮询');
   updateTimer.value = setInterval(() => {
-    if (isInRoom.value && isConnected.value) {
-      updateRoom();
+    if (isConnected.value) {
+      updateData(); // 使用统一的数据更新方法，而不是直接调用 updateRoom
     } else {
       resetRoom();
+      resetChampSelectState();
     }
   }, 3000);
 
   // 立即执行一次
-  if (isInRoom.value && isConnected.value) {
-    updateRoom();
+  if (isConnected.value) {
+    updateData();
   }
 };
 
@@ -263,12 +330,55 @@ watch(isInRoom, newValue => {
   }
 });
 
+// 检查游戏阶段
+const checkGamePhase = async (): Promise<void> => {
+  try {
+    const phase = await gamePhaseManager.getCurrentPhase();
+    currentGamePhase.value = phase;
+  } catch (error) {
+    console.warn('获取游戏阶段失败:', error);
+    currentGamePhase.value = null;
+  }
+};
+
+// 统一的数据更新方法
+const updateData = async (): Promise<void> => {
+  // 防止并发调用
+  if (isUpdating.value) {
+    console.log('🏠 数据更新中，跳过本次调用');
+    return;
+  }
+
+  try {
+    isUpdating.value = true;
+
+    // 首先检查游戏阶段
+    await checkGamePhase();
+
+    // 直接根据游戏阶段判断，而不依赖 isInChampSelectPhase
+    if (currentGamePhase.value === GameflowPhaseEnum.ChampSelect) {
+      // 英雄选择阶段：更新英雄选择数据
+      await updateChampSelectMembers();
+    } else if (isInRoom.value && isConnected.value) {
+      // 房间阶段：更新房间数据
+      await updateRoom();
+    } else {
+      // 其他阶段：重置状态
+      resetRoom();
+      resetChampSelectState();
+    }
+  } finally {
+    isUpdating.value = false;
+  }
+};
+
 // 监听连接状态变化
 watch(isConnected, newValue => {
   if (!newValue) {
     resetRoom();
-  } else if (isInRoom.value) {
-    updateRoom();
+    resetChampSelectState();
+  } else {
+    updateData();
   }
 });
 
@@ -288,11 +398,11 @@ onUnmounted(() => {
   >
     <!-- 错误提示 -->
     <div
-      v-if="errorMessage"
+      v-if="currentError"
       class="bg-destructive/10 border-destructive/20 text-destructive mx-4 mt-4 rounded-lg border p-3 text-sm"
     >
       <div class="flex items-center justify-between">
-        <span>{{ errorMessage }}</span>
+        <span>{{ currentError }}</span>
         <button
           @click="handleClearError"
           class="hover:bg-destructive/20 ml-2 rounded px-2 py-1 text-xs transition-colors"
@@ -304,7 +414,7 @@ onUnmounted(() => {
 
     <!-- 初始加载状态 - 优雅的加载界面 -->
     <div
-      v-if="isLoading && !isInRoom"
+      v-if="isLoading && !isInRoom && !isInChampSelectPhase"
       class="flex flex-1 items-center justify-center px-8"
     >
       <div class="text-center">
@@ -317,18 +427,27 @@ onUnmounted(() => {
             ></div>
           </div>
         </div>
-        <h3 class="text-foreground mb-3 text-xl font-semibold">检测房间状态</h3>
+        <h3 class="text-foreground mb-3 text-xl font-semibold">
+          {{ isInChampSelectPhase ? '检测英雄选择状态' : '检测房间状态' }}
+        </h3>
         <p class="text-muted-foreground text-sm">正在连接游戏客户端...</p>
       </div>
     </div>
 
-    <!-- 房间成员展示 - 保持原有的5个位置横向排列 -->
+    <!-- 成员展示 - 支持房间和英雄选择两种模式 -->
     <div
-      v-else-if="isInRoom"
+      v-else-if="isInRoom || isInChampSelectPhase"
       class="bg-card/50 border-border/30 flex h-full flex-1 border-t backdrop-blur-sm"
     >
+      <!-- 阶段指示器 -->
+      <!-- <div class="absolute top-4 right-4 z-10">
+        <div class="bg-primary/10 border-primary/20 text-primary rounded-lg border px-3 py-1 text-sm font-medium">
+          {{ isInChampSelectPhase ? '英雄选择阶段' : '房间阶段' }}
+        </div>
+      </div> -->
+
       <div
-        v-for="(member, index) in roomSlots"
+        v-for="(member, index) in displaySlots"
         :key="index"
         class="border-border/30 flex h-full flex-1 flex-col border-r last:border-r-0"
       >
@@ -337,7 +456,7 @@ onUnmounted(() => {
           v-if="member && member.summonerData"
           :member="member"
           :is-leader="index === 0"
-          :can-kick="index !== 0"
+          :can-kick="index !== 0 && !isInChampSelectPhase"
           @kick="handleKickMember"
         />
 

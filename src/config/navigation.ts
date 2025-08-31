@@ -33,15 +33,15 @@ export const navigationItems: NavigationItem[] = [
   {
     name: 'RoomManagement',
     path: '/room-management',
-    title: '房间',
+    title: '房间/对局',
     icon: '🏠',
   },
-  {
-    name: 'Match',
-    path: '/match',
-    title: '对局',
-    icon: '⚡',
-  },
+  // {
+  //   name: 'Match',
+  //   path: '/match',
+  //   title: '对局',
+  //   icon: '⚡',
+  // },
   {
     name: 'Settings',
     path: '/settings',

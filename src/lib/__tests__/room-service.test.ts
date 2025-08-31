@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
 import { RoomService } from '../service/room-service';
 import { LCUClientInterface } from '../client/interface';
-import fs from 'fs/promises';
-import path from 'path';
 
 describe('RoomService', () => {
   let lcuClient: LCUClientInterface;
