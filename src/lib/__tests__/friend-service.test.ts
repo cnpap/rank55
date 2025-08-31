@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { LCUClient } from '../client/lcu-client';
-import { FriendService, Friend } from '../service/friend-service';
+import { FriendService } from '../service/friend-service';
 import { LCUClientInterface } from '../client/interface';
+import { Friend } from '@/types/friend';
 
 // 辅助方法：获取在线状态中文描述
 function getAvailabilityText(availability: string): string {
