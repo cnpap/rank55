@@ -2,7 +2,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { useGameConnection } from './useGameConnection';
 import { useGamePhaseHandler } from './useGamePhaseHandler';
-import { RoomService } from '@/lib/service/room-service';
 
 export function useAutoAcceptGame() {
   const gamePhaseTimer = ref<NodeJS.Timeout | null>(null);
@@ -10,10 +9,7 @@ export function useAutoAcceptGame() {
   // 使用拆分后的 hooks
   const connection = useGameConnection();
   const phaseHandler = useGamePhaseHandler();
-
-  // 简化的房间状态 - 只保留是否在房间的状态
-  const isInRoom = ref(false);
-  const roomService = new RoomService();
+  const currentPhase = ref<GameflowPhaseEnum>(GameflowPhaseEnum.None);
 
   const checkGamePhaseAndExecute = async (): Promise<void> => {
     try {
@@ -21,19 +17,26 @@ export function useAutoAcceptGame() {
       const connected = await connection.checkConnection();
 
       if (!connected) {
-        isInRoom.value = false;
+        // 只有当当前阶段不是 None 时才更新
+        if (currentPhase.value !== GameflowPhaseEnum.None) {
+          currentPhase.value = GameflowPhaseEnum.None;
+        }
         return;
       }
 
       const phase = await phaseHandler.gamePhaseManager.getCurrentPhase();
+      const lastPhase = phaseHandler.gamePhaseManager.currentState.lastPhase;
 
-      // 阶段变化日志
-      if (phaseHandler.lastPhase.value !== phase) {
-        console.log(
-          `游戏阶段变化: ${phaseHandler.lastPhase.value} -> ${phase}`
-        );
-        phaseHandler.lastPhase.value = phase;
+      // 只有当阶段真正发生变化时才更新 currentPhase
+      if (currentPhase.value !== phase) {
+        currentPhase.value = phase;
+        console.log(`游戏阶段变化: ${lastPhase} -> ${phase}`);
       }
+
+      // 移除重复的阶段变化日志，因为已经在上面处理了
+      // if (lastPhase !== phase) {
+      //   console.log(`游戏阶段变化: ${lastPhase} -> ${phase}`);
+      // }
 
       // 场景 0: None 状态 - 获取用户信息
       await connection.fetchCurrentUser();
@@ -45,10 +48,10 @@ export function useAutoAcceptGame() {
           GameflowPhaseEnum.Matchmaking,
           GameflowPhaseEnum.ReadyCheck,
           GameflowPhaseEnum.ChampSelect,
+          GameflowPhaseEnum.GameStart,
+          GameflowPhaseEnum.InProgress,
         ].includes(phase)
       ) {
-        isInRoom.value = await roomService.isInLobby();
-
         // 场景 2: 准备检查阶段
         if (phase === GameflowPhaseEnum.ReadyCheck) {
           await phaseHandler.autoActionService.executeReadyCheckAction();
@@ -61,30 +64,30 @@ export function useAutoAcceptGame() {
           return;
         }
 
+        // 场景 4: 游戏开始阶段（包括 GameStart 和 InProgress）
+        if (
+          phase === GameflowPhaseEnum.GameStart ||
+          phase === GameflowPhaseEnum.InProgress
+        ) {
+          await phaseHandler.gamePhaseManager.handleGameStartPhase();
+          return;
+        }
+
         return;
       }
 
-      // 场景 4: 游戏开始阶段
-      if (phase === GameflowPhaseEnum.GameStart) {
-        await phaseHandler.gamePhaseManager.handleGameStartPhase();
-        return;
-      }
-
-      // 其他阶段重置相关状态
-      if (
-        ![
-          GameflowPhaseEnum.None,
-          GameflowPhaseEnum.Lobby,
-          GameflowPhaseEnum.ChampSelect,
-          GameflowPhaseEnum.GameStart,
-        ].includes(phase)
-      ) {
+      // 其他阶段重置相关状态 - 修复这里的逻辑
+      // 当不在房间相关阶段时，应该立即重置房间状态
+      if (currentPhase.value !== GameflowPhaseEnum.None) {
         phaseHandler.resetPhaseState();
-        isInRoom.value = false;
+        currentPhase.value = GameflowPhaseEnum.None;
       }
     } catch (error) {
       console.error('游戏阶段轮询出错:', error);
-      isInRoom.value = false;
+      // 只有当当前阶段不是 None 时才更新
+      if (currentPhase.value !== GameflowPhaseEnum.None) {
+        currentPhase.value = GameflowPhaseEnum.None;
+      }
     } finally {
       // 安排下一次执行
       scheduleNextPoll();
@@ -108,7 +111,7 @@ export function useAutoAcceptGame() {
       gamePhaseTimer.value = null;
     }
     phaseHandler.resetPhaseState();
-    isInRoom.value = false;
+    currentPhase.value = GameflowPhaseEnum.None;
     connection.resetConnection();
     console.log('🛑 停止游戏阶段轮询');
   };
@@ -127,7 +130,7 @@ export function useAutoAcceptGame() {
     clientUser: connection.clientUser,
 
     // 简化的房间状态 - 只返回是否在房间中
-    isInRoom,
+    currentPhase,
 
     // 游戏阶段相关
     gamePhaseManager: phaseHandler.gamePhaseManager,

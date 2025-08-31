@@ -24,12 +24,14 @@ defineProps<Props>();
           </div>
         </div>
         <!-- 位置信息 -->
-        <p
-          class="text-muted-foreground/90 mb-1 text-sm font-medium tracking-wide"
-        >
-          位置 {{ slotIndex + 1 }}
-        </p>
-        <p class="text-muted-foreground/65 text-xs">等待队友</p>
+        <div>
+          <p
+            class="text-muted-foreground/90 mb-1 text-sm font-medium tracking-wide"
+          >
+            位置 {{ slotIndex + 1 }}
+          </p>
+          <p class="text-muted-foreground/65 text-xs">等待队友</p>
+        </div>
       </div>
     </div>
   </div>

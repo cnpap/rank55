@@ -10,8 +10,6 @@ import { getPlayerDisplayName } from '@/lib/player-helpers';
 
 interface Props {
   member: MemberWithDetails;
-  isLeader?: boolean;
-  canKick?: boolean;
 }
 
 interface Emits {
@@ -102,7 +100,6 @@ onMounted(() => {
       :member="member"
       :display-name="displayName"
       :current-ranked-stats="currentRankedStats"
-      :can-kick="canKick"
       @kick="handleKick"
     />
 

@@ -18,13 +18,13 @@ const isVersionsLoaded = ref(false);
 const isVersionsLoading = ref(true);
 
 // 使用自动接受游戏功能
-const { isInRoom, isConnected, clientUser } = useAutoAcceptGame();
+const { currentPhase, clientUser, gamePhaseManager } = useAutoAcceptGame();
 
 // 通过 provide 向子组件提供房间状态
 provide('gameState', {
-  isInRoom,
-  isConnected,
+  currentPhase,
   clientUser,
+  gamePhaseManager,
 });
 
 // 重新加载页面的方法

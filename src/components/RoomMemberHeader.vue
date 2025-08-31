@@ -14,7 +14,6 @@ interface Props {
   member: MemberWithDetails;
   displayName: string;
   currentRankedStats: any;
-  canKick?: boolean;
 }
 
 interface Emits {
@@ -72,7 +71,7 @@ const avatarIconId = computed(() => {
   >
     <!-- 踢出按钮 -->
     <button
-      v-if="canKick && !member.isLeader"
+      v-if="!member.isLeader"
       @click="handleKick"
       class="absolute top-2 right-2 z-20 flex h-5 w-5 items-center justify-center border border-red-200 bg-red-50 text-red-600 transition-all duration-150 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70"
       title="踢出玩家"

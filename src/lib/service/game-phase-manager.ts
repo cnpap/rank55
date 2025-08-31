@@ -52,6 +52,7 @@ export class GamePhaseManager {
     // 从 gameflowSession 中提取需要的信息来构建 ChampSelectSession
     // 或者直接保存 gameflowSession
     await this.sessionStorage.saveGameflowSession(gameflowSession);
+    return gameflowSession;
   }
 
   setActionState(type: 'ban' | 'pick'): void {

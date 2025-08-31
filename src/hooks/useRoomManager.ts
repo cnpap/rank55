@@ -25,15 +25,12 @@ export function useRoomManager() {
   const isLoadingRoom = ref(false);
   const isLoadingMembers = ref(false);
   const errorMessage = ref<string | null>(null);
-  const isUpdating = ref(false); // 添加更新状态标记
 
   const roomService = new RoomService();
   const summonerService = new SummonerService();
   const sgpApi = new SimpleSgpApi();
   const sgpMatchService = new SgpMatchService(sgpApi);
 
-  // 计算属性
-  const isInRoom = computed(() => !!currentRoom.value);
   const isLoading = computed(
     () => isLoadingRoom.value || isLoadingMembers.value
   );
@@ -108,14 +105,7 @@ export function useRoomManager() {
   };
 
   const updateRoom = async (): Promise<void> => {
-    // 防止并发调用
-    if (isUpdating.value) {
-      console.log('🏠 房间更新中，跳过本次调用');
-      return;
-    }
-
     try {
-      isUpdating.value = true;
       isLoadingRoom.value = true;
 
       const inLobby = await roomService.isInLobby();
@@ -177,7 +167,6 @@ export function useRoomManager() {
     } finally {
       isLoadingRoom.value = false;
       isLoadingMembers.value = false;
-      isUpdating.value = false;
     }
   };
 
@@ -209,7 +198,6 @@ export function useRoomManager() {
     isLoadingRoom,
     isLoadingMembers,
     isLoading,
-    isInRoom,
     roomLeader,
     otherMembers,
     errorMessage,
@@ -217,6 +205,5 @@ export function useRoomManager() {
     kickMember,
     clearError,
     resetRoom,
-    isUpdating, // 导出更新状态
   };
 }

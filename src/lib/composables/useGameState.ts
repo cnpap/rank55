@@ -1,10 +1,12 @@
 import { inject, type Ref } from 'vue';
 import type { SummonerData } from '@/types/summoner';
+import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { GamePhaseManager } from '../service/game-phase-manager';
 
 export interface GameState {
-  isInRoom: Ref<boolean>;
-  isConnected: Ref<boolean>;
+  currentPhase: Ref<GameflowPhaseEnum>;
   clientUser: Ref<SummonerData | null>;
+  gamePhaseManager: GamePhaseManager;
 }
 
 export function useGameState(): GameState {

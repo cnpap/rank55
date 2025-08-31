@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useGameState } from '@/lib/composables/useGameState';
 import { useChampSelectMembers } from '@/hooks/useChampSelectMembers';
+import { useGameStartMembers } from '@/hooks/useGameStartMembers';
 import { RoomService } from '@/lib/service/room-service';
 import { SummonerService } from '@/lib/service/summoner-service';
-import { GamePhaseManager } from '@/lib/service/game-phase-manager';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import type { Room, Member } from '@/types/room';
 import type { SummonerData } from '@/types/summoner';
@@ -12,7 +12,6 @@ import type { RankedStats } from '@/types/ranked-stats';
 import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
 import RoomMemberCard from '@/components/RoomMemberCard.vue';
 import RoomEmptySlot from '@/components/RoomEmptySlot.vue';
-import RoomEmptyState from '@/components/RoomEmptyState.vue';
 
 export interface MemberWithDetails extends Member {
   summonerData?: SummonerData;
@@ -25,59 +24,93 @@ export interface MemberWithDetails extends Member {
   error?: string;
 }
 
-// 使用游戏状态
-const { isInRoom, isConnected } = useGameState();
+const { currentPhase, gamePhaseManager } = useGameState();
 
 // 使用英雄选择成员数据
-const {
-  isLoadingChampSelect,
-  champSelectError,
-  champSelectSlots,
-  updateChampSelectMembers,
-  resetChampSelectState,
-  isInChampSelect,
-} = useChampSelectMembers();
+const { champSelectError, champSelectSlots, updateChampSelectMembers } =
+  useChampSelectMembers();
+
+// 使用游戏开始成员数据
+const { gameStartError, gameStartSlots, updateGameStartMembers } =
+  useGameStartMembers();
 
 // 房间管理状态
 const currentRoom = ref<Room | null>(null);
 const roomMembers = ref<MemberWithDetails[]>([]);
-const isLoadingRoom = ref(false);
-const isLoadingMembers = ref(false);
 const errorMessage = ref<string | null>(null);
-const isUpdating = ref(false);
 const updateTimer = ref<NodeJS.Timeout | null>(null);
-const currentGamePhase = ref<GameflowPhaseEnum | null>(null);
 
 // 服务实例
 const roomService = new RoomService();
 const summonerService = new SummonerService();
-const gamePhaseManager = new GamePhaseManager();
 
-// 计算属性
-const isLoading = computed(
-  () =>
-    isLoadingRoom.value || isLoadingMembers.value || isLoadingChampSelect.value
-);
-const isInChampSelectPhase = computed(
-  () => currentGamePhase.value === GameflowPhaseEnum.ChampSelect
-); // 直接根据游戏阶段判断
 const currentError = computed(
-  () => errorMessage.value || champSelectError.value
+  () => errorMessage.value || champSelectError.value || gameStartError.value
 );
 
-const roomLeader = computed(
-  () => roomMembers.value.find(member => member.isLeader) as MemberWithDetails
-);
-const otherMembers = computed(
-  () =>
-    roomMembers.value.filter(member => !member.isLeader) as MemberWithDetails[]
-);
+// 添加缓存变量
+const cachedDisplaySlots = ref<(MemberWithDetails | null)[]>([]);
+const lastPhase = ref<GameflowPhaseEnum | null>(null);
+const lastMemberIds = ref<string>('');
+const lastMemberDetails = ref<string>(''); // 新增：用于跟踪成员详细信息的变化
+
+// 判断是否为游戏开始阶段（需要两排布局）
+const isGameStartPhase = computed(() => {
+  return (
+    currentPhase.value === GameflowPhaseEnum.GameStart ||
+    currentPhase.value === GameflowPhaseEnum.InProgress
+  );
+});
 
 // 统一的显示槽位 - 根据当前阶段选择数据源
 const displaySlots = computed(() => {
-  if (isInChampSelectPhase.value) {
+  let currentMemberIds = '';
+  let currentMemberDetails = '';
+
+  if (currentPhase.value === GameflowPhaseEnum.ChampSelect) {
+    currentMemberIds = champSelectSlots.value
+      .map(m => m?.summonerId || 'null')
+      .join(',');
+    currentMemberDetails = champSelectSlots.value
+      .map(m =>
+        m ? `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}` : 'null'
+      )
+      .join(',');
+  } else if (
+    currentPhase.value === GameflowPhaseEnum.GameStart ||
+    currentPhase.value === GameflowPhaseEnum.InProgress
+  ) {
+    currentMemberIds = gameStartSlots.value
+      .map(m => m?.summonerId || 'null')
+      .join(',');
+    currentMemberDetails = gameStartSlots.value
+      .map(m =>
+        m ? `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}` : 'null'
+      )
+      .join(',');
+  } else {
+    currentMemberIds = roomMembers.value.map(m => m.summonerId).join(',');
+    currentMemberDetails = roomMembers.value
+      .map(m => `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}`)
+      .join(',');
+  }
+
+  // 检查是否需要重新计算 - 包括详细信息的变化
+  const needsRecalculation =
+    lastPhase.value !== currentPhase.value ||
+    lastMemberIds.value !== currentMemberIds ||
+    lastMemberDetails.value !== currentMemberDetails;
+
+  // 如果没有变化且有缓存，直接返回缓存
+  if (!needsRecalculation && cachedDisplaySlots.value.length > 0) {
+    return cachedDisplaySlots.value;
+  }
+
+  let newSlots: (MemberWithDetails | null)[];
+
+  if (currentPhase.value === GameflowPhaseEnum.ChampSelect) {
     // 英雄选择阶段：使用 champSelectSlots
-    return champSelectSlots.value.map(member => {
+    newSlots = champSelectSlots.value.map(member => {
       if (!member) return null;
       // 转换为 MemberWithDetails 格式以兼容现有组件
       return {
@@ -114,46 +147,143 @@ const displaySlots = computed(() => {
         teamId: 1,
       } as unknown as MemberWithDetails;
     });
+  } else if (
+    currentPhase.value === GameflowPhaseEnum.GameStart ||
+    currentPhase.value === GameflowPhaseEnum.InProgress
+  ) {
+    // 游戏开始阶段：使用 gameStartSlots
+    newSlots = gameStartSlots.value.map(member => {
+      if (!member) return null;
+      // 转换为 MemberWithDetails 格式以兼容现有组件
+      return {
+        summonerId: member.summonerId,
+        summonerName: member.summonerName,
+        isLeader: false, // 游戏开始阶段没有房主概念
+        summonerData: member.summonerData,
+        rankedStats: member.rankedStats,
+        isLoading: member.isLoading,
+        error: member.error,
+        // 添加房间成员的其他必需字段，使用默认值
+        allowedChangeActivity: false,
+        allowedInviteOthers: false,
+        allowedKickOthers: false,
+        allowedStartActivity: false,
+        allowedToggleInvite: false,
+        autoFillEligible: false,
+        autoFillProtectedForPromos: false,
+        autoFillProtectedForSoloing: false,
+        autoFillProtectedForStreaking: false,
+        botChampionId: 0,
+        botDifficulty: '',
+        botId: '',
+        firstPositionPreference: '',
+        isBot: false,
+        isOwner: false,
+        isSpectator: false,
+        puuid: '',
+        ready: true,
+        secondPositionPreference: '',
+        showGhostedBanner: false,
+        summonerIconId: member.summonerData?.profileIconId || 0,
+        summonerLevel: member.summonerData?.summonerLevel || 0,
+        teamId: member.teamId,
+      } as unknown as MemberWithDetails;
+    });
   } else {
-    // 房间阶段：使用原有逻辑
-    const slots = Array(5).fill(null);
-    if (roomLeader.value) {
-      slots[0] = roomLeader.value;
+    // 房间阶段：修复逻辑错误
+    newSlots = new Array(5).fill(null);
+
+    // 安全地查找房主
+    const leader = roomMembers.value.find(member => member.isLeader);
+    if (leader) {
+      newSlots[0] = leader;
     }
 
     // 填充其他成员到剩余位置
-    const otherMembersList = otherMembers.value;
+    const otherMembersList = roomMembers.value.filter(
+      member => !member.isLeader
+    );
     for (let i = 0; i < Math.min(otherMembersList.length, 4); i++) {
-      slots[i + 1] = otherMembersList[i];
+      newSlots[i + 1] = otherMembersList[i];
     }
-
-    return slots as (MemberWithDetails | null)[];
   }
+  console.log('newSlots', newSlots);
+
+  // 更新缓存
+  cachedDisplaySlots.value = newSlots;
+  lastPhase.value = currentPhase.value;
+  lastMemberIds.value = currentMemberIds;
+  lastMemberDetails.value = currentMemberDetails;
+
+  return newSlots;
 });
 
-// 获取成员详细信息
+// 获取成员详细信息 - 优化为增量更新
 const fetchMembersDetails = async (members: Member[]): Promise<void> => {
-  // 第一阶段：立即显示基本信息
-  roomMembers.value = members.map(member => ({
+  // 创建当前成员的映射
+  const currentMemberMap = new Map(
+    roomMembers.value.map(m => [m.summonerId, m])
+  );
+  const newMemberMap = new Map(members.map(m => [m.summonerId, m]));
+
+  // 找出新增的成员
+  const newMembers = members.filter(m => !currentMemberMap.has(m.summonerId));
+  // 找出离开的成员
+  const leftMemberIds = roomMembers.value
+    .filter(m => !newMemberMap.has(m.summonerId))
+    .map(m => m.summonerId);
+
+  // 如果没有变化，直接返回
+  if (newMembers.length === 0 && leftMemberIds.length === 0) {
+    return;
+  }
+
+  console.log(
+    `🏠 成员变动: 新增 ${newMembers.length} 人，离开 ${leftMemberIds.length} 人`
+  );
+
+  // 移除离开的成员
+  if (leftMemberIds.length > 0) {
+    roomMembers.value = roomMembers.value.filter(
+      m => !leftMemberIds.includes(m.summonerId)
+    );
+  }
+
+  // 如果没有新成员，直接返回
+  if (newMembers.length === 0) {
+    return;
+  }
+
+  // 为新成员添加基本信息
+  const newMembersWithDetails: MemberWithDetails[] = newMembers.map(member => ({
     ...member,
     isLoading: false,
   }));
 
-  // 第二阶段：并行加载召唤师基本数据
-  const summonerPromises = members.map(async (member, index) => {
+  // 添加新成员到列表
+  roomMembers.value = [...roomMembers.value, ...newMembersWithDetails];
+
+  // 只为新成员加载详细信息
+  const summonerPromises = newMembers.map(async (member, index) => {
     if (!member.summonerId) return;
 
     try {
       const summonerData = await summonerService.getSummonerByID(
         member.summonerId
       );
-      if (roomMembers.value[index]) {
-        roomMembers.value[index] = {
-          ...roomMembers.value[index],
+
+      // 找到对应的成员并更新
+      const memberIndex = roomMembers.value.findIndex(
+        m => m.summonerId === member.summonerId
+      );
+      if (memberIndex !== -1) {
+        roomMembers.value[memberIndex] = {
+          ...roomMembers.value[memberIndex],
           summonerData,
         };
       }
-      return { index, summonerData };
+
+      return { summonerId: member.summonerId, summonerData };
     } catch (error) {
       console.warn(`获取成员 ${member.summonerName} 召唤师数据失败:`, error);
       return null;
@@ -162,102 +292,47 @@ const fetchMembersDetails = async (members: Member[]): Promise<void> => {
 
   const summonerResults = await Promise.all(summonerPromises);
 
-  // 第三阶段：只加载排位统计，战绩由各个 RoomMemberCard 自己处理
-  summonerResults.forEach(async result => {
-    if (!result?.summonerData?.puuid) return;
+  // 为新成员加载排位统计
+  const rankedPromises = summonerResults.map(async result => {
+    if (!result?.summonerData?.puuid) return null;
 
-    const { index, summonerData } = result;
-
-    // 只加载排位统计
+    const { summonerId, summonerData } = result;
     try {
       const rankedStats = await summonerService.getRankedStats(
         summonerData.puuid
       );
-      if (roomMembers.value[index]) {
-        roomMembers.value[index] = {
-          ...roomMembers.value[index],
+
+      // 找到对应的成员并更新排位统计
+      const memberIndex = roomMembers.value.findIndex(
+        m => m.summonerId === summonerId
+      );
+      if (memberIndex !== -1) {
+        roomMembers.value[memberIndex] = {
+          ...roomMembers.value[memberIndex],
           rankedStats,
         };
       }
+
+      return { summonerId, rankedStats };
     } catch (error) {
-      console.warn(`获取排位统计失败:`, error);
+      console.warn(`获取成员排位统计失败:`, error);
+      return null;
     }
   });
+
+  await Promise.all(rankedPromises);
 };
 
-// 更新房间信息
+// 更新房间信息 - 优化成员变化检测
 const updateRoom = async (): Promise<void> => {
-  // 防止并发调用
-  if (isUpdating.value) {
-    console.log('🏠 房间更新中，跳过本次调用');
-    return;
-  }
+  const room = await roomService.getCurrentLobby();
+  currentRoom.value = room;
+  clearError();
 
-  try {
-    isUpdating.value = true;
-    isLoadingRoom.value = true;
+  const members = await roomService.getLobbyMembers();
 
-    const inLobby = await roomService.isInLobby();
-    if (!inLobby) {
-      currentRoom.value = null;
-      roomMembers.value = [];
-      errorMessage.value = '当前不在游戏房间中';
-      return;
-    }
-
-    const room = await roomService.getCurrentLobby();
-    currentRoom.value = room;
-    clearError();
-
-    isLoadingMembers.value = true;
-    const members = await roomService.getLobbyMembers();
-
-    // 改进的成员变化检测逻辑
-    const currentMemberIds = members.map(m => String(m.summonerId)).sort();
-    const existingMemberIds = roomMembers.value
-      .map(m => String(m.summonerId))
-      .sort();
-
-    // 更严格的比较
-    const hasChanges =
-      currentMemberIds.length !== existingMemberIds.length ||
-      !currentMemberIds.every((id, index) => id === existingMemberIds[index]);
-
-    if (hasChanges) {
-      console.log(
-        `🏠 房间成员发生变化，重新获取详细信息: ${members.length} 名成员`
-      );
-      await fetchMembersDetails(members);
-    } else {
-      console.log(`🏠 房间成员无变化: ${members.length} 名成员`);
-      // 更安全的更新逻辑
-      roomMembers.value = roomMembers.value.map(existingMember => {
-        const updatedMember = members.find(
-          m => m.summonerId === existingMember.summonerId
-        );
-        if (updatedMember) {
-          return {
-            ...existingMember,
-            ...updatedMember,
-            // 保留详细信息
-            summonerData: existingMember.summonerData,
-            rankedStats: existingMember.rankedStats,
-            matchHistory: existingMember.matchHistory,
-            isLoading: existingMember.isLoading,
-            error: existingMember.error,
-          };
-        }
-        return existingMember;
-      });
-    }
-  } catch (error: any) {
-    console.error('更新房间信息失败:', error);
-    errorMessage.value = error.message || '获取房间信息失败';
-  } finally {
-    isLoadingRoom.value = false;
-    isLoadingMembers.value = false;
-    isUpdating.value = false;
-  }
+  // 直接调用优化后的增量更新函数
+  await fetchMembersDetails(members);
 };
 
 // 踢出成员
@@ -271,33 +346,56 @@ const clearError = () => {
   errorMessage.value = null;
 };
 
-// 重置房间状态
-const resetRoom = () => {
-  currentRoom.value = null;
-  roomMembers.value = [];
-  isLoadingRoom.value = false;
-  isLoadingMembers.value = false;
-  clearError();
-};
-
 // 开始房间状态轮询
 const startRoomPolling = () => {
   if (updateTimer.value) return;
 
   console.log('🏠 开始房间状态轮询');
-  updateTimer.value = setInterval(() => {
-    if (isConnected.value) {
-      updateData(); // 使用统一的数据更新方法，而不是直接调用 updateRoom
-    } else {
-      resetRoom();
-      resetChampSelectState();
+  updateTimer.value = setInterval(async () => {
+    try {
+      console.log('🏠 房间状态轮询 - 当前阶段:', currentPhase.value);
+      if (
+        [
+          GameflowPhaseEnum.Lobby,
+          GameflowPhaseEnum.Matchmaking,
+          GameflowPhaseEnum.ReadyCheck,
+          GameflowPhaseEnum.ChampSelect,
+          GameflowPhaseEnum.GameStart,
+          GameflowPhaseEnum.InProgress,
+        ].includes(currentPhase.value)
+      ) {
+        if (
+          [
+            GameflowPhaseEnum.Lobby,
+            GameflowPhaseEnum.Matchmaking,
+            GameflowPhaseEnum.ReadyCheck,
+          ].includes(currentPhase.value)
+        ) {
+          console.log('🏠 房间状态轮询 - 大厅或匹配中');
+          await updateRoom();
+        } else if (GameflowPhaseEnum.ChampSelect === currentPhase.value) {
+          console.log('🏠 房间状态轮询 - 选择英雄');
+          await updateChampSelectMembers();
+        } else if (
+          GameflowPhaseEnum.GameStart === currentPhase.value ||
+          GameflowPhaseEnum.InProgress === currentPhase.value
+        ) {
+          console.log('🏠 房间状态轮询 - 游戏开始');
+          await updateGameStartMembers(
+            await gamePhaseManager.handleGameStartPhase()
+          );
+        }
+      } else {
+        roomMembers.value = [];
+      }
+    } catch (e) {
+      console.error('房间状态轮询错误:', e);
+      roomMembers.value = [];
     }
   }, 3000);
 
   // 立即执行一次
-  if (isConnected.value) {
-    updateData();
-  }
+  updateRoom();
 };
 
 // 停止房间状态轮询
@@ -320,67 +418,6 @@ const handleKickMember = async (summonerId: number) => {
 const handleClearError = () => {
   clearError();
 };
-
-// 监听房间状态变化
-watch(isInRoom, newValue => {
-  if (newValue && isConnected.value) {
-    updateRoom();
-  } else {
-    resetRoom();
-  }
-});
-
-// 检查游戏阶段
-const checkGamePhase = async (): Promise<void> => {
-  try {
-    const phase = await gamePhaseManager.getCurrentPhase();
-    currentGamePhase.value = phase;
-  } catch (error) {
-    console.warn('获取游戏阶段失败:', error);
-    currentGamePhase.value = null;
-  }
-};
-
-// 统一的数据更新方法
-const updateData = async (): Promise<void> => {
-  // 防止并发调用
-  if (isUpdating.value) {
-    console.log('🏠 数据更新中，跳过本次调用');
-    return;
-  }
-
-  try {
-    isUpdating.value = true;
-
-    // 首先检查游戏阶段
-    await checkGamePhase();
-
-    // 直接根据游戏阶段判断，而不依赖 isInChampSelectPhase
-    if (currentGamePhase.value === GameflowPhaseEnum.ChampSelect) {
-      // 英雄选择阶段：更新英雄选择数据
-      await updateChampSelectMembers();
-    } else if (isInRoom.value && isConnected.value) {
-      // 房间阶段：更新房间数据
-      await updateRoom();
-    } else {
-      // 其他阶段：重置状态
-      resetRoom();
-      resetChampSelectState();
-    }
-  } finally {
-    isUpdating.value = false;
-  }
-};
-
-// 监听连接状态变化
-watch(isConnected, newValue => {
-  if (!newValue) {
-    resetRoom();
-    resetChampSelectState();
-  } else {
-    updateData();
-  }
-});
 
 onMounted(() => {
   startRoomPolling();
@@ -412,60 +449,83 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 初始加载状态 - 优雅的加载界面 -->
+    <!-- 成员展示 - 支持房间、英雄选择和游戏开始三种模式 -->
     <div
-      v-if="isLoading && !isInRoom && !isInChampSelectPhase"
-      class="flex flex-1 items-center justify-center px-8"
+      class="bg-card/50 border-border/30 flex h-full flex-1 border-t backdrop-blur-sm"
+      :class="{
+        'flex-col': isGameStartPhase,
+        'flex-row': !isGameStartPhase,
+      }"
     >
-      <div class="text-center">
-        <div class="relative mb-8">
+      <!-- 游戏开始阶段：两排布局 -->
+      <template v-if="isGameStartPhase">
+        <!-- 我方队伍 -->
+        <div class="border-border/30 flex h-1/2 border-b">
           <div
-            class="from-primary/20 to-accent/30 mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br"
+            v-for="(member, index) in displaySlots.slice(0, 5)"
+            :key="member ? `my-team-${member.summonerId}` : `my-empty-${index}`"
+            class="border-border/30 flex h-full flex-1 flex-col border-r last:border-r-0"
           >
-            <div
-              class="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-            ></div>
+            <!-- 有成员的情况 -->
+            <RoomMemberCard
+              v-if="member && member.summonerData"
+              :member="member"
+              :is-leader="false"
+              :can-kick="false"
+              @kick="handleKickMember"
+            />
+
+            <!-- 空位的情况 -->
+            <RoomEmptySlot v-else :slot-index="index" />
           </div>
         </div>
-        <h3 class="text-foreground mb-3 text-xl font-semibold">
-          {{ isInChampSelectPhase ? '检测英雄选择状态' : '检测房间状态' }}
-        </h3>
-        <p class="text-muted-foreground text-sm">正在连接游戏客户端...</p>
-      </div>
-    </div>
 
-    <!-- 成员展示 - 支持房间和英雄选择两种模式 -->
-    <div
-      v-else-if="isInRoom || isInChampSelectPhase"
-      class="bg-card/50 border-border/30 flex h-full flex-1 border-t backdrop-blur-sm"
-    >
-      <!-- 阶段指示器 -->
-      <!-- <div class="absolute top-4 right-4 z-10">
-        <div class="bg-primary/10 border-primary/20 text-primary rounded-lg border px-3 py-1 text-sm font-medium">
-          {{ isInChampSelectPhase ? '英雄选择阶段' : '房间阶段' }}
+        <!-- 敌方队伍 -->
+        <div class="flex h-1/2">
+          <div
+            v-for="(member, index) in displaySlots.slice(5, 10)"
+            :key="
+              member
+                ? `enemy-team-${member.summonerId}`
+                : `enemy-empty-${index}`
+            "
+            class="border-border/30 flex h-full flex-1 flex-col border-r last:border-r-0"
+          >
+            <!-- 有成员的情况 -->
+            <RoomMemberCard
+              v-if="member && member.summonerData"
+              :member="member"
+              :is-leader="false"
+              :can-kick="false"
+              @kick="handleKickMember"
+            />
+
+            <!-- 空位的情况 -->
+            <RoomEmptySlot v-else :slot-index="index + 5" />
+          </div>
         </div>
-      </div> -->
+      </template>
 
-      <div
-        v-for="(member, index) in displaySlots"
-        :key="index"
-        class="border-border/30 flex h-full flex-1 flex-col border-r last:border-r-0"
-      >
-        <!-- 有成员的情况 -->
-        <RoomMemberCard
-          v-if="member && member.summonerData"
-          :member="member"
-          :is-leader="index === 0"
-          :can-kick="index !== 0 && !isInChampSelectPhase"
-          @kick="handleKickMember"
-        />
+      <!-- 其他阶段：单排布局 -->
+      <template v-else>
+        <div
+          v-for="(member, index) in displaySlots"
+          :key="member ? `member-${member.summonerId}` : `empty-${index}`"
+          class="border-border/30 flex h-full flex-1 flex-col border-r last:border-r-0"
+        >
+          <!-- 有成员的情况 -->
+          <RoomMemberCard
+            v-if="member && member.summonerData"
+            :member="member"
+            :is-leader="index === 0"
+            :can-kick="index !== 0"
+            @kick="handleKickMember"
+          />
 
-        <!-- 空位的情况 -->
-        <RoomEmptySlot v-else :slot-index="index" />
-      </div>
+          <!-- 空位的情况 -->
+          <RoomEmptySlot v-else :slot-index="index" />
+        </div>
+      </template>
     </div>
-
-    <!-- 未在房间中的状态 - 使用独立组件 -->
-    <RoomEmptyState v-else />
   </main>
 </template>

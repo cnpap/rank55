@@ -1,3 +1,5 @@
+import { RankTeam } from './players-info';
+
 export interface GameflowSessionResponse {
   timestamp: string;
   gameflowPhase: string;
@@ -50,8 +52,8 @@ export interface GameData {
   playerChampionSelections: any[];
   queue: Queue;
   spectatorsAllowed: boolean;
-  teamOne: any[];
-  teamTwo: any[];
+  teamOne: RankTeam[];
+  teamTwo: RankTeam[];
 }
 
 export interface Queue {
