@@ -68,7 +68,9 @@ function handleReorderChampions(champions: ChampionData[]) {
       <div
         class="flex flex-shrink-0 items-center justify-between border-b px-6 py-4"
       >
-        <div class="flex items-center gap-3">
+        <div
+          class="flex items-center gap-3 object-cover opacity-70 brightness-0 dark:invert"
+        >
           <img
             :src="getPositionIconUrl(position.icon)"
             :alt="position.name"

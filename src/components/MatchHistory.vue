@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, provide } from 'vue';
+import { onMounted, provide, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
@@ -12,6 +12,10 @@ const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
 provide('serverId', serverId);
 provide('puuid', puuid);
+
+// 添加数据展示模式状态
+const dataDisplayMode = ref<'damage' | 'tank'>('damage'); // 默认看输出
+provide('dataDisplayMode', dataDisplayMode);
 
 // 使用新的战绩查询 hook
 const {
@@ -36,6 +40,11 @@ const { isSticky, sentinelRef } = useMatchHistoryUI();
 onMounted(async () => {
   await loadCompleteMatchData();
 });
+
+// 处理刷新事件
+const handleRefresh = async () => {
+  await loadCompleteMatchData();
+};
 </script>
 
 <template>
@@ -98,6 +107,8 @@ onMounted(async () => {
                     <SummonerProfileComponent
                       :summoner="summoner"
                       :ranked-stats="rankedStats"
+                      :is-refreshing="isLoading"
+                      @refresh="handleRefresh"
                     />
                   </div>
 
@@ -111,12 +122,17 @@ onMounted(async () => {
                 </div>
                 <!-- 历史战绩 - 直接使用 MatchListItem -->
                 <div v-if="showMatchHistory && matchHistory">
-                  <MatchListItem
+                  <div
+                    class="relative"
                     v-for="(match, index) in matchHistory"
                     :key="`${match.json.gameId}-${index}`"
-                    :match="match"
-                    :current-user-puuid="puuid || ''"
-                  />
+                  >
+                    <MatchListItem
+                      :index="index + 1"
+                      :match="match"
+                      :current-user-puuid="puuid || ''"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

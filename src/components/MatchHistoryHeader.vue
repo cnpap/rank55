@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import type { Game } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 import PaginationControl from './PaginationControl.vue';
 import GameModeFilterControl from './GameModeFilterControl.vue';
+import Button from './ui/button/Button.vue';
+import type { Ref } from 'vue';
 
 interface Props {
   matches: Game[];
@@ -13,6 +15,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// 注入数据展示模式 - 修复类型定义
+const dataDisplayMode = inject<Ref<'damage' | 'tank'>>('dataDisplayMode');
 
 // 位置映射 - 添加固定顺序
 const positionMap = {
@@ -165,15 +170,63 @@ const recentChampions = computed(() => {
 
 <template>
   <div class="mx-auto max-w-4xl">
-    <!-- 整体布局：左侧筛选分页 + 右侧信息统计 -->
+    <!-- 整体布局：左侧筛选分页 + 中间数据模式选择 + 右侧信息统计 -->
     <div class="flex h-24 items-center justify-between gap-6">
       <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
-      <div class="flex-shrink-0 space-y-1 p-4">
-        <!-- 第一行：筛选器 -->
-        <GameModeFilterControl />
+      <div class="flex flex-shrink-0 gap-1 p-4">
+        <div class="space-y-1">
+          <!-- 第一行：筛选器 -->
+          <GameModeFilterControl />
 
-        <!-- 第二行：分页控制 -->
-        <PaginationControl />
+          <!-- 第二行：分页控制 -->
+          <PaginationControl />
+        </div>
+        <!-- 中间：数据展示模式选择 -->
+        <div class="flex-shrink-0">
+          <div class="flex flex-col gap-1">
+            <!-- 看输出按钮 -->
+            <Button
+              @click="dataDisplayMode = 'damage'"
+              variant="outline"
+              size="sm"
+              class="relative h-9 justify-start gap-2"
+            >
+              <img
+                v-if="dataDisplayMode === 'damage'"
+                :src="staticAssets.getIcon('check2')"
+                class="absolute -top-2.5 -right-2.5 h-5 w-5"
+                alt="如果选中"
+              />
+              <img
+                :src="staticAssets.getIcon('fire')"
+                class="h-5 w-5"
+                alt="输出图标"
+              />
+              <span>看输出</span>
+            </Button>
+
+            <!-- 看承伤按钮 -->
+            <Button
+              @click="dataDisplayMode = 'tank'"
+              variant="outline"
+              size="sm"
+              class="relative h-9 items-center justify-start gap-2"
+            >
+              <img
+                v-if="dataDisplayMode === 'tank'"
+                :src="staticAssets.getIcon('check2')"
+                class="absolute -top-2.5 -right-2.5 h-5 w-5"
+                alt="如果选中"
+              />
+              <img
+                :src="staticAssets.getIcon('protection')"
+                class="h-5 w-5"
+                alt="防护图标"
+              />
+              <span>看承伤</span>
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div class="flex w-128 items-center justify-between">

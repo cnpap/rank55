@@ -52,7 +52,7 @@ defineExpose({
     <div class="flex items-center justify-between px-6 py-4">
       <h3 class="text-foreground text-lg font-medium">依次禁选</h3>
       <!-- 重置按钮 -->
-      <Button @click="resetSettings">
+      <Button @click="resetSettings" variant="outline">
         <RotateCcw class="h-4 w-4" />
         重置
       </Button>

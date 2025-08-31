@@ -29,6 +29,9 @@ export enum StaticAssets {
 
   // 玩家头像目录
   PROFILE_ICON_IMAGES = 'profileicon/',
+
+  // 其他 icon 目录
+  ICON_IMAGES = 'icon/',
 }
 
 const s3BaseDir = `http://${envConfig.endpoint()}/static`;
@@ -79,6 +82,7 @@ export const staticAssets = {
     getDataAsset(`${StaticAssets.RANK_IMAGES}${rankId}_mini.png`),
   getRuneIcon: (runeId: string) => `./${StaticAssets.RUNE_IMAGES}${runeId}.png`,
   getPerkIcon: (perkId: string) => `./${StaticAssets.PERK_IMAGES}${perkId}.png`,
+  getIcon: (iconName: string) => `./${StaticAssets.ICON_IMAGES}${iconName}.png`,
   getProfileIcon: (profileIconId: string) =>
     // `/lol-game-data/assets/v1/profile-icons/${profileIconId}.jpg`,
     `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,

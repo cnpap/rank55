@@ -215,7 +215,19 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     summonerName: string,
     serverId?: string
   ): Promise<void> => {
-    summonerName = summonerName.trim();
+    // 移除特殊Unicode控制字符（U+2066到U+2069）
+    summonerName = summonerName.replace(/[\u2066-\u2069]/g, '');
+    // 移除所有空格（包括名称中间的空格）
+    summonerName = summonerName.replace(/\s/g, '');
+    // 通过第一个#号拆分
+    let parts = summonerName.split('#');
+    let gameName = parts[0];
+    let tagLine = parts.length > 1 ? parts[1] : '';
+    // 标签部分只保留数字
+    tagLine = tagLine.replace(/\D/g, '');
+    // 如果标签为空，可以按照需求处理，比如设为默认值或报错
+    // 重新组合
+    summonerName = `${gameName}#${tagLine}`;
 
     // 验证用户ID格式
     if (!validateUserIdFormat(summonerName)) {
@@ -226,7 +238,7 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
 
     try {
       const playerAccountAlias = (
-        await riotApiService.lookupPlayerAccount(summonerName)
+        await riotApiService.lookupPlayerAccount(gameName, tagLine)
       )[0];
 
       if (!playerAccountAlias) {

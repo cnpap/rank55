@@ -281,6 +281,7 @@ defineExpose({
           />
           <!-- "我" 按钮 - 在输入框内部左侧 -->
           <Button
+            variant="outline"
             @click="searchCurrentSummoner"
             :disabled="isSearching"
             class="absolute top-1/2 left-1 h-6 -translate-y-1/2 cursor-pointer px-2 text-xs"

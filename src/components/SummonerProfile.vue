@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Copy } from 'lucide-vue-next';
+import { Copy, RefreshCw } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import {
   copyToClipboard,
@@ -11,10 +11,16 @@ import {
 } from '@/lib/player-helpers';
 import type { SummonerData } from '@/types/summoner';
 import type { RankedStats } from '@/types/ranked-stats';
+import Button from './ui/button/Button.vue';
 
 const props = defineProps<{
   summoner?: SummonerData;
   rankedStats?: RankedStats;
+  isRefreshing?: boolean;
+}>();
+
+const emit = defineEmits<{
+  refresh: [];
 }>();
 
 // 获取召唤师头像URL
@@ -61,11 +67,16 @@ const tagLine = computed(() => {
 const copyPlayerName = async () => {
   await copyToClipboard(fullGameName.value, '召唤师名称已复制到剪贴板');
 };
+
+// 刷新战绩数据
+const handleRefresh = () => {
+  emit('refresh');
+};
 </script>
 
 <template>
   <!-- 召唤师基本信息和排位信息在同一行 -->
-  <div class="flex h-22 items-center justify-between gap-6">
+  <div class="flex h-24 items-center justify-between gap-6">
     <!-- 头像和基本信息 -->
     <div class="flex items-center gap-4">
       <img
@@ -98,42 +109,60 @@ const copyPlayerName = async () => {
       </div>
     </div>
 
-    <!-- 排位信息 - 紧凑布局 -->
-    <div class="flex w-128 gap-3">
-      <div
-        v-for="(rankInfo, index) in rankInfos"
-        :key="index"
-        class="flex items-center gap-2"
-      >
-        <div class="space-y-0.5">
-          <div class="text-muted-foreground text-xs font-medium">
-            {{ rankInfo.queueName }}
-          </div>
-          <div class="text-sm font-bold">
-            {{ rankInfo.tier }}
-            <span v-if="rankInfo.division" class="font-tektur-numbers">
-              {{ rankInfo.division }}
-            </span>
-          </div>
+    <!-- 排位信息和刷新按钮 -->
+    <div class="flex items-center gap-4">
+      <!-- 排位信息 - 紧凑布局 -->
+      <div class="flex w-128 justify-between gap-3">
+        <div class="flex">
           <div
-            v-if="rankInfo.lp > 0"
-            class="font-tektur-numbers text-muted-foreground text-xs"
+            v-for="(rankInfo, index) in rankInfos"
+            :key="index"
+            class="flex items-center gap-2"
           >
-            {{ rankInfo.lp }} LP
-          </div>
-          <div class="font-tektur-numbers text-xs">
-            <span class="text-yellow-600">{{ rankInfo.wins }}</span
-            >/<span class="text-pink-600">{{
-              rankInfo.losses ? rankInfo.losses : 'fail'
-            }}</span>
-            <span class="pl-1">{{ rankInfo.winRate }}%</span>
+            <div class="space-y-0.5">
+              <div class="text-muted-foreground text-xs font-medium">
+                {{ rankInfo.queueName }}
+              </div>
+              <div class="text-sm font-bold">
+                {{ rankInfo.tier }}
+                <span v-if="rankInfo.division" class="font-tektur-numbers">
+                  {{ rankInfo.division }}
+                </span>
+              </div>
+              <div
+                v-if="rankInfo.lp > 0"
+                class="font-tektur-numbers text-muted-foreground text-xs"
+              >
+                {{ rankInfo.lp }} LP
+              </div>
+              <div class="font-tektur-numbers text-xs">
+                <span class="text-yellow-600">{{ rankInfo.wins }}</span
+                >/<span class="text-pink-600">{{
+                  rankInfo.losses ? rankInfo.losses : 'fail'
+                }}</span>
+                <span class="pl-1">{{ rankInfo.winRate }}%</span>
+              </div>
+            </div>
+            <img
+              :src="rankInfo.iconUrl"
+              :alt="rankInfo.queueName"
+              class="h-24 w-24 scale-125 transform object-contain"
+            />
           </div>
         </div>
-        <img
-          :src="rankInfo.iconUrl"
-          :alt="rankInfo.queueName"
-          class="h-24 w-24 scale-125 transform object-contain"
-        />
+        <!-- 刷新按钮 -->
+        <Button
+          @click="handleRefresh"
+          :disabled="isRefreshing"
+          variant="outline"
+          title="刷新战绩数据"
+        >
+          <RefreshCw
+            class="h-4 w-4"
+            :class="{ 'animate-spin': isRefreshing }"
+          />
+          刷新
+        </Button>
       </div>
     </div>
   </div>

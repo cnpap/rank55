@@ -113,9 +113,7 @@ function onEnd() {
 
     <!-- 当没有选择英雄时显示空占位符 -->
     <div v-else class="grid grid-cols-8 gap-3">
-      <div
-        class="aspect-square border-2 border-dashed border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50"
-      >
+      <div class="aspect-square border-2 border-dashed border-gray-300">
         <div class="flex h-full w-full items-center justify-center">
           <span class="text-xs text-gray-400 dark:text-gray-500">?</span>
         </div>
