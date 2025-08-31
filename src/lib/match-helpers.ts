@@ -422,3 +422,40 @@ export function collectAllItemIds(matchDetail: Game): Set<number> {
 
   return allItemIds;
 }
+
+/**
+ * 计算比赛中的MVP玩家（基于KDA最高）
+ * @param game SGP 比赛数据
+ * @returns MVP玩家数据，如果没有参与者则返回null
+ */
+export function findMVPPlayer(game: Game): Participant | null {
+  const participants = game.json?.participants;
+  if (!participants || participants.length === 0) return null;
+
+  let bestPlayer = participants[0];
+  let bestKDA =
+    (bestPlayer.kills + bestPlayer.assists) / Math.max(bestPlayer.deaths, 1);
+
+  for (const participant of participants) {
+    const kda =
+      (participant.kills + participant.assists) /
+      Math.max(participant.deaths, 1);
+    if (kda > bestKDA) {
+      bestKDA = kda;
+      bestPlayer = participant;
+    }
+  }
+
+  return bestPlayer;
+}
+
+/**
+ * 检查指定玩家是否是比赛MVP
+ * @param game SGP 比赛数据
+ * @param puuid 玩家PUUID
+ * @returns 是否为MVP
+ */
+export function isPlayerMVP(game: Game, puuid: string): boolean {
+  const mvpPlayer = findMVPPlayer(game);
+  return mvpPlayer?.puuid === puuid;
+}

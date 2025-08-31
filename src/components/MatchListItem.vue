@@ -8,6 +8,7 @@ import { inject, computed } from 'vue';
 import { ref } from 'vue';
 import Button from './ui/button/Button.vue';
 import { staticAssets } from '@/assets/data-assets';
+import { findMVPPlayer, isPlayerMVP } from '@/lib/match-helpers';
 
 interface Props {
   match: Game;
@@ -36,35 +37,14 @@ const gameResult = computed(() => {
   return currentPlayer.value.win ? 'victory' : 'defeat';
 });
 
-// 计算 KDA 最高的玩家（MVP）
+// 使用工具函数计算MVP
 const mvpPlayer = computed(() => {
-  const participants = props.match.json.participants;
-  if (!participants || participants.length === 0) return null;
-
-  let bestPlayer = participants[0];
-  let bestKDA =
-    (bestPlayer.kills + bestPlayer.assists) / Math.max(bestPlayer.deaths, 1);
-
-  for (const participant of participants) {
-    const kda =
-      (participant.kills + participant.assists) /
-      Math.max(participant.deaths, 1);
-    if (kda > bestKDA) {
-      bestKDA = kda;
-      bestPlayer = participant;
-    }
-  }
-
-  return bestPlayer;
+  return findMVPPlayer(props.match);
 });
 
 // 判断当前玩家是否是 MVP
 const isCurrentPlayerMVP = computed(() => {
-  return (
-    currentPlayer.value &&
-    mvpPlayer.value &&
-    currentPlayer.value.puuid === mvpPlayer.value.puuid
-  );
+  return puuid ? isPlayerMVP(props.match, puuid) : false;
 });
 </script>
 

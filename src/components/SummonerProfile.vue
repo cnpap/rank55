@@ -112,7 +112,7 @@ const handleRefresh = () => {
     <!-- 排位信息和刷新按钮 -->
     <div class="flex items-center gap-4">
       <!-- 排位信息 - 紧凑布局 -->
-      <div class="flex w-128 justify-between gap-3">
+      <div class="flex w-143 justify-between gap-3">
         <div class="flex">
           <div
             v-for="(rankInfo, index) in rankInfos"

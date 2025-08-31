@@ -6,6 +6,7 @@ import PaginationControl from './PaginationControl.vue';
 import GameModeFilterControl from './GameModeFilterControl.vue';
 import Button from './ui/button/Button.vue';
 import type { Ref } from 'vue';
+import { isPlayerMVP } from '@/lib/match-helpers';
 
 interface Props {
   matches: Game[];
@@ -88,12 +89,15 @@ const overallStats = computed(() => {
       totalLosses: 0,
       winRate: 0,
       avgKDA: 0,
+      mvpCount: 0,
+      mvpRate: 0,
     };
   }
 
   const totalGames = props.matches.length;
   let totalWins = 0;
   let totalKDA = 0;
+  let mvpCount = 0;
 
   props.matches.forEach(game => {
     const currentPlayer = findCurrentPlayer(game);
@@ -106,6 +110,11 @@ const overallStats = computed(() => {
         (currentPlayer.kills + currentPlayer.assists) /
         Math.max(currentPlayer.deaths, 1);
       totalKDA += kda;
+
+      // 计算MVP次数
+      if (isPlayerMVP(game, props.currentUserPuuid)) {
+        mvpCount++;
+      }
     }
   });
 
@@ -114,6 +123,8 @@ const overallStats = computed(() => {
     totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
   const avgKDA =
     totalGames > 0 ? Number((totalKDA / totalGames).toFixed(1)) : 0;
+  const mvpRate =
+    totalGames > 0 ? Math.round((mvpCount / totalGames) * 100) : 0;
 
   return {
     totalGames,
@@ -121,6 +132,8 @@ const overallStats = computed(() => {
     totalLosses,
     winRate,
     avgKDA,
+    mvpCount,
+    mvpRate,
   };
 });
 
@@ -171,7 +184,7 @@ const recentChampions = computed(() => {
 <template>
   <div class="mx-auto max-w-4xl">
     <!-- 整体布局：左侧筛选分页 + 中间数据模式选择 + 右侧信息统计 -->
-    <div class="flex h-24 items-center justify-between gap-6">
+    <div class="flex h-24 items-center justify-between">
       <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
       <div class="flex flex-shrink-0 gap-1 p-4">
         <div class="space-y-1">
@@ -229,14 +242,14 @@ const recentChampions = computed(() => {
         </div>
       </div>
 
-      <div class="flex w-128 items-center justify-between">
+      <div class="flex w-143 items-center justify-between">
         <!-- 右侧：统计信息区域（调整为与左侧对齐的两行布局） -->
         <div class="flex w-60 items-start">
           <!-- 左侧：最近对局和常用英雄（调整为与左侧筛选分页对齐） -->
           <div class="flex-shrink-0">
             <!-- 第一行：最近对局统计（与筛选器对齐） -->
-            <div class="mb-3 flex h-8 items-center gap-3">
-              <div class="font-tektur-numbers flex items-center gap-4 text-sm">
+            <div class="mb-3 flex h-8 items-center gap-1">
+              <div class="font-tektur-numbers flex items-center gap-3 text-sm">
                 <span
                   class="font-medium text-emerald-600 dark:text-emerald-400"
                 >
@@ -251,6 +264,16 @@ const recentChampions = computed(() => {
                 <span class="font-medium text-blue-600 dark:text-blue-400"
                   >{{ overallStats.avgKDA }} KDA</span
                 >
+                <span
+                  class="flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400"
+                >
+                  <img
+                    :src="staticAssets.getIcon('most-valuable-player2')"
+                    class="h-4 w-4"
+                    alt="MVP"
+                  />
+                  {{ overallStats.mvpCount }}次 ({{ overallStats.mvpRate }}%)
+                </span>
               </div>
             </div>
 
