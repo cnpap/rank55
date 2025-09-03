@@ -1,44 +1,30 @@
 import { ref, computed } from 'vue';
-import { BanPickService } from '@/lib/service/ban-pick-service';
-import { SummonerService } from '@/lib/service/summoner-service';
+import { banPickService } from '@/lib/service/service-manager';
 import type { ChampSelectSession } from '@/types/champ-select-session';
 import type { RankTeam } from '@/types/players-info';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-
-export interface ChampSelectMemberWithDetails {
-  // 基本信息来自 RankTeam
-  summonerId: number;
-  summonerName: string;
-  puuid: string;
-  assignedPosition: string;
-  cellId: number;
-  championId: number;
-  isLeader: boolean; // 根据 cellId 判断
-
-  // 详细信息
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  isLoading?: boolean;
-  error?: string;
-}
+import {
+  ChampSelectMemberWithDetails,
+  POSITION_ORDER,
+} from '@/types/room-management';
+import { updateMembersData } from '@/utils/room-management-utils';
 
 export function useChampSelectMembers() {
   const champSelectMembers = ref<ChampSelectMemberWithDetails[]>([]);
   const champSelectError = ref<string | null>(null);
 
-  const banPickService = new BanPickService();
-  const summonerService = new SummonerService();
-
   // 创建5个位置的数组，类似房间的 roomSlots
   const champSelectSlots = computed(() => {
-    const slots = Array(5).fill(null);
+    const slots: (ChampSelectMemberWithDetails | null)[] = Array.from(
+      { length: 5 },
+      () => null
+    );
 
-    // 按位置顺序排列：top, jungle, middle, bottom, support
-    const positionOrder = ['top', 'jungle', 'middle', 'bottom', 'support'];
+    // 按位置顺序排列：使用统一的位置常量
 
     champSelectMembers.value.forEach(member => {
-      const positionIndex = positionOrder.indexOf(member.assignedPosition);
+      const positionIndex = POSITION_ORDER.indexOf(
+        member.assignedPosition as any
+      );
       if (positionIndex !== -1) {
         slots[positionIndex] = member;
       }
@@ -119,62 +105,17 @@ export function useChampSelectMembers() {
       ...newMembersWithDetails,
     ];
 
-    // 只为新成员加载详细信息
-    const summonerPromises = newMembers.map(async (member, index) => {
-      if (!member.summonerId) return;
+    // 使用通用函数批量加载召唤师数据和排位统计
+    const summonerIds = newMembers.map(m => m.summonerId).filter(Boolean);
+    const result = await updateMembersData(
+      champSelectMembers.value,
+      summonerIds
+    );
 
-      try {
-        const summonerData = await summonerService.getSummonerByID(
-          member.summonerId
-        );
-
-        // 找到对应的成员并更新
-        const memberIndex = champSelectMembers.value.findIndex(
-          m => m.summonerId === member.summonerId
-        );
-        if (memberIndex !== -1) {
-          champSelectMembers.value[memberIndex] = {
-            ...champSelectMembers.value[memberIndex],
-            summonerData,
-          };
-        }
-        return { summonerId: member.summonerId, summonerData };
-      } catch (error) {
-        console.warn(`获取成员 ${member.gameName} 召唤师数据失败:`, error);
-        return null;
-      }
-    });
-
-    const summonerResults = await Promise.all(summonerPromises);
-
-    // 为新成员加载排位统计
-    const rankedPromises = summonerResults.map(async result => {
-      if (!result?.summonerData?.puuid) return null;
-
-      const { summonerId, summonerData } = result;
-      try {
-        const rankedStats = await summonerService.getRankedStats(
-          summonerData.puuid
-        );
-
-        // 找到对应的成员并更新排位统计
-        const memberIndex = champSelectMembers.value.findIndex(
-          m => m.summonerId === summonerId
-        );
-        if (memberIndex !== -1) {
-          champSelectMembers.value[memberIndex] = {
-            ...champSelectMembers.value[memberIndex],
-            rankedStats,
-          };
-        }
-        return { summonerId, rankedStats };
-      } catch (error) {
-        console.warn(`获取排位统计失败:`, error);
-        return null;
-      }
-    });
-
-    await Promise.all(rankedPromises);
+    if (!result.success) {
+      console.error('英雄选择成员数据加载失败:', result.error);
+      champSelectError.value = result.error || '数据加载失败';
+    }
   };
 
   // 更新英雄选择成员数据
@@ -191,7 +132,15 @@ export function useChampSelectMembers() {
       await fetchChampSelectMembersDetails(myTeam);
     } catch (error) {
       console.error('更新英雄选择成员失败:', error);
-      champSelectError.value = '获取英雄选择数据失败';
+      const errorMessage =
+        error instanceof Error ? error.message : '获取英雄选择数据失败';
+      champSelectError.value = errorMessage;
+
+      // 设置所有成员的错误状态
+      champSelectMembers.value.forEach(member => {
+        member.isLoading = false;
+        member.error = errorMessage;
+      });
     }
   };
 

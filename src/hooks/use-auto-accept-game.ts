@@ -33,11 +33,6 @@ export function useAutoAcceptGame() {
         console.log(`游戏阶段变化: ${lastPhase} -> ${phase}`);
       }
 
-      // 移除重复的阶段变化日志，因为已经在上面处理了
-      // if (lastPhase !== phase) {
-      //   console.log(`游戏阶段变化: ${lastPhase} -> ${phase}`);
-      // }
-
       // 场景 0: None 状态 - 获取用户信息
       await connection.fetchCurrentUser();
 
@@ -82,11 +77,27 @@ export function useAutoAcceptGame() {
         phaseHandler.resetPhaseState();
         currentPhase.value = GameflowPhaseEnum.None;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('游戏阶段轮询出错:', error);
-      // 只有当当前阶段不是 None 时才更新
-      if (currentPhase.value !== GameflowPhaseEnum.None) {
-        currentPhase.value = GameflowPhaseEnum.None;
+      // 区分不同类型的错误
+      const errorMessage = error?.message || '';
+
+      // 只有在真正的连接错误时才重置阶段
+      // 检查是否是连接相关的错误
+      const isConnectionError =
+        errorMessage.includes('连接') ||
+        errorMessage.includes('Connection') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('网络');
+
+      if (isConnectionError) {
+        console.log('检测到连接错误，重置游戏阶段');
+        if (currentPhase.value !== GameflowPhaseEnum.None) {
+          currentPhase.value = GameflowPhaseEnum.None;
+        }
+      } else {
+        console.log('API操作错误，保持当前阶段:', currentPhase.value);
       }
     } finally {
       // 安排下一次执行

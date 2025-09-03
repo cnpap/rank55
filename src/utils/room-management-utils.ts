@@ -1,48 +1,16 @@
 import { Ref } from 'vue';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
-import type { Member } from '@/types/room';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
-
-export interface MemberWithDetails extends Member {
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  matchHistory?: SgpMatchHistoryResult;
-  isLoading?: boolean;
-  isLoadingSummonerData?: boolean;
-  isLoadingRankedStats?: boolean;
-  isLoadingMatchHistory?: boolean;
-  error?: string;
-}
-
-export interface ChampSelectMember {
-  // 基本信息来自 RankTeam
-  summonerId: number;
-  summonerName: string;
-  puuid: string;
-  assignedPosition: string;
-  cellId: number;
-  championId: number;
-  isLeader: boolean; // 根据 cellId 判断
-
-  // 详细信息
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  isLoading?: boolean;
-  error?: string;
-}
-
-export interface GameStartMember {
-  summonerId: number;
-  summonerName: string;
-  teamId: number;
-  isMyTeam: boolean;
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  isLoading?: boolean;
-  error?: string;
-}
+import {
+  MemberWithDetails,
+  ChampSelectMemberWithDetails,
+  GameStartMemberWithDetails,
+  AnyMemberWithDetails,
+  ErrorHandlingResult,
+  GamePhaseCategory,
+  MemberDataUpdateable,
+  GAME_PHASES,
+} from '@/types/room-management';
+import { summonerDataCache } from '@/lib/service/summoner-data-cache';
 
 /**
  * 创建MemberWithDetails的默认字段
@@ -71,10 +39,10 @@ function createMemberWithDetailsDefaults(): Partial<MemberWithDetails> {
 }
 
 /**
- * 将ChampSelectMember转换为MemberWithDetails
+ * 将ChampSelectMemberWithDetails转换为MemberWithDetails
  */
 export function convertChampSelectMemberToMemberWithDetails(
-  member: ChampSelectMember
+  member: ChampSelectMemberWithDetails
 ): MemberWithDetails {
   return {
     summonerId: member.summonerId,
@@ -94,10 +62,10 @@ export function convertChampSelectMemberToMemberWithDetails(
 }
 
 /**
- * 将GameStartMember转换为MemberWithDetails
+ * 将GameStartMemberWithDetails转换为MemberWithDetails
  */
 export function convertGameStartMemberToMemberWithDetails(
-  member: GameStartMember
+  member: GameStartMemberWithDetails
 ): MemberWithDetails {
   return {
     summonerId: member.summonerId,
@@ -117,31 +85,27 @@ export function convertGameStartMemberToMemberWithDetails(
 }
 
 /**
- * 计算成员ID字符串
+ * 计算成员ID数组
  */
 export function calculateMemberIds(
-  members:
-    | (ChampSelectMember | GameStartMember | MemberWithDetails | null)[]
-    | null
-): string {
-  if (!members) return '';
-  return members.map(m => m?.summonerId || 'null').join(',');
+  members: (AnyMemberWithDetails | null)[] | null
+): string[] {
+  if (!members) return [];
+  return members
+    .filter((member): member is AnyMemberWithDetails => member !== null)
+    .map(member => member.summonerId.toString());
 }
 
 /**
- * 计算成员详细信息字符串
+ * 计算成员详细信息数组
  */
 export function calculateMemberDetails(
-  members:
-    | (ChampSelectMember | GameStartMember | MemberWithDetails | null)[]
-    | null
-): string {
-  if (!members) return '';
+  members: (AnyMemberWithDetails | null)[] | null
+): string[] {
+  if (!members) return [];
   return members
-    .map(m =>
-      m ? `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}` : 'null'
-    )
-    .join(',');
+    .filter((member): member is AnyMemberWithDetails => member !== null)
+    .map(m => `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}`);
 }
 
 /**
@@ -166,7 +130,7 @@ export function shouldRecalculateSlots(
  * 计算英雄选择阶段的显示槽位
  */
 export function calculateChampSelectSlots(
-  champSelectSlots: (ChampSelectMember | null)[]
+  champSelectSlots: (ChampSelectMemberWithDetails | null)[]
 ): (MemberWithDetails | null)[] {
   return champSelectSlots.map(member => {
     if (!member) return null;
@@ -178,7 +142,7 @@ export function calculateChampSelectSlots(
  * 计算游戏开始阶段的显示槽位
  */
 export function calculateGameStartSlots(
-  gameStartSlots: (GameStartMember | null)[]
+  gameStartSlots: (GameStartMemberWithDetails | null)[]
 ): (MemberWithDetails | null)[] {
   return gameStartSlots.map(member => {
     if (!member) return null;
@@ -192,7 +156,10 @@ export function calculateGameStartSlots(
 export function calculateRoomSlots(
   roomMembers: MemberWithDetails[]
 ): (MemberWithDetails | null)[] {
-  const newSlots = new Array(5).fill(null);
+  const newSlots: (MemberWithDetails | null)[] = Array.from(
+    { length: 5 },
+    () => null
+  );
 
   // 安全地查找房主
   const leader = roomMembers.find(member => member.isLeader);
@@ -214,16 +181,16 @@ export function calculateRoomSlots(
  */
 export function calculateDisplaySlots(
   currentPhase: GameflowPhaseEnum,
-  champSelectSlots: (ChampSelectMember | null)[],
-  gameStartSlots: (GameStartMember | null)[],
+  champSelectSlots: (ChampSelectMemberWithDetails | null)[],
+  gameStartSlots: (GameStartMemberWithDetails | null)[],
   roomMembers: MemberWithDetails[],
   cachedSlots: (MemberWithDetails | null)[],
   lastPhase: Ref<GameflowPhaseEnum | null>,
   lastMemberIds: Ref<string>,
   lastMemberDetails: Ref<string>
 ): (MemberWithDetails | null)[] {
-  let currentMemberIds = '';
-  let currentMemberDetails = '';
+  let currentMemberIds: string[] = [];
+  let currentMemberDetails: string[] = [];
 
   // 根据当前阶段计算成员ID和详细信息
   if (currentPhase === GameflowPhaseEnum.ChampSelect) {
@@ -244,9 +211,9 @@ export function calculateDisplaySlots(
   const needsRecalculation = shouldRecalculateSlots(
     currentPhase,
     lastPhase.value,
-    currentMemberIds,
+    currentMemberIds.join(','),
     lastMemberIds.value,
-    currentMemberDetails,
+    currentMemberDetails.join(','),
     lastMemberDetails.value
   );
 
@@ -273,18 +240,200 @@ export function calculateDisplaySlots(
 
   // 更新缓存
   lastPhase.value = currentPhase;
-  lastMemberIds.value = currentMemberIds;
-  lastMemberDetails.value = currentMemberDetails;
+  lastMemberIds.value = currentMemberIds.join(',');
+  lastMemberDetails.value = currentMemberDetails.join(',');
 
   return newSlots;
 }
 
 /**
+ * 通用的成员数据更新函数 - 批量加载召唤师数据和排位统计
+ * 这个函数可以被所有hooks复用，避免重复代码
+ * 增强了错误处理和重试机制
+ */
+export async function updateMembersData<T extends MemberDataUpdateable>(
+  members: T[],
+  summonerIds: number[],
+  maxRetries: number = 2
+): Promise<ErrorHandlingResult> {
+  let retryCount = 0;
+
+  // 设置加载状态
+  members.forEach(member => {
+    if (summonerIds.includes(member.summonerId)) {
+      member.isLoading = true;
+      member.error = undefined;
+    }
+  });
+
+  while (retryCount <= maxRetries) {
+    try {
+      // 第一阶段：使用缓存服务批量加载召唤师数据
+      const summonerDataMap =
+        await summonerDataCache.batchGetSummonerData(summonerIds);
+
+      // 更新召唤师基本数据
+      for (const [summonerId, summonerData] of summonerDataMap) {
+        const memberIndex = members.findIndex(m => m.summonerId === summonerId);
+        if (memberIndex !== -1) {
+          members[memberIndex] = {
+            ...members[memberIndex],
+            summonerData: summonerData || undefined,
+            isLoading: true, // 继续加载排位数据
+          };
+        }
+      }
+
+      // 第二阶段：使用缓存服务批量加载排位统计
+      const rankedRequests = Array.from(summonerDataMap.entries())
+        .filter(([_, summonerData]) => summonerData?.puuid)
+        .map(([summonerId, summonerData]) => ({
+          summonerId,
+          puuid: summonerData!.puuid,
+        }));
+
+      const rankedStatsMap =
+        await summonerDataCache.batchGetRankedStats(rankedRequests);
+
+      // 更新排位统计数据并清除加载状态
+      for (const summonerId of summonerIds) {
+        const memberIndex = members.findIndex(m => m.summonerId === summonerId);
+        if (memberIndex !== -1) {
+          const rankedStats = rankedStatsMap.get(summonerId);
+          members[memberIndex] = {
+            ...members[memberIndex],
+            rankedStats: rankedStats || undefined,
+            isLoading: false,
+            error: undefined,
+          };
+        }
+      }
+
+      return { success: true, retryCount };
+    } catch (error) {
+      retryCount++;
+      console.warn(
+        `成员数据更新失败 (尝试 ${retryCount}/${maxRetries + 1}):`,
+        error
+      );
+
+      if (retryCount > maxRetries) {
+        // 最终失败，设置错误状态
+        const errorMessage =
+          error instanceof Error ? error.message : '数据加载失败';
+        members.forEach(member => {
+          if (summonerIds.includes(member.summonerId)) {
+            member.isLoading = false;
+            member.error = errorMessage;
+          }
+        });
+
+        return {
+          success: false,
+          error: errorMessage,
+          retryCount,
+        };
+      }
+
+      // 等待一段时间后重试
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+    }
+  }
+
+  return { success: false, error: '未知错误', retryCount };
+}
+
+/**
+ * 游戏阶段管理器 - 统一管理所有阶段相关的判断逻辑
+ */
+export class GamePhaseManager {
+  /**
+   * 获取阶段分类
+   */
+  static getPhaseCategory(phase: GameflowPhaseEnum): GamePhaseCategory {
+    if (GAME_PHASES.IDLE.includes(phase)) {
+      return GamePhaseCategory.Idle;
+    }
+    if (GAME_PHASES.LOBBY.includes(phase)) {
+      return GamePhaseCategory.Lobby;
+    }
+    if (GAME_PHASES.CHAMP_SELECT.includes(phase)) {
+      return GamePhaseCategory.ChampSelect;
+    }
+    if (GAME_PHASES.GAME_START.includes(phase)) {
+      return GamePhaseCategory.GameStart;
+    }
+    if (GAME_PHASES.GAME_END.includes(phase)) {
+      return GamePhaseCategory.GameEnd;
+    }
+    return GamePhaseCategory.Unknown;
+  }
+
+  /**
+   * 判断是否为空闲阶段
+   */
+  static isIdlePhase(phase: GameflowPhaseEnum): boolean {
+    return GAME_PHASES.IDLE.includes(phase);
+  }
+
+  /**
+   * 判断是否为大厅阶段
+   */
+  static isLobbyPhase(phase: GameflowPhaseEnum): boolean {
+    return GAME_PHASES.LOBBY.includes(phase);
+  }
+
+  /**
+   * 判断是否为英雄选择阶段
+   */
+  static isChampSelectPhase(phase: GameflowPhaseEnum): boolean {
+    return GAME_PHASES.CHAMP_SELECT.includes(phase);
+  }
+
+  /**
+   * 判断是否为游戏开始阶段（需要两排布局）
+   */
+  static isGameStartPhase(phase: GameflowPhaseEnum): boolean {
+    return GAME_PHASES.GAME_START.includes(phase);
+  }
+
+  /**
+   * 判断是否为游戏结束阶段
+   */
+  static isGameEndPhase(phase: GameflowPhaseEnum): boolean {
+    return GAME_PHASES.GAME_END.includes(phase);
+  }
+
+  /**
+   * 判断是否为需要轮询的阶段
+   */
+  static shouldPoll(phase: GameflowPhaseEnum): boolean {
+    return (
+      this.isLobbyPhase(phase) ||
+      this.isChampSelectPhase(phase) ||
+      this.isGameStartPhase(phase)
+    );
+  }
+
+  /**
+   * 判断是否需要清理缓存
+   */
+  static shouldClearCache(phase: GameflowPhaseEnum): boolean {
+    return this.isGameEndPhase(phase);
+  }
+
+  /**
+   * 判断是否应该清理数据但不清理缓存（空闲阶段）
+   */
+  static shouldClearDataOnly(phase: GameflowPhaseEnum): boolean {
+    return this.isIdlePhase(phase);
+  }
+}
+
+/**
  * 判断是否为游戏开始阶段（需要两排布局）
+ * @deprecated 使用 GamePhaseManager.isGameStartPhase 替代
  */
 export function isGameStartPhase(currentPhase: GameflowPhaseEnum): boolean {
-  return (
-    currentPhase === GameflowPhaseEnum.GameStart ||
-    currentPhase === GameflowPhaseEnum.InProgress
-  );
+  return GamePhaseManager.isGameStartPhase(currentPhase);
 }

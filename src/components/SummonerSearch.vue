@@ -16,7 +16,7 @@ import FriendsList from '@/components/FriendsList.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { SearchHistoryItem } from '@/storages/storage-use';
 import { useClientUserStore } from '@/stores/client-user';
-import { FriendService } from '@/lib/service/friend-service';
+import { friendService } from '@/lib/service/service-manager';
 import { Friend, SimpleFriend } from '@/types/friend';
 
 // Props 定义
@@ -50,8 +50,7 @@ const summonerName = ref<SearchHistoryItem>({
   puuid: '',
 });
 
-// 好友服务和数据
-const friendService = ref<FriendService | null>(null);
+// 好友数据
 const friends = ref<Friend[]>([]);
 const isLoadingFriends = ref(false);
 // 添加定时器引用
@@ -60,7 +59,6 @@ const friendsRefreshTimer = ref<NodeJS.Timeout | null>(null);
 // 初始化好友服务
 const initFriendService = async () => {
   try {
-    friendService.value = new FriendService();
     await loadFriends();
     // 启动定时刷新
     startFriendsRefresh();
@@ -71,11 +69,9 @@ const initFriendService = async () => {
 
 // 加载好友列表
 const loadFriends = async () => {
-  if (!friendService.value) return;
-
   try {
     isLoadingFriends.value = true;
-    friends.value = await friendService.value.getOnlineFriends();
+    friends.value = await friendService.getOnlineFriends();
   } catch (error) {
     console.error('获取好友列表失败:', error);
     friends.value = [];
@@ -93,9 +89,7 @@ const startFriendsRefresh = () => {
 
   // 每30秒刷新一次好友列表
   friendsRefreshTimer.value = setInterval(() => {
-    if (friendService.value) {
-      loadFriends();
-    }
+    loadFriends();
   }, 30000);
 };
 
@@ -210,7 +204,7 @@ const handleClickOutside = (event: MouseEvent) => {
 
 // 监听弹出框状态，打开时刷新好友列表
 watch(isDropdownOpen, newValue => {
-  if (newValue && friendService.value) {
+  if (newValue) {
     // 弹出框打开时立即刷新好友列表
     loadFriends();
   }

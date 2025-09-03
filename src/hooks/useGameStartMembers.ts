@@ -1,33 +1,19 @@
 import { ref, computed } from 'vue';
-import { SummonerService } from '@/lib/service/summoner-service';
 import type { GameflowSession } from '@/types/gameflow-session';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
 import { RankTeam } from '@/types/players-info';
-
-export interface GameStartMemberWithDetails {
-  // 基本信息
-  summonerId: number;
-  summonerName: string;
-  teamId: number; // 1为我方，2为敌方
-  isMyTeam: boolean;
-
-  // 详细信息
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  isLoading?: boolean;
-  error?: string;
-}
+import type { GameStartMemberWithDetails } from '@/types/room-management';
+import { updateMembersData } from '@/utils/room-management-utils';
 
 export function useGameStartMembers() {
   const gameStartMembers = ref<GameStartMemberWithDetails[]>([]);
   const gameStartError = ref<string | null>(null);
 
-  const summonerService = new SummonerService();
-
   // 创建10个位置的数组，前5个是我方，后5个是敌方
   const gameStartSlots = computed(() => {
-    const slots = Array(10).fill(null);
+    const slots: (GameStartMemberWithDetails | null)[] = Array.from(
+      { length: 10 },
+      () => null
+    );
 
     // 分离我方和敌方成员
     const myTeamMembers = gameStartMembers.value.filter(
@@ -54,7 +40,7 @@ export function useGameStartMembers() {
     return slots as (GameStartMemberWithDetails | null)[];
   });
 
-  // 获取游戏开始阶段成员详细信息
+  // 获取游戏开始阶段成员详细信息 - 使用缓存优化
   const fetchGameStartMembersDetails = async (
     teamOne: RankTeam[],
     teamTwo: RankTeam[]
@@ -74,55 +60,14 @@ export function useGameStartMembers() {
       isLoading: false,
     }));
 
-    // 第二阶段：并行加载召唤师基本数据
-    const summonerPromises = allPlayers.map(async (player, index) => {
-      if (!player.summonerId) return;
+    // 第二阶段：使用通用函数批量加载召唤师数据和排位统计
+    const summonerIds = allPlayers.map(p => p.summonerId).filter(Boolean);
+    const result = await updateMembersData(gameStartMembers.value, summonerIds);
 
-      try {
-        const summonerData = await summonerService.getSummonerByID(
-          player.summonerId
-        );
-        if (gameStartMembers.value[index]) {
-          gameStartMembers.value[index] = {
-            ...gameStartMembers.value[index],
-            summonerData,
-          };
-        }
-        return { index, summonerData };
-      } catch (error) {
-        console.warn(`获取成员 ${player.summonerId} 召唤师数据失败:`, error);
-        if (gameStartMembers.value[index]) {
-          gameStartMembers.value[index] = {
-            ...gameStartMembers.value[index],
-            error: '获取召唤师数据失败',
-          };
-        }
-        return null;
-      }
-    });
-
-    const summonerResults = await Promise.all(summonerPromises);
-
-    // 第三阶段：加载排位统计
-    summonerResults.forEach(async result => {
-      if (!result?.summonerData?.puuid) return;
-
-      const { index, summonerData } = result;
-
-      try {
-        const rankedStats = await summonerService.getRankedStats(
-          summonerData.puuid
-        );
-        if (gameStartMembers.value[index]) {
-          gameStartMembers.value[index] = {
-            ...gameStartMembers.value[index],
-            rankedStats,
-          };
-        }
-      } catch (error) {
-        console.warn(`获取排位统计失败:`, error);
-      }
-    });
+    if (!result.success) {
+      console.error('游戏开始成员数据加载失败:', result.error);
+      gameStartError.value = result.error || '数据加载失败';
+    }
   };
 
   // 更新游戏开始阶段成员数据
@@ -177,7 +122,15 @@ export function useGameStartMembers() {
       }
     } catch (error) {
       console.error('更新游戏开始阶段成员数据失败:', error);
-      gameStartError.value = '获取游戏数据失败';
+      const errorMessage =
+        error instanceof Error ? error.message : '获取游戏数据失败';
+      gameStartError.value = errorMessage;
+
+      // 设置所有成员的错误状态
+      gameStartMembers.value.forEach(member => {
+        member.isLoading = false;
+        member.error = errorMessage;
+      });
     }
   };
 

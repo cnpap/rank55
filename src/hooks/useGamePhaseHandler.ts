@@ -1,18 +1,17 @@
 import { ref } from 'vue';
-import { GamePhaseManager } from '@/lib/service/game-phase-manager';
-import { AutoActionService } from '@/lib/service/auto-action-service';
-import { BanPickService } from '@/lib/service/ban-pick-service';
+import {
+  banPickService,
+  autoActionService,
+  gamePhaseManager,
+} from '@/lib/service/service-manager';
 import { $local } from '@/storages/storage-use';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 
 export function useGamePhaseHandler() {
   const lastPhase = ref<GameflowPhaseEnum | null>(null);
-  const gamePhaseManager = new GamePhaseManager();
-  const autoActionService = new AutoActionService();
-  const banpickService = new BanPickService();
 
   const handleChampSelectPhase = async (): Promise<void> => {
-    const session = await banpickService.getChampSelectSession();
+    const session = await banPickService.getChampSelectSession();
     const { actions, myTeam, localPlayerCellId } = session;
     const flatActions = actions.flat();
     const positionSettings = $local.getItem('positionSettings');

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
 import { eventBus } from '@/lib/event-bus';
-import { SummonerService } from './summoner-service';
+import { summonerService } from './service-manager';
 
 export interface GameConnectionState {
   isConnected: boolean;
@@ -30,8 +30,7 @@ export class GameConnectionMonitor {
   private readonly CHECK_INTERVAL = 5000; // 5秒检查一次
   private readonly MIN_CHECK_INTERVAL = 3000; // 最小检查间隔2秒
 
-  // 服务实例
-  private summonerService = new SummonerService();
+  // 使用全局服务实例
 
   // 订阅者列表
   private subscribers = new Set<(state: GameConnectionState) => void>();
@@ -173,7 +172,7 @@ export class GameConnectionMonitor {
     try {
       console.log('执行游戏连接状态检查...');
 
-      const isConnected = await this.summonerService.isConnected();
+      const isConnected = await summonerService.isConnected();
       const previousState = this.connectionState.value.isConnected;
 
       // 更新连接状态

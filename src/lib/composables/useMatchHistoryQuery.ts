@@ -13,7 +13,10 @@ import type { Game } from '@/types/match-history-sgp';
 import type { GameModesFilter } from '@/types/match-history-ui';
 import { MatchDataLoader } from '@/lib/match-data-loader';
 import { useClientUserStore } from '@/stores/client-user';
-import { useMatchHistoryStore } from '@/stores/match-history';
+import {
+  summonerService,
+  sgpMatchService,
+} from '@/lib/service/service-manager';
 
 // 查询结果接口
 export interface MatchHistoryQueryResult {
@@ -62,7 +65,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   let { serverId, puuid } = options;
 
   const userStore = useClientUserStore();
-  const matchHistoryStore = useMatchHistoryStore();
   if (!serverId) {
     serverId = userStore.serverId;
   }
@@ -86,7 +88,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   });
 
   // 数据加载器
-  const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
   const dataLoader = new MatchDataLoader(
     summonerService,
     sgpMatchService,

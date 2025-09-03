@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { RiotApiService } from '@/lib/service/riot-api-service';
-import { SummonerService } from '@/lib/service/summoner-service';
 import type { SummonerData } from '@/types/summoner';
 import { $local, SearchHistoryItem } from '@/storages/storage-use';
 import serverConfig from '../../public/config/league-servers.json';
 import { useRouter } from 'vue-router';
-import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
-import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
 import { useClientUserStore } from './client-user';
+import {
+  riotApiService,
+  summonerService,
+  sgpApi,
+  sgpMatchService,
+} from '@/lib/service/service-manager';
 
 // 简化的搜索结果接口 - 只包含基本信息
 export interface PuuidSearchResult {
@@ -35,12 +37,8 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
   );
   const selectedServerId = ref<string>('TENCENT_HN1');
 
-  // 服务实例
-  const riotApiService = new RiotApiService();
-  // 服务实例
-  let summonerService: SummonerService = new SummonerService();
-  let sgpApi: SimpleSgpApi = new SimpleSgpApi();
-  let sgpMatchService: SgpMatchService = new SgpMatchService(sgpApi);
+  // 使用全局服务实例
+  // 所有服务实例现在通过 service-manager 管理
 
   // 获取排序后的搜索历史（收藏的在前面）
   const sortedSearchHistory = computed(() => {
@@ -314,14 +312,6 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     }
   };
 
-  const getServices = () => {
-    return {
-      summonerService,
-      sgpApi,
-      sgpMatchService,
-    };
-  };
-
   return {
     // 状态
     isSearching,
@@ -340,6 +330,5 @@ export const useMatchHistoryStore = defineStore('matchHistory', () => {
     clearSearchHistory,
     toggleBookmark,
     deleteHistoryItem,
-    getServices,
   };
 });

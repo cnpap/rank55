@@ -17,7 +17,7 @@ import {
   collectAllChampionIds,
   collectAllItemIds,
 } from '@/lib/match-helpers';
-import { SummonerService } from '@/lib/service/summoner-service';
+import { summonerService } from '@/lib/service/service-manager';
 import { BrowserDataLoader } from '@/lib/data-loader';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +39,6 @@ const matchHistoryStore = useMatchHistoryStore();
 const serverId = inject<string>('serverId');
 
 // 创建服务实例
-const summonerService = new SummonerService();
 const dataLoader = new BrowserDataLoader();
 
 // 英雄和装备名称缓存

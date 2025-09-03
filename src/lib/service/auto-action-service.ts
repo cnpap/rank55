@@ -1,32 +1,25 @@
-import { BanPickService } from './ban-pick-service';
+import {
+  banPickService,
+  gameflowService,
+  gamePhaseManager,
+} from './service-manager';
 import { $local, type PositionSetting } from '@/storages/storage-use';
 import { toast } from 'vue-sonner';
 import type { ChampSelectSession } from '@/types/champ-select-session';
 import type { AllAction } from '@/types/ban-phase-detail';
-import { GamePhaseManager } from './game-phase-manager';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
-import { GameflowService } from './gameflow-service';
 
 export class AutoActionService {
-  private banpickService: BanPickService;
-  private gamePhaseManager: GamePhaseManager;
-  private gameflowService: GameflowService;
-  constructor() {
-    this.banpickService = new BanPickService();
-    this.gamePhaseManager = new GamePhaseManager();
-    this.gameflowService = new GameflowService();
-  }
-
   async executeReadyCheckAction(): Promise<boolean> {
     const autoAcceptEnabled = $local.getItem('autoAcceptGame');
     if (!autoAcceptEnabled) {
       return false;
     }
 
-    const currentPhase = await this.gamePhaseManager.getCurrentPhase();
+    const currentPhase = await gamePhaseManager.getCurrentPhase();
     if (currentPhase === GameflowPhaseEnum.ReadyCheck) {
       console.log('检测到待接受的对局，正在自动接受...');
-      await this.gameflowService.acceptReadyCheck();
+      await gameflowService.acceptReadyCheck();
       toast.success('已自动接受对局');
       console.log('✅ 自动接受对局成功');
       return true;
@@ -59,7 +52,7 @@ export class AutoActionService {
     }
 
     const myChampion = myPositionInfo.pickChampions[0];
-    await this.banpickService.hoverChampion(parseInt(myChampion));
+    await banPickService.hoverChampion(parseInt(myChampion));
   }
 
   async executeBanAction(
@@ -73,7 +66,7 @@ export class AutoActionService {
       return;
     }
 
-    const session = await this.banpickService.getChampSelectSession();
+    const session = await banPickService.getChampSelectSession();
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
       .map(a => a.championId);
@@ -101,7 +94,7 @@ export class AutoActionService {
       }
 
       console.log(`正在禁用英雄: ${championIdNum}`);
-      await this.banpickService.banChampion(championIdNum);
+      await banPickService.banChampion(championIdNum);
       toast.success(`已自动禁用英雄: ${championId}`);
       console.log(`✅ 自动禁用英雄成功: ${championId}`);
       return;
@@ -121,7 +114,7 @@ export class AutoActionService {
       return;
     }
 
-    const session = await this.banpickService.getChampSelectSession();
+    const session = await banPickService.getChampSelectSession();
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
       .map(a => a.championId);
@@ -157,7 +150,7 @@ export class AutoActionService {
       }
 
       console.log(`正在选择英雄: ${championIdNum}`);
-      await this.banpickService.pickChampion(championIdNum);
+      await banPickService.pickChampion(championIdNum);
       toast.success('已自动选择英雄');
       console.log(`✅ 自动选择英雄成功: ${championId}`);
       return;

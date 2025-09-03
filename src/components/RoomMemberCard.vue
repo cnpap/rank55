@@ -5,11 +5,12 @@ import RoomMemberMatchHistory from './RoomMemberMatchHistory.vue';
 import GameModeFilterControl from './GameModeFilterControl.vue';
 import PaginationControl from './PaginationControl.vue';
 import { useMatchHistoryQuery } from '@/lib/composables/useMatchHistoryQuery';
-import type { MemberWithDetails } from '@/stores/room-management';
+import type { MemberWithDetails } from '@/types/room-management';
 import { getPlayerDisplayName } from '@/lib/player-helpers';
 
 interface Props {
   member: MemberWithDetails;
+  canKick?: boolean;
 }
 
 interface Emits {
@@ -100,6 +101,7 @@ onMounted(() => {
       :member="member"
       :display-name="displayName"
       :current-ranked-stats="currentRankedStats"
+      :can-kick="canKick"
       @kick="handleKick"
     />
 
@@ -113,7 +115,7 @@ onMounted(() => {
     />
 
     <!-- 底部过滤和分页控制区域 -->
-    <div class="border-border/40 bg-card/50 border-t p-3">
+    <div class="border-border/40 bg-card/50 border-t py-3">
       <div class="flex flex-col items-center justify-between gap-1">
         <!-- 游戏模式过滤 -->
         <GameModeFilterControl />

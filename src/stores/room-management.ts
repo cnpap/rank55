@@ -1,27 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { RoomService } from '@/lib/service/room-service';
-import { SummonerService } from '@/lib/service/summoner-service';
+import {
+  roomService,
+  summonerService,
+  sgpMatchService,
+} from '@/lib/service/service-manager';
 import {
   gameConnectionMonitor,
   type GameConnectionState,
 } from '@/lib/service/game-connection-monitor';
 import { eventBus } from '@/lib/event-bus';
 import type { Room, Member } from '@/types/room';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-// 添加 SGP 服务导入
-import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
-import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
-import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
-
-export interface MemberWithDetails extends Member {
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  matchHistory?: SgpMatchHistoryResult;
-  isLoading?: boolean;
-  error?: string;
-}
+import type { MemberWithDetails } from '@/types/room-management';
 
 export const useRoomManagementStore = defineStore('roomManagement', () => {
   // 状态
@@ -43,12 +33,7 @@ export const useRoomManagementStore = defineStore('roomManagement', () => {
   const lastCheckTime = ref<number>(0);
   const MIN_CHECK_INTERVAL = 4000; // 最小检查间隔4秒
 
-  // 服务实例
-  const roomService = new RoomService();
-  const summonerService = new SummonerService();
-  // 添加 SGP 服务实例
-  const sgpApi = new SimpleSgpApi();
-  const sgpMatchService = new SgpMatchService(sgpApi);
+  // 服务实例已从 service-manager 导入
 
   // 游戏连接状态订阅
   let connectionUnsubscribe: (() => void) | null = null;

@@ -1,21 +1,18 @@
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
-import { GameflowService } from './gameflow-service';
+import { gameflowService } from './service-manager';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { ChampSelectSession } from '@/types/champ-select-session';
 import { AssignedPosition } from '@/types/players-info';
 
 export class BanPickService extends BaseService {
-  private gameflowService: GameflowService;
-
   constructor(client?: LCUClientInterface) {
     super(client);
-    this.gameflowService = new GameflowService(client);
   }
 
   // 检查是否在 ban/pick 阶段
   async isInChampSelect(): Promise<boolean> {
-    const phase = await this.gameflowService.getGameflowPhase();
+    const phase = await gameflowService.getGameflowPhase();
     return phase === GameflowPhaseEnum.ChampSelect;
   }
 
@@ -54,26 +51,6 @@ export class BanPickService extends BaseService {
       }
     }
     return session;
-  }
-
-  // 检查当前是否是禁用阶段（改进版本）
-  async isBanPhase(): Promise<boolean> {
-    const session = await this.getChampSelectSession();
-    return session.actions.flat().some(a => a.isInProgress && a.type === 'ban');
-  }
-
-  // 检查当前是否是选择阶段（改进版本）
-  async isPickPhase(): Promise<boolean> {
-    const session = await this.getChampSelectSession();
-    return session.actions
-      .flat()
-      .some(a => a.isInProgress && a.type === 'pick');
-  }
-
-  // 检查当前是否是预选阶段
-  async isPrePickPhase(): Promise<boolean> {
-    const session = await this.getChampSelectSession();
-    return session.actions.flat().every(a => !a.isInProgress);
   }
 
   async pickAction(

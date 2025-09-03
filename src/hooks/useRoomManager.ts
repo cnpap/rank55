@@ -1,23 +1,11 @@
 import { ref, computed } from 'vue';
-import { RoomService } from '@/lib/service/room-service';
-import { SummonerService } from '@/lib/service/summoner-service';
+import {
+  roomService,
+  summonerService,
+  sgpMatchService,
+} from '@/lib/service/service-manager';
 import type { Room, Member } from '@/types/room';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
-import { SimpleSgpApi } from '@/lib/sgp/sgp-api';
-import { SgpMatchService } from '@/lib/sgp/sgp-match-service';
-
-export interface MemberWithDetails extends Member {
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  matchHistory?: SgpMatchHistoryResult;
-  isLoading?: boolean; // 详细信息的整体加载状态
-  isLoadingSummonerData?: boolean;
-  isLoadingRankedStats?: boolean;
-  isLoadingMatchHistory?: boolean;
-  error?: string;
-}
+import type { MemberWithDetails } from '@/types/room-management';
 
 export function useRoomManager() {
   const currentRoom = ref<Room | null>(null);
@@ -25,11 +13,6 @@ export function useRoomManager() {
   const isLoadingRoom = ref(false);
   const isLoadingMembers = ref(false);
   const errorMessage = ref<string | null>(null);
-
-  const roomService = new RoomService();
-  const summonerService = new SummonerService();
-  const sgpApi = new SimpleSgpApi();
-  const sgpMatchService = new SgpMatchService(sgpApi);
 
   const isLoading = computed(
     () => isLoadingRoom.value || isLoadingMembers.value

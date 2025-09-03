@@ -1,14 +1,11 @@
 import { GameConfig, Member, Room } from '@/types/room';
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
-import { SummonerService } from './summoner-service';
+import { summonerService } from './service-manager';
 
 export class RoomService extends BaseService {
-  private summonerService: SummonerService;
-
   constructor(client?: LCUClientInterface) {
     super(client);
-    this.summonerService = new SummonerService(client);
   }
 
   // 获取当前房间信息
@@ -33,7 +30,7 @@ export class RoomService extends BaseService {
         let summonerInfo = null;
         if (member.summonerId) {
           try {
-            summonerInfo = await this.summonerService.getSummonerByID(
+            summonerInfo = await summonerService.getSummonerByID(
               member.summonerId
             );
           } catch (error) {
@@ -103,7 +100,7 @@ export class RoomService extends BaseService {
       const members = await this.getLobbyMembers();
 
       // 获取当前召唤师信息
-      const currentSummoner = await this.summonerService.getCurrentSummoner();
+      const currentSummoner = await summonerService.getCurrentSummoner();
 
       // 查找当前用户在房间成员中的信息
       const currentMember = members.find(

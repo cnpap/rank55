@@ -2,12 +2,15 @@ import { ref } from 'vue';
 import type { SummonerData } from '@/types/summoner';
 import { useClientUserStore } from '@/stores/client-user';
 import { useMatchHistoryStore } from '@/stores/match-history';
+import {
+  summonerService,
+  sgpMatchService,
+} from '@/lib/service/service-manager';
 
 export function useGameConnection() {
   const isConnected = ref(false);
   const clientUserStore = useClientUserStore();
   const matchHistoryStore = useMatchHistoryStore();
-  const { summonerService, sgpMatchService } = matchHistoryStore.getServices();
 
   const checkConnection = async (): Promise<boolean> => {
     try {
