@@ -7,22 +7,13 @@ import { RoomService } from '@/lib/service/room-service';
 import { SummonerService } from '@/lib/service/summoner-service';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import type { Room, Member } from '@/types/room';
-import type { SummonerData } from '@/types/summoner';
-import type { RankedStats } from '@/types/ranked-stats';
-import { SgpMatchHistoryResult } from '@/types/match-history-sgp';
 import RoomMemberCard from '@/components/RoomMemberCard.vue';
 import RoomEmptySlot from '@/components/RoomEmptySlot.vue';
-
-export interface MemberWithDetails extends Member {
-  summonerData?: SummonerData;
-  rankedStats?: RankedStats;
-  matchHistory?: SgpMatchHistoryResult;
-  isLoading?: boolean;
-  isLoadingSummonerData?: boolean;
-  isLoadingRankedStats?: boolean;
-  isLoadingMatchHistory?: boolean;
-  error?: string;
-}
+import {
+  type MemberWithDetails,
+  calculateDisplaySlots,
+  isGameStartPhase as checkIsGameStartPhase,
+} from '@/utils/room-management-utils';
 
 const { currentPhase, gamePhaseManager } = useGameState();
 
@@ -56,164 +47,24 @@ const lastMemberDetails = ref<string>(''); // 新增：用于跟踪成员详细�
 
 // 判断是否为游戏开始阶段（需要两排布局）
 const isGameStartPhase = computed(() => {
-  return (
-    currentPhase.value === GameflowPhaseEnum.GameStart ||
-    currentPhase.value === GameflowPhaseEnum.InProgress
-  );
+  return checkIsGameStartPhase(currentPhase.value);
 });
 
 // 统一的显示槽位 - 根据当前阶段选择数据源
 const displaySlots = computed(() => {
-  let currentMemberIds = '';
-  let currentMemberDetails = '';
-
-  if (currentPhase.value === GameflowPhaseEnum.ChampSelect) {
-    currentMemberIds = champSelectSlots.value
-      .map(m => m?.summonerId || 'null')
-      .join(',');
-    currentMemberDetails = champSelectSlots.value
-      .map(m =>
-        m ? `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}` : 'null'
-      )
-      .join(',');
-  } else if (
-    currentPhase.value === GameflowPhaseEnum.GameStart ||
-    currentPhase.value === GameflowPhaseEnum.InProgress
-  ) {
-    currentMemberIds = gameStartSlots.value
-      .map(m => m?.summonerId || 'null')
-      .join(',');
-    currentMemberDetails = gameStartSlots.value
-      .map(m =>
-        m ? `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}` : 'null'
-      )
-      .join(',');
-  } else {
-    currentMemberIds = roomMembers.value.map(m => m.summonerId).join(',');
-    currentMemberDetails = roomMembers.value
-      .map(m => `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}`)
-      .join(',');
-  }
-
-  // 检查是否需要重新计算 - 包括详细信息的变化
-  const needsRecalculation =
-    lastPhase.value !== currentPhase.value ||
-    lastMemberIds.value !== currentMemberIds ||
-    lastMemberDetails.value !== currentMemberDetails;
-
-  // 如果没有变化且有缓存，直接返回缓存
-  if (!needsRecalculation && cachedDisplaySlots.value.length > 0) {
-    return cachedDisplaySlots.value;
-  }
-
-  let newSlots: (MemberWithDetails | null)[];
-
-  if (currentPhase.value === GameflowPhaseEnum.ChampSelect) {
-    // 英雄选择阶段：使用 champSelectSlots
-    newSlots = champSelectSlots.value.map(member => {
-      if (!member) return null;
-      // 转换为 MemberWithDetails 格式以兼容现有组件
-      return {
-        summonerId: member.summonerId,
-        summonerName: member.summonerName,
-        isLeader: member.isLeader,
-        summonerData: member.summonerData,
-        rankedStats: member.rankedStats,
-        isLoading: member.isLoading,
-        error: member.error,
-        // 添加房间成员的其他必需字段，使用默认值
-        allowedChangeActivity: false,
-        allowedInviteOthers: false,
-        allowedKickOthers: false,
-        allowedStartActivity: false,
-        allowedToggleInvite: false,
-        autoFillEligible: false,
-        autoFillProtectedForPromos: false,
-        autoFillProtectedForSoloing: false,
-        autoFillProtectedForStreaking: false,
-        botChampionId: 0,
-        botDifficulty: '',
-        botId: '',
-        firstPositionPreference: '',
-        isBot: false,
-        isOwner: member.isLeader,
-        isSpectator: false,
-        puuid: member.puuid,
-        ready: true,
-        secondPositionPreference: '',
-        showGhostedBanner: false,
-        summonerIconId: member.summonerData?.profileIconId || 0,
-        summonerLevel: member.summonerData?.summonerLevel || 0,
-        teamId: 1,
-      } as unknown as MemberWithDetails;
-    });
-  } else if (
-    currentPhase.value === GameflowPhaseEnum.GameStart ||
-    currentPhase.value === GameflowPhaseEnum.InProgress
-  ) {
-    // 游戏开始阶段：使用 gameStartSlots
-    newSlots = gameStartSlots.value.map(member => {
-      if (!member) return null;
-      // 转换为 MemberWithDetails 格式以兼容现有组件
-      return {
-        summonerId: member.summonerId,
-        summonerName: member.summonerName,
-        isLeader: false, // 游戏开始阶段没有房主概念
-        summonerData: member.summonerData,
-        rankedStats: member.rankedStats,
-        isLoading: member.isLoading,
-        error: member.error,
-        // 添加房间成员的其他必需字段，使用默认值
-        allowedChangeActivity: false,
-        allowedInviteOthers: false,
-        allowedKickOthers: false,
-        allowedStartActivity: false,
-        allowedToggleInvite: false,
-        autoFillEligible: false,
-        autoFillProtectedForPromos: false,
-        autoFillProtectedForSoloing: false,
-        autoFillProtectedForStreaking: false,
-        botChampionId: 0,
-        botDifficulty: '',
-        botId: '',
-        firstPositionPreference: '',
-        isBot: false,
-        isOwner: false,
-        isSpectator: false,
-        puuid: '',
-        ready: true,
-        secondPositionPreference: '',
-        showGhostedBanner: false,
-        summonerIconId: member.summonerData?.profileIconId || 0,
-        summonerLevel: member.summonerData?.summonerLevel || 0,
-        teamId: member.teamId,
-      } as unknown as MemberWithDetails;
-    });
-  } else {
-    // 房间阶段：修复逻辑错误
-    newSlots = new Array(5).fill(null);
-
-    // 安全地查找房主
-    const leader = roomMembers.value.find(member => member.isLeader);
-    if (leader) {
-      newSlots[0] = leader;
-    }
-
-    // 填充其他成员到剩余位置
-    const otherMembersList = roomMembers.value.filter(
-      member => !member.isLeader
-    );
-    for (let i = 0; i < Math.min(otherMembersList.length, 4); i++) {
-      newSlots[i + 1] = otherMembersList[i];
-    }
-  }
-  console.log('newSlots', newSlots);
+  const newSlots = calculateDisplaySlots(
+    currentPhase.value,
+    champSelectSlots.value,
+    gameStartSlots.value,
+    roomMembers.value,
+    cachedDisplaySlots.value,
+    lastPhase,
+    lastMemberIds,
+    lastMemberDetails
+  );
 
   // 更新缓存
   cachedDisplaySlots.value = newSlots;
-  lastPhase.value = currentPhase.value;
-  lastMemberIds.value = currentMemberIds;
-  lastMemberDetails.value = currentMemberDetails;
 
   return newSlots;
 });

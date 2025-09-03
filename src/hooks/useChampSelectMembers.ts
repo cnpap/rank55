@@ -56,14 +56,14 @@ export function useChampSelectMembers() {
       champSelectMembers.value.map(m => [m.summonerId, m])
     );
     const newMemberMap = new Map(myTeam.map(m => [m.summonerId, m]));
-  
+
     // 找出新增的成员
     const newMembers = myTeam.filter(m => !currentMemberMap.has(m.summonerId));
     // 找出离开的成员
     const leftMemberIds = champSelectMembers.value
       .filter(m => !newMemberMap.has(m.summonerId))
       .map(m => m.summonerId);
-  
+
     // 如果没有变化，只更新基本信息（英雄ID、位置等）
     if (newMembers.length === 0 && leftMemberIds.length === 0) {
       champSelectMembers.value = champSelectMembers.value.map(
@@ -83,47 +83,51 @@ export function useChampSelectMembers() {
       );
       return;
     }
-  
+
     console.log(
       `🎯 英雄选择成员变动: 新增 ${newMembers.length} 人，离开 ${leftMemberIds.length} 人`
     );
-  
+
     // 移除离开的成员
     if (leftMemberIds.length > 0) {
       champSelectMembers.value = champSelectMembers.value.filter(
         m => !leftMemberIds.includes(m.summonerId)
       );
     }
-  
+
     // 如果没有新成员，直接返回
     if (newMembers.length === 0) {
       return;
     }
-  
+
     // 为新成员添加基本信息
-    const newMembersWithDetails: ChampSelectMemberWithDetails[] = newMembers.map(member => ({
-      summonerId: member.summonerId,
-      summonerName: member.gameName || `Player${member.summonerId}`,
-      puuid: member.puuid,
-      assignedPosition: member.assignedPosition,
-      cellId: member.cellId,
-      championId: member.championId,
-      isLeader: member.cellId === 0,
-      isLoading: false,
-    }));
-  
+    const newMembersWithDetails: ChampSelectMemberWithDetails[] =
+      newMembers.map(member => ({
+        summonerId: member.summonerId,
+        summonerName: member.gameName || `Player${member.summonerId}`,
+        puuid: member.puuid,
+        assignedPosition: member.assignedPosition,
+        cellId: member.cellId,
+        championId: member.championId,
+        isLeader: member.cellId === 0,
+        isLoading: false,
+      }));
+
     // 添加新成员到列表
-    champSelectMembers.value = [...champSelectMembers.value, ...newMembersWithDetails];
-  
+    champSelectMembers.value = [
+      ...champSelectMembers.value,
+      ...newMembersWithDetails,
+    ];
+
     // 只为新成员加载详细信息
     const summonerPromises = newMembers.map(async (member, index) => {
       if (!member.summonerId) return;
-  
+
       try {
         const summonerData = await summonerService.getSummonerByID(
           member.summonerId
         );
-        
+
         // 找到对应的成员并更新
         const memberIndex = champSelectMembers.value.findIndex(
           m => m.summonerId === member.summonerId
@@ -140,19 +144,19 @@ export function useChampSelectMembers() {
         return null;
       }
     });
-  
+
     const summonerResults = await Promise.all(summonerPromises);
-  
+
     // 为新成员加载排位统计
     const rankedPromises = summonerResults.map(async result => {
       if (!result?.summonerData?.puuid) return null;
-  
+
       const { summonerId, summonerData } = result;
       try {
         const rankedStats = await summonerService.getRankedStats(
           summonerData.puuid
         );
-        
+
         // 找到对应的成员并更新排位统计
         const memberIndex = champSelectMembers.value.findIndex(
           m => m.summonerId === summonerId
@@ -169,20 +173,20 @@ export function useChampSelectMembers() {
         return null;
       }
     });
-  
+
     await Promise.all(rankedPromises);
   };
 
   // 更新英雄选择成员数据
   const updateChampSelectMembers = async (): Promise<void> => {
     champSelectError.value = null;
-  
+
     try {
       // 获取英雄选择会话数据
       const session: ChampSelectSession =
         await banPickService.getChampSelectSession();
       const { myTeam } = session;
-  
+
       // 直接调用优化后的增量更新函数
       await fetchChampSelectMembersDetails(myTeam);
     } catch (error) {
