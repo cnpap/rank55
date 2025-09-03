@@ -84,7 +84,6 @@ export class UpdateManager {
             flex-direction: column;
             justify-content: center;
             height: 160px; /* 调整高度 */
-            border-radius: 8px;
           }
           .title {
             font-size: 16px;
@@ -97,7 +96,6 @@ export class UpdateManager {
             width: 100%;
             height: 8px;
             background: #e5e7eb;
-            border-radius: 4px;
             overflow: hidden;
             margin-bottom: 12px;
           }
@@ -106,7 +104,6 @@ export class UpdateManager {
             background: #2563eb;
             width: 0%;
             transition: width 0.3s ease;
-            border-radius: 4px;
           }
           .progress-text {
             font-size: 13px;
@@ -127,7 +124,6 @@ export class UpdateManager {
             padding: 8px 16px;
             margin: 0 5px;
             border: 1px solid #d1d5db;
-            border-radius: 4px;
             background: white;
             cursor: pointer;
             font-size: 12px;
@@ -144,7 +140,6 @@ export class UpdateManager {
             border: none;
             background: #ef4444;
             color: white;
-            border-radius: 50%;
             cursor: pointer;
             font-size: 12px;
             display: flex;
