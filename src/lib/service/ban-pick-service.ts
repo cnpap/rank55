@@ -1,7 +1,5 @@
 import { LCUClientInterface } from '../client/interface';
 import { BaseService } from './base-service';
-import { gameflowService } from './service-manager';
-import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { ChampSelectSession } from '@/types/champ-select-session';
 import { AssignedPosition } from '@/types/players-info';
 
@@ -10,47 +8,53 @@ export class BanPickService extends BaseService {
     super(client);
   }
 
-  // 检查是否在 ban/pick 阶段
-  async isInChampSelect(): Promise<boolean> {
-    const phase = await gameflowService.getGameflowPhase();
-    return phase === GameflowPhaseEnum.ChampSelect;
-  }
-
-  // 获取英雄选择会话信息
+  // 获取英雄选择会话信息（带防抖）
   async getChampSelectSession(): Promise<ChampSelectSession> {
-    const session = await this.makeRequest<ChampSelectSession>(
-      'GET',
-      '/lol-champ-select/v1/session'
-    );
-    const myTeam = session.myTeam;
-    const positions: Array<AssignedPosition> = [];
-    for (const { assignedPosition } of myTeam) {
-      if (
-        assignedPosition &&
-        ['bottom', 'top', 'middle', 'jungle', 'support'].includes(
-          assignedPosition
-        )
-      ) {
-        positions.push(assignedPosition);
-      }
-    }
-    if (positions.length < 5) {
-      // 通过排除法计算，少了的位置是什么
-      const missingPositions: AssignedPosition = (
-        ['bottom', 'jungle', 'middle', 'top', 'support'] as AssignedPosition[]
-      ).filter((pos: AssignedPosition) => !positions.includes(pos))[0];
-      // 回写到对象中
-      for (const item of myTeam) {
-        if (
-          !['bottom', 'jungle', 'middle', 'top', 'support'].includes(
-            item.assignedPosition
-          )
-        ) {
-          item.assignedPosition = missingPositions;
+    return this.debounce(
+      'getChampSelectSession',
+      async () => {
+        const session = await this.makeRequest<ChampSelectSession>(
+          'GET',
+          '/lol-champ-select/v1/session'
+        );
+        const myTeam = session.myTeam;
+        const positions: Array<AssignedPosition> = [];
+        for (const { assignedPosition } of myTeam) {
+          if (
+            assignedPosition &&
+            ['bottom', 'top', 'middle', 'jungle', 'support'].includes(
+              assignedPosition
+            )
+          ) {
+            positions.push(assignedPosition);
+          }
         }
-      }
-    }
-    return session;
+        if (positions.length < 5) {
+          // 通过排除法计算，少了的位置是什么
+          const missingPositions: AssignedPosition = (
+            [
+              'bottom',
+              'jungle',
+              'middle',
+              'top',
+              'support',
+            ] as AssignedPosition[]
+          ).filter((pos: AssignedPosition) => !positions.includes(pos))[0];
+          // 回写到对象中
+          for (const item of myTeam) {
+            if (
+              !['bottom', 'jungle', 'middle', 'top', 'support'].includes(
+                item.assignedPosition
+              )
+            ) {
+              item.assignedPosition = missingPositions;
+            }
+          }
+        }
+        return session;
+      },
+      1000
+    );
   }
 
   async pickAction(

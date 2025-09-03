@@ -26,9 +26,15 @@ export class GameflowService extends BaseService {
     return this.makeRequest('GET', '/lol-gameflow/v1/session');
   }
 
-  // 获取当前游戏流程阶段
+  // 获取当前游戏流程阶段（带防抖）
   async getGameflowPhase(): Promise<GameflowPhaseEnum> {
-    return this.makeRequest('GET', '/lol-gameflow/v1/gameflow-phase');
+    return this.debounce(
+      'getGameflowPhase',
+      async () => {
+        return this.makeRequest('GET', '/lol-gameflow/v1/gameflow-phase');
+      },
+      1000
+    );
   }
 
   // 获取 Ready Check 状态
