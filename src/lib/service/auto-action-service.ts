@@ -1,15 +1,18 @@
 import {
   banPickService,
+  chatNotificationService,
   gameflowService,
   gamePhaseManager,
 } from './service-manager';
 import { $local, type PositionSetting } from '@/storages/storage-use';
-import { toast } from 'vue-sonner';
 import type { ChampSelectSession } from '@/types/champ-select-session';
 import type { AllAction } from '@/types/ban-phase-detail';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { toast } from 'vue-sonner';
 
 export class AutoActionService {
+  // 记录无法使用的英雄（未拥有或不在免费轮换中）
+  private unavailableChampions: Set<number> = new Set();
   async executeReadyCheckAction(): Promise<boolean> {
     const autoAcceptEnabled = $local.getItem('autoAcceptGame');
     if (!autoAcceptEnabled) {
@@ -29,6 +32,8 @@ export class AutoActionService {
   }
 
   async executePrePickAction(session: ChampSelectSession): Promise<void> {
+    // 每次进入预选阶段时清空无法使用的英雄记录
+    this.unavailableChampions.clear();
     const { myTeam, localPlayerCellId } = session;
     const positionSettings = $local.getItem('positionSettings');
 
@@ -55,7 +60,9 @@ export class AutoActionService {
     for (const champion of myPositionInfo.pickChampions) {
       try {
         await banPickService.hoverChampion(parseInt(champion));
-        console.log(`✅ 预选英雄成功: ${champion}`);
+        chatNotificationService.sendSystemMessage(
+          `✅ 预选英雄成功: ${champion}`
+        );
         return; // 成功预选后退出循环
       } catch (error: any) {
         console.log(`❌ 预选英雄 ${champion} 失败: ${error.message}`);
@@ -65,21 +72,23 @@ export class AutoActionService {
           (error.message.includes('is not owned by account') ||
             error.message.includes('is not free to play'))
         ) {
-          console.log(
+          chatNotificationService.sendSystemMessage(
             `英雄 ${champion} 无法预选（未拥有或不在免费轮换中），尝试下一个英雄`
           );
+          // 记录无法使用的英雄
+          this.unavailableChampions.add(parseInt(champion));
           continue; // 继续尝试下一个英雄
         } else {
-          console.error(`预选英雄时发生未知错误:`, error);
-          toast.error(`预选英雄失败: ${error.message}`);
+          chatNotificationService.sendSystemMessage(`预选英雄失败: ${error}`);
           return; // 遇到其他错误时退出
         }
       }
     }
 
     // 如果所有英雄都无法预选
-    console.log('所有预设英雄都无法预选（可能都未拥有或不在免费轮换中）');
-    toast.warning('所有预设英雄都无法预选，请检查英雄拥有情况');
+    chatNotificationService.sendSystemMessage(
+      '所有预设英雄都无法预选（可能都未拥有或不在免费轮换中）'
+    );
   }
 
   async executeBanAction(
@@ -123,8 +132,9 @@ export class AutoActionService {
       console.log(`正在禁用英雄: ${championIdNum}`);
       try {
         await banPickService.banChampion(championIdNum);
-        toast.success(`已自动禁用英雄: ${championId}`);
-        console.log(`✅ 自动禁用英雄成功: ${championId}`);
+        chatNotificationService.sendSystemMessage(
+          `已自动禁用英雄: ${championId}`
+        );
         return;
       } catch (error: any) {
         console.log(`❌ 禁用英雄 ${championIdNum} 失败: ${error.message}`);
@@ -134,21 +144,18 @@ export class AutoActionService {
           (error.message.includes('is not owned by account') ||
             error.message.includes('is not free to play'))
         ) {
-          console.log(
-            `英雄 ${championIdNum} 无法禁用（未拥有或不在免费轮换中），尝试下一个英雄`
+          chatNotificationService.sendSystemMessage(
+            `英雄 ${championId} 无法禁用，尝试下一个英雄`
           );
-          toast.warning(`英雄 ${championId} 无法禁用，尝试下一个英雄`);
           continue;
         }
         // 其他错误，重新抛出
         console.error(`禁用英雄时发生未知错误:`, error);
-        toast.error(`禁用英雄失败: ${error.message}`);
         throw error;
       }
     }
 
-    console.log('⚠️ 所有预设的禁用英雄都已被禁用、被预选或无法禁用');
-    toast.warning('所有预设的禁用英雄都不可用');
+    chatNotificationService.sendSystemMessage('所有预设的禁用英雄都不可用');
   }
 
   async executePickAction(
@@ -207,11 +214,14 @@ export class AutoActionService {
         !banedChampions.includes(prePickedChampionId) &&
         !allPickedChampions.includes(prePickedChampionId)
       ) {
-        console.log(`优先选择已预选的英雄: ${prePickedChampionId}`);
+        chatNotificationService.sendSystemMessage(
+          `优先选择已预选的英雄: ${prePickedChampionId}`
+        );
         try {
           await banPickService.pickChampion(prePickedChampionId);
-          toast.success(`已自动选择预选英雄: ${prePickedChampionIdStr}`);
-          console.log(`✅ 自动选择预选英雄成功: ${prePickedChampionIdStr}`);
+          chatNotificationService.sendSystemMessage(
+            `已自动选择预选英雄: ${prePickedChampionIdStr}`
+          );
           return;
         } catch (error: any) {
           console.log(
@@ -227,50 +237,65 @@ export class AutoActionService {
       const championIdNum = parseInt(championId);
 
       if (banedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被禁用，跳过`);
+        chatNotificationService.sendSystemMessage(
+          `英雄 ${championIdNum} 已被禁用，跳过`
+        );
         continue;
       }
 
       if (allPickedChampions.includes(championIdNum)) {
-        console.log(`英雄 ${championIdNum} 已被选择，跳过`);
+        chatNotificationService.sendSystemMessage(
+          `英雄 ${championIdNum} 已被选择，跳过`
+        );
         continue;
       }
 
-      console.log(`正在选择英雄: ${championIdNum}`);
+      // 检查是否是预选阶段已确认无法使用的英雄
+      if (this.unavailableChampions.has(championIdNum)) {
+        chatNotificationService.sendSystemMessage(
+          `英雄 ${championIdNum} 无法使用（未拥有或不在免费轮换中），跳过`
+        );
+        continue;
+      }
+
+      chatNotificationService.sendSystemMessage(
+        `正在选择英雄: ${championIdNum}`
+      );
       try {
         await banPickService.pickChampion(championIdNum);
-        toast.success(`已自动选择英雄: ${championId}`);
-        console.log(`✅ 自动选择英雄成功: ${championId}`);
+        chatNotificationService.sendSystemMessage(
+          `已自动选择英雄: ${championId}`
+        );
         return;
       } catch (error: any) {
-        console.log(`❌ 选择英雄 ${championIdNum} 失败: ${error.message}`);
+        chatNotificationService.sendSystemMessage(
+          `选择英雄 ${championIdNum} 失败，尝试下一个英雄`
+        );
         // 检查是否是因为没有拥有该英雄
         if (
           error.message &&
           error.message.includes('is not owned by account')
         ) {
-          console.log(`英雄 ${championIdNum} 未拥有，尝试下一个英雄`);
-          toast.warning(`英雄 ${championId} 未拥有，尝试下一个英雄`);
+          chatNotificationService.sendSystemMessage(
+            `英雄 ${championIdNum} 未拥有，尝试下一个英雄`
+          );
           continue;
         }
         // 检查是否是因为英雄不在免费轮换中
         if (error.message && error.message.includes('is not free to play')) {
-          console.log(
+          chatNotificationService.sendSystemMessage(
             `英雄 ${championIdNum} 不在免费轮换中且未拥有，尝试下一个英雄`
-          );
-          toast.warning(
-            `英雄 ${championId} 不在免费轮换中且未拥有，尝试下一个英雄`
           );
           continue;
         }
         // 其他错误，重新抛出
-        console.error(`选择英雄时发生未知错误:`, error);
-        toast.error(`选择英雄失败: ${error.message}`);
+        chatNotificationService.sendSystemMessage(
+          `选择英雄失败: ${error.message}`
+        );
         throw error;
       }
     }
 
-    console.log('⚠️ 所有预设的选择英雄都不可用（已被禁用、选择或未拥有）');
-    toast.warning('所有预设的选择英雄都不可用');
+    chatNotificationService.sendSystemMessage('所有预设的选择英雄都不可用');
   }
 }

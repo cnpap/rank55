@@ -32,7 +32,6 @@ const { gameStartSlots, updateGameStartMembers } = useGameStartMembers();
 // 使用房间成员数据
 const {
   roomMembers,
-  roomSlots,
   canKickMembers,
   updateRoomMembers,
   kickMember,

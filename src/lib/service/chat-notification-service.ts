@@ -30,6 +30,7 @@ export class ChatNotificationService extends BaseService {
 
   // 发送系统消息到当前对话
   async sendSystemMessage(message: string): Promise<void> {
+    console.log(`发送系统消息: ${message}`);
     // 获取当前活跃的聊天对话ID
     const conversations = await this.getConversations();
     const activeConversation = conversations.find(
@@ -42,7 +43,7 @@ export class ChatNotificationService extends BaseService {
         `/lol-chat/v1/conversations/${activeConversation.id}/messages`,
         {
           body: {
-            body: message,
+            body: `[rank55] ${message}`,
             type: 'celebration',
           },
         }

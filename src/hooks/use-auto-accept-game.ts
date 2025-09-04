@@ -108,7 +108,7 @@ export function useAutoAcceptGame() {
 
   const scheduleNextPoll = (): void => {
     if (gamePhaseTimer.value) {
-      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 1000);
+      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 700);
     }
   };
 
