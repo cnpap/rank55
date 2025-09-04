@@ -113,7 +113,7 @@ const handleRefresh = () => {
     <div class="flex items-center gap-4">
       <!-- 排位信息 - 紧凑布局 -->
       <div class="flex w-143 justify-between gap-3">
-        <div class="flex">
+        <div class="flex gap-8">
           <div
             v-for="(rankInfo, index) in rankInfos"
             :key="index"

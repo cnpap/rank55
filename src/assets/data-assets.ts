@@ -28,7 +28,7 @@ export enum StaticAssets {
   SPELL_IMAGES = 'spell/',
 
   // 玩家头像目录
-  PROFILE_ICON_IMAGES = 'profileicon/',
+  // PROFILE_ICON_IMAGES = 'profileicon/',
 
   // 其他 icon 目录
   ICON_IMAGES = 'icon/',
@@ -75,7 +75,8 @@ export const staticAssets = {
   getItemIcon: (itemId: string) =>
     getDataAsset(`${StaticAssets.ITEM_IMAGES}${itemId}.png`),
   getChampionIcon: (championKey: string) =>
-    getDataAsset(`${StaticAssets.CHAMPION_IMAGES}${championKey}.png`),
+    `rank55://lol-game-data/assets/v1/champion-icons/${championKey}.png`,
+  // getDataAsset(`${StaticAssets.CHAMPION_IMAGES}${championKey}.png`),
   getRankIcon: (rankId: string) =>
     getDataAsset(`${StaticAssets.RANK_IMAGES}${rankId}.png`),
   getRankMiniIcon: (rankId: string) =>
@@ -84,8 +85,8 @@ export const staticAssets = {
   getPerkIcon: (perkId: string) => `./${StaticAssets.PERK_IMAGES}${perkId}.png`,
   getIcon: (iconName: string) => `./${StaticAssets.ICON_IMAGES}${iconName}.png`,
   getProfileIcon: (profileIconId: string) =>
-    // `/lol-game-data/assets/v1/profile-icons/${profileIconId}.jpg`,
-    `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,
+    `rank55://lol-game-data/assets/v1/profile-icons/${profileIconId}.jpg`,
+  // `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,
   getSpellIcon: (spellId: string) =>
     `./${StaticAssets.SPELL_IMAGES}${spellId}.png`,
 };

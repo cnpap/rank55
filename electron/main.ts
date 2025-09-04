@@ -5,6 +5,10 @@ import log from 'electron-log';
 import { LCUClient } from '../src/lib/client/lcu-client';
 import { UpdateManager } from './updater';
 import { RequestOptions } from '../src/lib/client/interface';
+import {
+  registerRank55Protocol,
+  registerRank55ProtocolPrivileges,
+} from './protocol-handler';
 
 // 配置日志
 log.transports.file.level = 'info';
@@ -30,6 +34,9 @@ let mainWindow: BrowserWindow | null = null;
 
 // 创建更新管理器
 const updateManager = new UpdateManager(isDev);
+
+// 注册自定义协议权限
+registerRank55ProtocolPrivileges();
 
 // 获取或重新创建 LCU 客户端
 async function ensureLCUClient(): Promise<LCUClient> {
@@ -281,6 +288,10 @@ function createWindow() {
 // ===== 应用生命周期 =====
 app.whenReady().then(async () => {
   console.log('App ready, creating window...');
+
+  // 注册自定义协议处理器
+  registerRank55Protocol(ensureLCUClient);
+
   createWindow();
 
   // 尝试初始化 LCU 客户端
