@@ -42,12 +42,6 @@ describe('BanPickActions', () => {
     });
 
     it('应该能够获取当前玩家的 Action 信息', async () => {
-      const isInChampSelect = await banPickService.isInChampSelect();
-      console.log(`🎯 是否在英雄选择阶段: ${isInChampSelect ? '是' : '否'}`);
-      if (!isInChampSelect) {
-        console.log('ℹ️ 当前不在英雄选择阶段，跳过测试');
-        return;
-      }
       // 获取当前玩家的 action
       const session = await banPickService.getChampSelectSession();
       expect(typeof session.localPlayerCellId).toBe('number');
