@@ -11,7 +11,6 @@ import {
 import { copyToClipboard } from '@/lib/player-helpers';
 import {
   calculateKDA,
-  collectPlayerItems,
   calculateCS,
   getPlayerRunes,
   collectAllChampionIds,
@@ -150,6 +149,36 @@ const loadPlayerRanks = async () => {
     await Promise.allSettled(rankPromises);
     console.log('🎉 所有玩家段位信息获取完成');
   }
+};
+
+// 计算全局最高值
+const maxStats = computed(() => {
+  if (!game.json?.participants)
+    return {
+      maxGold: 0,
+      maxCS: 0,
+      maxDamage: 0,
+      maxDamageTaken: 0,
+    };
+
+  const participants = game.json.participants;
+
+  return {
+    maxGold: Math.max(...participants.map(p => p.goldEarned || 0)),
+    maxCS: Math.max(...participants.map(p => calculateCS(p))),
+    maxDamage: Math.max(
+      ...participants.map(p => p.totalDamageDealtToChampions || 0)
+    ),
+    maxDamageTaken: Math.max(...participants.map(p => p.totalDamageTaken || 0)),
+  };
+});
+
+// 格式化数值显示
+const formatValue = (value: number) => {
+  if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'k';
+  }
+  return value.toString();
 };
 
 // 组件挂载时初始化数据
@@ -292,7 +321,7 @@ const searchPlayerHistory = async (name: string) => {
           >
             <!-- 表头 -->
             <div
-              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2.5fr_1fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-1 pl-4 text-sm font-medium"
+              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2.5fr_0.5fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-1 pl-4 text-sm font-medium"
             >
               <div>玩家</div>
               <div class="text-center">KDA</div>
@@ -305,11 +334,11 @@ const searchPlayerHistory = async (name: string) => {
             <div
               v-for="participant in getTeamParticipants(team.teamId)"
               :key="participant.participantId"
-              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2.5fr_1fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-0.5 pl-4 transition-colors last:border-b-0"
+              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2.5fr_0.5fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-0.5 pl-4 transition-colors last:border-b-0"
             >
               <!-- 玩家信息 -->
               <div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1">
                   <!-- 英雄头像 + 等级 -->
                   <div class="relative flex-shrink-0">
                     <img
@@ -332,7 +361,7 @@ const searchPlayerHistory = async (name: string) => {
                   </div>
 
                   <!-- 召唤师技能 + 天赋 -->
-                  <div class="flex flex-shrink-0 items-center gap-2">
+                  <div class="flex flex-shrink-0 items-center gap-1">
                     <!-- 召唤师技能 -->
                     <div class="flex flex-col gap-1">
                       <img
@@ -483,7 +512,7 @@ const searchPlayerHistory = async (name: string) => {
               <div
                 class="flex flex-col items-center justify-center text-center"
               >
-                <div class="space-y-1">
+                <div class="space-y-0.5">
                   <p class="font-tektur-numbers text-sm font-medium">
                     {{ participant.kills || 0 }}/{{
                       participant.deaths || 0
@@ -530,61 +559,255 @@ const searchPlayerHistory = async (name: string) => {
               </div>
 
               <!-- 金币/补刀 -->
-              <div
-                class="flex flex-col items-center justify-center text-center"
-              >
-                <div class="space-y-1">
-                  <div class="flex items-center gap-1">
-                    <Coins class="h-3 w-3 text-yellow-500" />
-                    <span class="font-tektur-numbers text-xs">
-                      {{ formatNumber(participant.goldEarned || 0) }}
+              <div class="flex flex-col justify-center space-y-1">
+                <!-- 金币 -->
+                <div class="flex items-center">
+                  <div class="flex w-12 items-center gap-1">
+                    <img class="h-3 w-3" :src="staticAssets.getIcon('coin')" />
+                    <span class="font-tektur-numbers text-xs font-medium">
+                      {{ formatValue(participant.goldEarned || 0) }}
                     </span>
                   </div>
-                  <p class="font-tektur-numbers text-muted-foreground text-xs">
-                    {{ calculateCS(participant) }} CS
-                  </p>
+                  <!-- 金币进度条 -->
+                  <div class="ml-1 flex-1">
+                    <div
+                      class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
+                    >
+                      <div
+                        class="h-full"
+                        :class="{
+                          'bg-green-500 dark:bg-green-400':
+                            (participant.goldEarned || 0) === maxStats.maxGold,
+                          'bg-blue-400 dark:bg-slate-600':
+                            participant.teamId === 100 &&
+                            (participant.goldEarned || 0) !== maxStats.maxGold,
+                          'bg-red-400 dark:bg-slate-500':
+                            participant.teamId === 200 &&
+                            (participant.goldEarned || 0) !== maxStats.maxGold,
+                        }"
+                        :style="{
+                          width:
+                            maxStats.maxGold > 0
+                              ? `${Math.min(100, ((participant.goldEarned || 0) / maxStats.maxGold) * 100)}%`
+                              : '0%',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 补刀 -->
+                <div class="flex items-center">
+                  <div class="flex w-12 items-center">
+                    <span
+                      class="font-tektur-numbers text-muted-foreground text-xs font-medium"
+                    >
+                      {{ calculateCS(participant) }} CS
+                    </span>
+                  </div>
+                  <!-- 补刀进度条 -->
+                  <div class="ml-1 flex-1">
+                    <div
+                      class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
+                    >
+                      <div
+                        class="h-full"
+                        :class="{
+                          'bg-green-500 dark:bg-green-400':
+                            calculateCS(participant) === maxStats.maxCS,
+                          'bg-blue-400 dark:bg-slate-600':
+                            participant.teamId === 100 &&
+                            calculateCS(participant) !== maxStats.maxCS,
+                          'bg-red-400 dark:bg-slate-500':
+                            participant.teamId === 200 &&
+                            calculateCS(participant) !== maxStats.maxCS,
+                        }"
+                        :style="{
+                          width:
+                            maxStats.maxCS > 0
+                              ? `${Math.min(100, (calculateCS(participant) / maxStats.maxCS) * 100)}%`
+                              : '0%',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- 伤害/承受 -->
-              <div
-                class="flex flex-col items-center justify-center text-center"
-              >
-                <div class="space-y-1">
-                  <div class="flex items-center gap-1">
-                    <Sword class="h-3 w-3 text-red-500" />
-                    <span class="font-tektur-numbers text-xs">
+              <div class="flex flex-col justify-center space-y-1">
+                <!-- 伤害 -->
+                <div class="flex items-center">
+                  <div class="flex w-12 items-center gap-1">
+                    <img class="h-3 w-3" :src="staticAssets.getIcon('fire')" />
+                    <span class="font-tektur-numbers text-xs font-medium">
                       {{
-                        formatNumber(
+                        formatValue(
                           participant.totalDamageDealtToChampions || 0
                         )
                       }}
                     </span>
                   </div>
-                  <div class="flex items-center gap-1">
-                    <Shield class="h-3 w-3 text-blue-500" />
-                    <span
-                      class="font-tektur-numbers text-muted-foreground text-xs"
+                  <!-- 伤害进度条 -->
+                  <div class="ml-1 flex-1">
+                    <div
+                      class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
                     >
-                      {{ formatNumber(participant.totalDamageTaken || 0) }}
+                      <div
+                        class="h-full"
+                        :class="{
+                          'bg-green-500 dark:bg-green-400':
+                            (participant.totalDamageDealtToChampions || 0) ===
+                            maxStats.maxDamage,
+                          'bg-blue-400 dark:bg-slate-600':
+                            participant.teamId === 100 &&
+                            (participant.totalDamageDealtToChampions || 0) !==
+                              maxStats.maxDamage,
+                          'bg-red-400 dark:bg-slate-500':
+                            participant.teamId === 200 &&
+                            (participant.totalDamageDealtToChampions || 0) !==
+                              maxStats.maxDamage,
+                        }"
+                        :style="{
+                          width:
+                            maxStats.maxDamage > 0
+                              ? `${Math.min(100, ((participant.totalDamageDealtToChampions || 0) / maxStats.maxDamage) * 100)}%`
+                              : '0%',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 承受伤害 -->
+                <div class="flex items-center">
+                  <div class="flex w-12 items-center gap-1">
+                    <img
+                      class="h-3 w-3"
+                      :src="staticAssets.getIcon('protection')"
+                    />
+                    <span
+                      class="font-tektur-numbers text-muted-foreground text-xs font-medium"
+                    >
+                      {{ formatValue(participant.totalDamageTaken || 0) }}
                     </span>
+                  </div>
+                  <!-- 承受伤害进度条 -->
+                  <div class="ml-1 flex-1">
+                    <div
+                      class="relative h-2 w-full overflow-hidden bg-gray-200 dark:bg-gray-700"
+                    >
+                      <div
+                        class="h-full"
+                        :class="{
+                          'bg-green-500 dark:bg-green-400':
+                            (participant.totalDamageTaken || 0) ===
+                            maxStats.maxDamageTaken,
+                          'bg-blue-400 dark:bg-slate-600':
+                            participant.teamId === 100 &&
+                            (participant.totalDamageTaken || 0) !==
+                              maxStats.maxDamageTaken,
+                          'bg-red-400 dark:bg-slate-500':
+                            participant.teamId === 200 &&
+                            (participant.totalDamageTaken || 0) !==
+                              maxStats.maxDamageTaken,
+                        }"
+                        :style="{
+                          width:
+                            maxStats.maxDamageTaken > 0
+                              ? `${Math.min(100, ((participant.totalDamageTaken || 0) / maxStats.maxDamageTaken) * 100)}%`
+                              : '0%',
+                        }"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <!-- 装备 -->
               <div class="flex items-center justify-center">
-                <div class="flex flex-wrap gap-1">
+                <div class="flex gap-1">
                   <div
-                    v-for="itemId in collectPlayerItems(participant)"
-                    :key="itemId"
-                    class="relative"
+                    v-for="(_itemId, index) in Array.from({ length: 6 })"
+                    :key="index"
+                    class="relative h-9 w-9"
                   >
                     <img
-                      :src="staticAssets.getItemIcon(`${itemId}`)"
-                      :alt="itemNames.get(String(itemId)) || `装备${itemId}`"
-                      :title="itemNames.get(String(itemId)) || `装备${itemId}`"
-                      class="border-border/40 h-8 w-8 rounded object-cover shadow-sm"
+                      v-if="
+                        [
+                          participant.item0,
+                          participant.item1,
+                          participant.item2,
+                          participant.item3,
+                          participant.item4,
+                          participant.item5,
+                        ][index]
+                      "
+                      :src="
+                        staticAssets.getItemIcon(
+                          `${
+                            [
+                              participant.item0,
+                              participant.item1,
+                              participant.item2,
+                              participant.item3,
+                              participant.item4,
+                              participant.item5,
+                            ][index]
+                          }`
+                        )
+                      "
+                      :alt="
+                        itemNames.get(
+                          String(
+                            [
+                              participant.item0,
+                              participant.item1,
+                              participant.item2,
+                              participant.item3,
+                              participant.item4,
+                              participant.item5,
+                            ][index]
+                          )
+                        ) ||
+                        `装备${
+                          [
+                            participant.item0,
+                            participant.item1,
+                            participant.item2,
+                            participant.item3,
+                            participant.item4,
+                            participant.item5,
+                          ][index]
+                        }`
+                      "
+                      :title="
+                        itemNames.get(
+                          String(
+                            [
+                              participant.item0,
+                              participant.item1,
+                              participant.item2,
+                              participant.item3,
+                              participant.item4,
+                              participant.item5,
+                            ][index]
+                          )
+                        ) ||
+                        `装备${
+                          [
+                            participant.item0,
+                            participant.item1,
+                            participant.item2,
+                            participant.item3,
+                            participant.item4,
+                            participant.item5,
+                          ][index]
+                        }`
+                      "
+                      class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
+                    />
+                    <div
+                      v-else
+                      class="border-border/20 bg-muted/30 h-full w-full rounded border"
                     />
                   </div>
                 </div>
