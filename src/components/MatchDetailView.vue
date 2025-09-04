@@ -3,11 +3,7 @@ import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { Copy } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
-import {
-  formatNumber,
-  getRankMiniImageUrl,
-  getTierName,
-} from '@/lib/rank-helpers';
+import { getRankMiniImageUrl, getTierName } from '@/lib/rank-helpers';
 import { copyToClipboard } from '@/lib/player-helpers';
 import {
   calculateKDA,
@@ -20,7 +16,7 @@ import { summonerService } from '@/lib/service/service-manager';
 import { BrowserDataLoader } from '@/lib/data-loader';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Coins, Sword, Shield } from 'lucide-vue-next';
+import { Loader2 } from 'lucide-vue-next';
 import { Game, Participant, Team } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 
