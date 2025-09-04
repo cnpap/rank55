@@ -174,11 +174,8 @@ ipcMain.handle(
 
 ipcMain.handle('lcu-is-connected', async () => {
   try {
-    if (lcuClient) {
-      return await lcuClient.isConnected();
-    }
-
-    return false;
+    const client = await ensureLCUClient();
+    return await client.isConnected();
   } catch (error) {
     console.error('检查 LCU 连接状态失败:', error);
     return false;

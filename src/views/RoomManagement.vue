@@ -1,21 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
+import {
+  computed,
+  ref,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated,
+} from 'vue';
 import { useGameState } from '@/lib/composables/useGameState';
 import { useChampSelectMembers } from '@/hooks/useChampSelectMembers';
 import { useGameStartMembers } from '@/hooks/useGameStartMembers';
-import { roomService } from '@/lib/service/service-manager';
+import { useRoomMembers } from '@/hooks/useRoomMembers';
 import { summonerDataCache } from '@/lib/service/summoner-data-cache';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
-import type { Room, Member } from '@/types/room';
 import RoomMemberCard from '@/components/RoomMemberCard.vue';
 import RoomEmptySlot from '@/components/RoomEmptySlot.vue';
 import type { MemberWithDetails } from '@/types/room-management';
 import {
   calculateDisplaySlots,
   GamePhaseManager,
-  updateMembersData,
 } from '@/utils/room-management-utils';
-import { toast } from 'vue-sonner';
 
 const { currentPhase, gamePhaseManager } = useGameState();
 
@@ -25,19 +29,18 @@ const { champSelectSlots, updateChampSelectMembers } = useChampSelectMembers();
 // 使用游戏开始成员数据
 const { gameStartSlots, updateGameStartMembers } = useGameStartMembers();
 
-// 房间管理状态
-const currentRoom = ref<Room | null>(null);
-const roomMembers = ref<MemberWithDetails[]>([]);
-const updateTimer = ref<NodeJS.Timeout | null>(null);
+// 使用房间成员数据
+const {
+  roomMembers,
+  roomSlots,
+  canKickMembers,
+  updateRoomMembers,
+  kickMember,
+  clearRoomData,
+} = useRoomMembers();
 
-// 判断当前用户是否有踢人权限
-const canKickMembers = computed(() => {
-  // 只有在真正的房间阶段且用户有踢人权限时才能踢人
-  return (
-    currentPhase.value === GameflowPhaseEnum.Lobby &&
-    currentRoom.value?.localMember?.allowedKickOthers === true
-  );
-});
+// 轮询定时器
+const updateTimer = ref<NodeJS.Timeout | null>(null);
 
 // 添加缓存变量
 const cachedDisplaySlots = ref<(MemberWithDetails | null)[]>([]);
@@ -89,97 +92,6 @@ const displaySlots = computed(() => {
   return newSlots;
 });
 
-// 获取成员详细信息 - 使用缓存优化
-const fetchMembersDetails = async (members: Member[]): Promise<void> => {
-  // 创建当前成员的映射
-  const currentMemberMap = new Map(
-    roomMembers.value.map(m => [m.summonerId, m])
-  );
-  const newMemberMap = new Map(members.map(m => [m.summonerId, m]));
-
-  // 找出新增的成员
-  const newMembers = members.filter(m => !currentMemberMap.has(m.summonerId));
-  // 找出离开的成员
-  const leftMemberIds = roomMembers.value
-    .filter(m => !newMemberMap.has(m.summonerId))
-    .map(m => m.summonerId);
-
-  // 如果没有变化，直接返回
-  if (newMembers.length === 0 && leftMemberIds.length === 0) {
-    return;
-  }
-
-  console.log(
-    `🏠 成员变动: 新增 ${newMembers.length} 人，离开 ${leftMemberIds.length} 人`
-  );
-
-  // 移除离开的成员
-  if (leftMemberIds.length > 0) {
-    roomMembers.value = roomMembers.value.filter(
-      m => !leftMemberIds.includes(m.summonerId)
-    );
-  }
-
-  // 如果没有新成员，直接返回
-  if (newMembers.length === 0) {
-    return;
-  }
-
-  // 为新成员添加基本信息
-  const newMembersWithDetails: MemberWithDetails[] = newMembers.map(member => ({
-    ...member,
-    isLoading: false,
-  }));
-
-  // 添加新成员到列表
-  roomMembers.value = [...roomMembers.value, ...newMembersWithDetails];
-
-  // 使用通用函数批量加载召唤师数据和排位统计
-  const summonerIds = newMembers.map(m => m.summonerId).filter(Boolean);
-  const result = await updateMembersData(roomMembers.value, summonerIds);
-
-  if (!result.success) {
-    toast.error('房间成员数据加载失败');
-    console.error('房间成员数据加载失败:', result.error);
-  }
-};
-
-// 简化的房间信息更新
-const updateRoom = async (): Promise<void> => {
-  // 只在真正的Lobby阶段才调用房间API
-  if (currentPhase.value !== GameflowPhaseEnum.Lobby) {
-    console.log('🏠 当前不在房间阶段，跳过房间API调用');
-    return;
-  }
-
-  try {
-    // 直接获取房间和成员信息
-    const room = await roomService.getCurrentLobby();
-    currentRoom.value = room;
-
-    const members = await roomService.getLobbyMembers();
-    await fetchMembersDetails(members);
-  } catch (error) {
-    console.error('更新房间信息失败:', error);
-    // 获取房间信息失败，清理数据
-    currentRoom.value = null;
-    roomMembers.value = [];
-  }
-};
-
-// 踢出成员
-const kickMember = async (summonerId: number): Promise<void> => {
-  // 前置权限检查
-  if (!canKickMembers.value) {
-    console.warn('当前阶段或权限不允许踢人操作');
-    toast.error('当前阶段或权限不允许踢人操作');
-    return;
-  }
-
-  await roomService.kickMember(summonerId);
-  await updateRoom();
-};
-
 // 简化的房间状态轮询
 const startRoomPolling = () => {
   if (updateTimer.value) return;
@@ -194,7 +106,7 @@ const startRoomPolling = () => {
         console.log('🏠 阶段变化，处理新阶段:', current);
 
         if (current === GameflowPhaseEnum.Lobby) {
-          await updateRoom();
+          await updateRoomMembers(current);
         } else if (GamePhaseManager.isChampSelectPhase(current)) {
           await updateChampSelectMembers();
         } else if (GamePhaseManager.isGameStartPhase(current)) {
@@ -206,19 +118,19 @@ const startRoomPolling = () => {
         // 不需要轮询的阶段，清理数据
         if (GamePhaseManager.shouldClearDataOnly(current)) {
           console.log('🏠 进入空闲阶段，清理房间数据但保留缓存');
-          roomMembers.value = [];
+          clearRoomData();
           resetPhaseTracking();
         } else if (GamePhaseManager.shouldClearCache(current)) {
           // 游戏结束阶段：清理所有数据和缓存
           console.log('🎮 游戏结束，清理所有数据和缓存');
-          roomMembers.value = [];
+          clearRoomData();
           resetPhaseTracking();
           summonerDataCache.clearAllCache();
         }
       }
     } catch (e) {
       console.error('房间状态轮询错误:', e);
-      roomMembers.value = [];
+      clearRoomData();
       resetPhaseTracking();
     }
   }, 3000);
@@ -237,7 +149,7 @@ const stopRoomPolling = () => {
 // 处理踢出成员
 const handleKickMember = async (summonerId: number) => {
   if (confirm('确定要踢出这个成员吗？')) {
-    await kickMember(summonerId);
+    await kickMember(summonerId, currentPhase.value);
   }
 };
 
@@ -248,6 +160,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopRoomPolling();
   resetPhaseTracking();
+  clearRoomData();
   // 清理召唤师数据缓存
   summonerDataCache.clearAllCache();
   console.log('🧹 已清理召唤师数据缓存');

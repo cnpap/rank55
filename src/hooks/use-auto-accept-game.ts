@@ -15,6 +15,7 @@ export function useAutoAcceptGame() {
     try {
       // 检查连接状态
       const connected = await connection.checkConnection();
+      console.log(`当前连接状态: ${connected}`);
 
       if (!connected) {
         // 只有当当前阶段不是 None 时才更新
@@ -107,7 +108,7 @@ export function useAutoAcceptGame() {
 
   const scheduleNextPoll = (): void => {
     if (gamePhaseTimer.value) {
-      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 3000);
+      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 1000);
     }
   };
 
