@@ -19,24 +19,7 @@ describe('RoomService', () => {
       }
     });
 
-    it('应该能够检查是否在房间中', async () => {
-      const isInLobby = await roomService.isInLobby();
-      console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
-
-      expect(typeof isInLobby).toBe('boolean');
-      console.log('✅ 房间状态检查测试通过');
-    });
-
     it('应该能够获取房间成员信息', async () => {
-      // 首先检查是否在房间中
-      const isInLobby = await roomService.isInLobby();
-      console.log(`🏠 房间状态: ${isInLobby ? '在房间中' : '不在房间中'}`);
-
-      if (!isInLobby) {
-        console.log('ℹ️ 当前不在房间中，无法获取房间成员');
-        return;
-      }
-
       // 获取房间信息
       const lobby = await roomService.getCurrentLobby();
       console.log('🏠 房间信息获取成功');
@@ -76,12 +59,6 @@ describe('RoomService', () => {
       }
 
       try {
-        const isInLobby = await roomService.isInLobby();
-        if (!isInLobby) {
-          console.log('ℹ️ 当前不在房间中，无法获取游戏配置');
-          return;
-        }
-
         const gameConfig = await roomService.getLobbyGameConfig();
         console.log('🎮 游戏配置信息:');
 

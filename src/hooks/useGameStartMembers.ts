@@ -3,10 +3,10 @@ import type { GameflowSession } from '@/types/gameflow-session';
 import { RankTeam } from '@/types/players-info';
 import type { GameStartMemberWithDetails } from '@/types/room-management';
 import { updateMembersData } from '@/utils/room-management-utils';
+import { toast } from 'vue-sonner';
 
 export function useGameStartMembers() {
   const gameStartMembers = ref<GameStartMemberWithDetails[]>([]);
-  const gameStartError = ref<string | null>(null);
 
   // 创建10个位置的数组，前5个是我方，后5个是敌方
   const gameStartSlots = computed(() => {
@@ -66,7 +66,7 @@ export function useGameStartMembers() {
 
     if (!result.success) {
       console.error('游戏开始成员数据加载失败:', result.error);
-      gameStartError.value = result.error || '数据加载失败';
+      toast.error(result.error || '数据加载失败');
     }
   };
 
@@ -74,8 +74,6 @@ export function useGameStartMembers() {
   const updateGameStartMembers = async (
     gameflowSession: GameflowSession
   ): Promise<void> => {
-    gameStartError.value = null;
-
     try {
       const { teamOne, teamTwo } = gameflowSession.gameData;
 
@@ -124,7 +122,7 @@ export function useGameStartMembers() {
       console.error('更新游戏开始阶段成员数据失败:', error);
       const errorMessage =
         error instanceof Error ? error.message : '获取游戏数据失败';
-      gameStartError.value = errorMessage;
+      toast.error(errorMessage);
 
       // 设置所有成员的错误状态
       gameStartMembers.value.forEach(member => {
@@ -136,7 +134,6 @@ export function useGameStartMembers() {
 
   return {
     gameStartMembers,
-    gameStartError,
     gameStartSlots,
     updateGameStartMembers,
   };

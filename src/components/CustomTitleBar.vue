@@ -19,6 +19,9 @@ const hasUserError = computed(() => userStore.hasError);
 
 // 获取召唤师头像URL
 const profileIconUrl = computed(() => {
+  if (!profileIconId.value) {
+    return './empty-avatar.jpg'; // 默认头像
+  }
   return staticAssets.getProfileIcon(String(profileIconId.value));
 });
 

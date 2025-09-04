@@ -7,6 +7,7 @@ export interface GameState {
   currentPhase: Ref<GameflowPhaseEnum>;
   clientUser: Ref<SummonerData | null>;
   gamePhaseManager: GamePhaseManager;
+  isConnected: Ref<boolean>;
 }
 
 export function useGameState(): GameState {

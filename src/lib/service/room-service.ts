@@ -67,20 +67,10 @@ export class RoomService extends BaseService {
     }
   }
 
-  // 检查是否在房间中
-  async isInLobby(): Promise<boolean> {
-    const lobby = await this.getCurrentLobby();
-    return lobby && lobby.gameConfig && Boolean(lobby.gameConfig.gameMode);
-  }
-
   // 获取房间游戏配置
   async getLobbyGameConfig(): Promise<GameConfig> {
-    try {
-      const lobby = await this.getCurrentLobby();
-      return lobby.gameConfig || null;
-    } catch (error) {
-      throw new Error(`获取房间游戏配置失败: ${error}`);
-    }
+    const lobby = await this.getCurrentLobby();
+    return lobby.gameConfig || null;
   }
 
   // 踢出房间成员
@@ -96,34 +86,21 @@ export class RoomService extends BaseService {
 
   // 检查当前用户是否为房主
   async isCurrentUserLeader(): Promise<boolean> {
-    try {
-      const members = await this.getLobbyMembers();
+    const lobby = await this.getCurrentLobby();
+    const currentSummoner = await summonerService.getCurrentSummoner();
 
-      // 获取当前召唤师信息
-      const currentSummoner = await summonerService.getCurrentSummoner();
+    // 查找当前用户在房间成员中的信息
+    const currentMember = lobby.members.find(
+      member => member.summonerId === currentSummoner.summonerId
+    );
 
-      // 查找当前用户在房间成员中的信息
-      const currentMember = members.find(
-        member => member.summonerId === currentSummoner.summonerId
-      );
-
-      return currentMember?.isLeader || false;
-    } catch (error) {
-      throw new Error(`检查房主权限失败: ${error}`);
-    }
+    return currentMember?.isLeader || false;
   }
 
   // 获取可踢出的成员列表（排除房主）
   async getKickableMembers(): Promise<Member[]> {
-    try {
-      const members = await this.getLobbyMembers();
-
-      // 过滤掉房主
-      const kickableMembers = members.filter(member => !member.isLeader);
-
-      return kickableMembers;
-    } catch (error) {
-      throw new Error(`获取可踢出成员列表失败: ${error}`);
-    }
+    const lobby = await this.getCurrentLobby();
+    // 过滤掉房主
+    return lobby.members.filter(member => !member.isLeader);
   }
 }

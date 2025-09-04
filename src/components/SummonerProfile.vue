@@ -26,7 +26,7 @@ const emit = defineEmits<{
 // 获取召唤师头像URL
 const profileIconUrl = computed(() => {
   if (!props.summoner?.profileIconId) {
-    return staticAssets.getProfileIcon('1'); // 默认头像
+    return './empty-avatar.jpg'; // 默认头像
   }
   return staticAssets.getProfileIcon(String(props.summoner.profileIconId));
 });
@@ -79,6 +79,7 @@ const handleRefresh = () => {
   <div class="flex h-24 items-center justify-between gap-6">
     <!-- 头像和基本信息 -->
     <div class="flex items-center gap-4">
+      <!-- 如果错了要有占位图片 -->
       <img
         :src="profileIconUrl"
         :alt="fullGameName"

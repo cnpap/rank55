@@ -7,10 +7,10 @@ import {
   POSITION_ORDER,
 } from '@/types/room-management';
 import { updateMembersData } from '@/utils/room-management-utils';
+import { toast } from 'vue-sonner';
 
 export function useChampSelectMembers() {
   const champSelectMembers = ref<ChampSelectMemberWithDetails[]>([]);
-  const champSelectError = ref<string | null>(null);
 
   // 创建5个位置的数组，类似房间的 roomSlots
   const champSelectSlots = computed(() => {
@@ -114,14 +114,12 @@ export function useChampSelectMembers() {
 
     if (!result.success) {
       console.error('英雄选择成员数据加载失败:', result.error);
-      champSelectError.value = result.error || '数据加载失败';
+      toast.error(result.error || '数据加载失败');
     }
   };
 
   // 更新英雄选择成员数据
   const updateChampSelectMembers = async (): Promise<void> => {
-    champSelectError.value = null;
-
     try {
       // 获取英雄选择会话数据
       const session: ChampSelectSession =
@@ -134,7 +132,7 @@ export function useChampSelectMembers() {
       console.error('更新英雄选择成员失败:', error);
       const errorMessage =
         error instanceof Error ? error.message : '获取英雄选择数据失败';
-      champSelectError.value = errorMessage;
+      toast.error(errorMessage);
 
       // 设置所有成员的错误状态
       champSelectMembers.value.forEach(member => {
@@ -146,7 +144,6 @@ export function useChampSelectMembers() {
 
   return {
     champSelectMembers,
-    champSelectError,
     champSelectSlots,
     updateChampSelectMembers,
   };

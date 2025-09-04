@@ -17,6 +17,7 @@ import {
   summonerService,
   sgpMatchService,
 } from '@/lib/service/service-manager';
+import { useGameState } from './useGameState';
 
 // 查询结果接口
 export interface MatchHistoryQueryResult {
@@ -65,6 +66,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   let { serverId, puuid } = options;
 
   const userStore = useClientUserStore();
+  const gameState = useGameState();
   if (!serverId) {
     serverId = userStore.serverId;
   }
@@ -159,6 +161,10 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     clearQueryResult();
 
     try {
+      if (!(await gameState.isConnected.value)) {
+        return;
+      }
+
       const result = await dataLoader.loadCompleteMatchData(
         puuid,
         pageSize.value

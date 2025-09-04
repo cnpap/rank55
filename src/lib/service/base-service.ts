@@ -2,7 +2,7 @@ import { LCUClientInterface, RequestOptions } from '../client/interface';
 import { RequestLogger } from './request-logger';
 import { RequestQueue } from './request-queue';
 import { DebounceCache } from './debounce-cache';
-import { ConnectionManager } from './connection-manager';
+import { connectionService } from './service-manager';
 
 /**
  * 基础服务类
@@ -158,52 +158,6 @@ export abstract class BaseService {
     options?: RequestOptions
   ): Promise<T> {
     return this.makeHttpRequest<T>(method, endpoint, options, true);
-  }
-
-  /**
-   * 检查连接状态（带防抖优化）
-   * @returns Promise<boolean>
-   */
-  async isConnected(): Promise<boolean> {
-    return DebounceCache.debounce(
-      'isConnected',
-      async () => {
-        try {
-          let isConnected = false;
-
-          if (this.client) {
-            isConnected = await this.client.isConnected();
-          } else {
-            if (
-              typeof window !== 'undefined' &&
-              window.electronAPI &&
-              window.electronAPI.lcuIsConnected
-            ) {
-              isConnected = await window.electronAPI.lcuIsConnected();
-            }
-          }
-
-          // 更新连接状态缓存
-          ConnectionManager.updateConnectionCache(isConnected);
-
-          return isConnected;
-        } catch {
-          // 发生错误时，更新缓存为 false
-          ConnectionManager.updateConnectionCache(false);
-          return false;
-        }
-      },
-      1000
-    );
-  }
-
-  /**
-   * 手动清除连接状态缓存（可选方法）
-   */
-  static clearConnectionCache(): void {
-    ConnectionManager.clearConnectionCache();
-    // 同时清除防抖缓存
-    DebounceCache.clearDebounceCache('isConnected');
   }
 
   /**

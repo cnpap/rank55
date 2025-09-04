@@ -5,6 +5,7 @@ import { useMatchHistoryStore } from '@/stores/match-history';
 import {
   summonerService,
   sgpMatchService,
+  connectionService,
 } from '@/lib/service/service-manager';
 
 export function useGameConnection() {
@@ -14,7 +15,7 @@ export function useGameConnection() {
 
   const checkConnection = async (): Promise<boolean> => {
     try {
-      const connected = await summonerService.isConnected();
+      const connected = await connectionService.isConnected();
 
       if (connected !== isConnected.value) {
         isConnected.value = connected;

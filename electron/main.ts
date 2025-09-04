@@ -46,17 +46,6 @@ async function ensureLCUClient(): Promise<LCUClient> {
   return lcuClient;
 }
 
-// 初始化 LCU 客户端
-async function initializeLCUClient() {
-  try {
-    lcuClient = await LCUClient.create();
-    console.log('LCU 客户端初始化成功');
-  } catch (error) {
-    console.log('LCU 客户端初始化失败:', error);
-    lcuClient = null;
-  }
-}
-
 // ===== 注册所有IPC处理器 =====
 // 这些必须在 app.whenReady() 之前注册
 
@@ -185,10 +174,6 @@ ipcMain.handle(
 
 ipcMain.handle('lcu-is-connected', async () => {
   try {
-    if (!lcuClient) {
-      await initializeLCUClient();
-    }
-
     if (lcuClient) {
       return await lcuClient.isConnected();
     }
@@ -293,9 +278,6 @@ app.whenReady().then(async () => {
   registerRank55Protocol(ensureLCUClient);
 
   createWindow();
-
-  // 尝试初始化 LCU 客户端
-  initializeLCUClient();
 
   // 在生产环境下，先检查更新再决定是否显示窗口
   if (!isDev) {

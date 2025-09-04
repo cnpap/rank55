@@ -1,0 +1,45 @@
+import { LCUClientInterface } from '../client/interface';
+import { DebounceCache } from './debounce-cache';
+
+/**
+ * 连接状态服务
+ * 负责检查 LCU 客户端连接状态
+ */
+export class ConnectionService {
+  private client?: LCUClientInterface;
+
+  constructor(client?: LCUClientInterface) {
+    this.client = client;
+  }
+
+  /**
+   * 检查连接状态（带防抖优化）
+   * @returns Promise<boolean>
+   */
+  async isConnected(): Promise<boolean> {
+    return DebounceCache.debounce(
+      'isConnected',
+      async () => {
+        try {
+          let isConnected = false;
+
+          if (this.client) {
+            isConnected = await this.client.isConnected();
+          } else {
+            if (
+              typeof window !== 'undefined' &&
+              window.electronAPI &&
+              window.electronAPI.lcuIsConnected
+            ) {
+              isConnected = await window.electronAPI.lcuIsConnected();
+            }
+          }
+          return isConnected;
+        } catch {
+          return false;
+        }
+      },
+      1000
+    );
+  }
+}

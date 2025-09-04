@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
 import { useGameState } from '@/lib/composables/useGameState';
 import { useChampSelectMembers } from '@/hooks/useChampSelectMembers';
 import { useGameStartMembers } from '@/hooks/useGameStartMembers';
@@ -15,28 +15,20 @@ import {
   GamePhaseManager,
   updateMembersData,
 } from '@/utils/room-management-utils';
+import { toast } from 'vue-sonner';
 
 const { currentPhase, gamePhaseManager } = useGameState();
 
 // 使用英雄选择成员数据
-const { champSelectError, champSelectSlots, updateChampSelectMembers } =
-  useChampSelectMembers();
+const { champSelectSlots, updateChampSelectMembers } = useChampSelectMembers();
 
 // 使用游戏开始成员数据
-const { gameStartError, gameStartSlots, updateGameStartMembers } =
-  useGameStartMembers();
+const { gameStartSlots, updateGameStartMembers } = useGameStartMembers();
 
 // 房间管理状态
 const currentRoom = ref<Room | null>(null);
 const roomMembers = ref<MemberWithDetails[]>([]);
-const errorMessage = ref<string | null>(null);
 const updateTimer = ref<NodeJS.Timeout | null>(null);
-
-// 服务实例
-
-const currentError = computed(
-  () => errorMessage.value || champSelectError.value || gameStartError.value
-);
 
 // 判断当前用户是否有踢人权限
 const canKickMembers = computed(() => {
@@ -147,12 +139,12 @@ const fetchMembersDetails = async (members: Member[]): Promise<void> => {
   const result = await updateMembersData(roomMembers.value, summonerIds);
 
   if (!result.success) {
+    toast.error('房间成员数据加载失败');
     console.error('房间成员数据加载失败:', result.error);
-    errorMessage.value = result.error || '数据加载失败';
   }
 };
 
-// 更新房间信息 - 优化成员变化检测
+// 简化的房间信息更新
 const updateRoom = async (): Promise<void> => {
   // 只在真正的Lobby阶段才调用房间API
   if (currentPhase.value !== GameflowPhaseEnum.Lobby) {
@@ -161,38 +153,17 @@ const updateRoom = async (): Promise<void> => {
   }
 
   try {
+    // 直接获取房间和成员信息
     const room = await roomService.getCurrentLobby();
     currentRoom.value = room;
-    clearError();
 
     const members = await roomService.getLobbyMembers();
-
-    // 直接调用优化后的增量更新函数
     await fetchMembersDetails(members);
   } catch (error) {
     console.error('更新房间信息失败:', error);
-
-    // 检查是否为404错误（房间不存在）
-    const errorMsg =
-      error instanceof Error ? error.message : '获取房间数据失败';
-
-    // 如果是LOBBY_NOT_FOUND错误，不显示给用户，只记录日志
-    if (errorMsg.includes('LOBBY_NOT_FOUND') || errorMsg.includes('404')) {
-      console.log('🏠 当前不在房间中，这是正常情况');
-      // 清理房间数据但不显示错误
-      currentRoom.value = null;
-      roomMembers.value = [];
-      return;
-    }
-
-    // 其他错误才显示给用户
-    errorMessage.value = errorMsg;
-
-    // 设置所有成员的错误状态
-    roomMembers.value.forEach(member => {
-      member.isLoading = false;
-      member.error = errorMsg;
-    });
+    // 获取房间信息失败，清理数据
+    currentRoom.value = null;
+    roomMembers.value = [];
   }
 };
 
@@ -201,7 +172,7 @@ const kickMember = async (summonerId: number): Promise<void> => {
   // 前置权限检查
   if (!canKickMembers.value) {
     console.warn('当前阶段或权限不允许踢人操作');
-    errorMessage.value = '当前阶段或权限不允许踢人操作';
+    toast.error('当前阶段或权限不允许踢人操作');
     return;
   }
 
@@ -209,12 +180,7 @@ const kickMember = async (summonerId: number): Promise<void> => {
   await updateRoom();
 };
 
-// 清除错误信息
-const clearError = () => {
-  errorMessage.value = null;
-};
-
-// 开始房间状态轮询
+// 简化的房间状态轮询
 const startRoomPolling = () => {
   if (updateTimer.value) return;
 
@@ -222,13 +188,11 @@ const startRoomPolling = () => {
   updateTimer.value = setInterval(async () => {
     try {
       const current = currentPhase.value;
-      console.log('🏠 房间状态轮询 - 当前阶段:', current);
 
       // 检查是否需要处理当前阶段
       if (shouldProcessPhase(current)) {
         console.log('🏠 阶段变化，处理新阶段:', current);
 
-        // 只在真正的Lobby阶段才调用房间API
         if (current === GameflowPhaseEnum.Lobby) {
           await updateRoom();
         } else if (GamePhaseManager.isChampSelectPhase(current)) {
@@ -240,11 +204,7 @@ const startRoomPolling = () => {
         }
       } else if (!GamePhaseManager.shouldPoll(current)) {
         // 不需要轮询的阶段，清理数据
-        console.log('🏠 房间状态轮询 - 当前阶段:', current);
-
-        // 区分空闲阶段和游戏结束阶段
         if (GamePhaseManager.shouldClearDataOnly(current)) {
-          // 空闲阶段：只清理房间数据，不清理缓存
           console.log('🏠 进入空闲阶段，清理房间数据但保留缓存');
           roomMembers.value = [];
           resetPhaseTracking();
@@ -262,9 +222,6 @@ const startRoomPolling = () => {
       resetPhaseTracking();
     }
   }, 3000);
-
-  // 移除立即执行，只在实际需要时才调用房间API
-  // updateRoom();
 };
 
 // 停止房间状态轮询
@@ -284,11 +241,6 @@ const handleKickMember = async (summonerId: number) => {
   }
 };
 
-// 清除错误信息
-const handleClearError = () => {
-  clearError();
-};
-
 onMounted(() => {
   startRoomPolling();
 });
@@ -300,6 +252,18 @@ onUnmounted(() => {
   summonerDataCache.clearAllCache();
   console.log('🧹 已清理召唤师数据缓存');
 });
+
+// 页面激活时恢复轮询
+onActivated(() => {
+  console.log('🔄 页面激活，恢复房间状态轮询');
+  startRoomPolling();
+});
+
+// 页面失活时停止轮询
+onDeactivated(() => {
+  console.log('⏸️ 页面失活，暂停房间状态轮询');
+  stopRoomPolling();
+});
 </script>
 
 <template>
@@ -307,22 +271,6 @@ onUnmounted(() => {
   <main
     class="from-background via-background to-muted/30 relative flex h-[calc(100vh-40px)] flex-col overflow-hidden bg-gradient-to-br"
   >
-    <!-- 错误提示 -->
-    <div
-      v-if="currentError"
-      class="bg-destructive/10 border-destructive/20 text-destructive mx-4 mt-4 rounded-lg border p-3 text-sm"
-    >
-      <div class="flex items-center justify-between">
-        <span>{{ currentError }}</span>
-        <button
-          @click="handleClearError"
-          class="hover:bg-destructive/20 ml-2 rounded px-2 py-1 text-xs transition-colors"
-        >
-          关闭
-        </button>
-      </div>
-    </div>
-
     <!-- 成员展示 - 支持房间、英雄选择和游戏开始三种模式 -->
     <div
       class="bg-card/50 border-border/30 flex h-full flex-1 border-t backdrop-blur-sm"

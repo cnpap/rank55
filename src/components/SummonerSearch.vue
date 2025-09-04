@@ -16,7 +16,11 @@ import FriendsList from '@/components/FriendsList.vue';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { SearchHistoryItem } from '@/storages/storage-use';
 import { useClientUserStore } from '@/stores/client-user';
-import { friendService } from '@/lib/service/service-manager';
+import {
+  connectionService,
+  friendService,
+  summonerService,
+} from '@/lib/service/service-manager';
 import { Friend, SimpleFriend } from '@/types/friend';
 
 // Props 定义
@@ -56,21 +60,13 @@ const isLoadingFriends = ref(false);
 // 添加定时器引用
 const friendsRefreshTimer = ref<NodeJS.Timeout | null>(null);
 
-// 初始化好友服务
-const initFriendService = async () => {
-  try {
-    await loadFriends();
-    // 启动定时刷新
-    startFriendsRefresh();
-  } catch (error) {
-    console.warn('无法连接到LOL客户端，好友功能不可用:', error);
-  }
-};
-
 // 加载好友列表
 const loadFriends = async () => {
   try {
     isLoadingFriends.value = true;
+    if (!(await connectionService.isConnected())) {
+      return;
+    }
     friends.value = await friendService.getOnlineFriends();
   } catch (error) {
     console.error('获取好友列表失败:', error);
@@ -133,6 +129,10 @@ const simplifiedFriends = computed(() => {
 
 // 搜索功能
 const handleSearch = async () => {
+  if (!(await connectionService.isConnected())) {
+    return;
+  }
+
   if (!summonerName.value.name.trim()) return;
 
   try {
@@ -149,6 +149,9 @@ const handleSearch = async () => {
 
 // 搜索当前登录的召唤师
 const searchCurrentSummoner = async () => {
+  if (!(await connectionService.isConnected())) {
+    return;
+  }
   try {
     await matchHistoryStore.searchSummonerByName(
       userStore.fullGameName,
@@ -213,7 +216,7 @@ watch(isDropdownOpen, newValue => {
 // 组件挂载时添加事件监听器和初始化好友服务
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-  initFriendService();
+  startFriendsRefresh();
 });
 
 // 组件卸载时移除事件监听器和清理定时器

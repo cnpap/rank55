@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { type PositionSettings } from '@/storages/storage-use';
 import AutoFunctionSettings from './AutoFunctionSettings.vue';
 import PositionChampionSettings from './PositionChampionSettings.vue';
 import { RotateCcw } from 'lucide-vue-next';
 import Button from '../ui/button/Button.vue';
+import { useGameState } from '@/lib/composables/useGameState';
+import ConnectionRequired from '../ui/ConnectionRequired.vue';
+
+// 获取游戏状态
+const { isConnected } = useGameState();
 
 // 自动功能设置
 const autoFunctionSettings = ref({
@@ -70,8 +75,15 @@ defineExpose({
 
       <!-- 位置英雄设置组件 -->
       <PositionChampionSettings
+        v-if="isConnected"
         ref="positionChampionRef"
         v-model="positionSettings"
+      />
+
+      <!-- 客户端未连接提示 -->
+      <ConnectionRequired
+        v-else
+        message="位置英雄设置需要连接到英雄联盟客户端才能使用。请启动游戏客户端后，您可以为每个位置配置禁用和选择的英雄。"
       />
     </div>
   </div>

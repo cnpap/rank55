@@ -8,6 +8,7 @@ import { SummonerService } from './summoner-service';
 import { RoomService } from './room-service';
 import { FriendService } from './friend-service';
 import { LOLStaticAssetsService } from './lol-static-assets-service';
+import { ConnectionService } from './connection-service';
 import { SimpleSgpApi } from '../sgp/sgp-api';
 import { SgpMatchService } from '../sgp/sgp-match-service';
 
@@ -24,6 +25,7 @@ export const summonerService = new SummonerService();
 export const roomService = new RoomService();
 export const friendService = new FriendService();
 export const lolStaticAssetsService = new LOLStaticAssetsService();
+export const connectionService = new ConnectionService();
 export const sgpApi = new SimpleSgpApi();
 
 // 依赖其他服务的实例

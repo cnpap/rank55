@@ -40,7 +40,7 @@ const navigateTo = async (path: string) => {
         :key="item.name"
         class="relative px-3 py-1.5 text-sm font-medium transition-all duration-200"
         :class="{
-          'bg-primary/10 text-primary': currentRoute === item.name,
+          'bg-primary/10': currentRoute === item.name,
           'text-muted-foreground hover:text-foreground hover:bg-muted/50':
             currentRoute !== item.name,
         }"
