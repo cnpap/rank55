@@ -51,8 +51,35 @@ export class AutoActionService {
       return;
     }
 
-    const myChampion = myPositionInfo.pickChampions[0];
-    await banPickService.hoverChampion(parseInt(myChampion));
+    // 循环尝试所有配置的英雄，直到找到一个可以成功预选的
+    for (const champion of myPositionInfo.pickChampions) {
+      try {
+        await banPickService.hoverChampion(parseInt(champion));
+        console.log(`✅ 预选英雄成功: ${champion}`);
+        return; // 成功预选后退出循环
+      } catch (error: any) {
+        console.log(`❌ 预选英雄 ${champion} 失败: ${error.message}`);
+        // 检查是否是因为没有拥有该英雄
+        if (
+          error.message &&
+          (error.message.includes('is not owned by account') ||
+            error.message.includes('is not free to play'))
+        ) {
+          console.log(
+            `英雄 ${champion} 无法预选（未拥有或不在免费轮换中），尝试下一个英雄`
+          );
+          continue; // 继续尝试下一个英雄
+        } else {
+          console.error(`预选英雄时发生未知错误:`, error);
+          toast.error(`预选英雄失败: ${error.message}`);
+          return; // 遇到其他错误时退出
+        }
+      }
+    }
+
+    // 如果所有英雄都无法预选
+    console.log('所有预设英雄都无法预选（可能都未拥有或不在免费轮换中）');
+    toast.warning('所有预设英雄都无法预选，请检查英雄拥有情况');
   }
 
   async executeBanAction(
@@ -94,13 +121,34 @@ export class AutoActionService {
       }
 
       console.log(`正在禁用英雄: ${championIdNum}`);
-      await banPickService.banChampion(championIdNum);
-      toast.success(`已自动禁用英雄: ${championId}`);
-      console.log(`✅ 自动禁用英雄成功: ${championId}`);
-      return;
+      try {
+        await banPickService.banChampion(championIdNum);
+        toast.success(`已自动禁用英雄: ${championId}`);
+        console.log(`✅ 自动禁用英雄成功: ${championId}`);
+        return;
+      } catch (error: any) {
+        console.log(`❌ 禁用英雄 ${championIdNum} 失败: ${error.message}`);
+        // 检查是否是因为没有拥有该英雄或其他权限问题
+        if (
+          error.message &&
+          (error.message.includes('is not owned by account') ||
+            error.message.includes('is not free to play'))
+        ) {
+          console.log(
+            `英雄 ${championIdNum} 无法禁用（未拥有或不在免费轮换中），尝试下一个英雄`
+          );
+          toast.warning(`英雄 ${championId} 无法禁用，尝试下一个英雄`);
+          continue;
+        }
+        // 其他错误，重新抛出
+        console.error(`禁用英雄时发生未知错误:`, error);
+        toast.error(`禁用英雄失败: ${error.message}`);
+        throw error;
+      }
     }
 
-    console.log('⚠️ 所有预设的禁用英雄都已被禁用或被预选');
+    console.log('⚠️ 所有预设的禁用英雄都已被禁用、被预选或无法禁用');
+    toast.warning('所有预设的禁用英雄都不可用');
   }
 
   async executePickAction(
@@ -123,10 +171,21 @@ export class AutoActionService {
       .filter(a => a.type === 'pick' && a.completed && a.championId !== 0)
       .map(a => a.championId);
 
+    // 获取真正已选择的英雄（排除自己的预选）
+    const currentPlayer = session.myTeam.find(
+      player => player.cellId === session.localPlayerCellId
+    );
+
     const pickedChampionsFromTeams = [
+      // 我方队伍：排除自己，只统计其他人已确定选择的英雄
       ...session.myTeam
-        .filter(player => player.championId !== 0)
+        .filter(
+          player =>
+            player.cellId !== session.localPlayerCellId &&
+            player.championId !== 0
+        )
         .map(player => player.championId),
+      // 敌方队伍：统计所有已确定选择的英雄
       ...session.theirTeam
         .filter(player => player.championId !== 0)
         .map(player => player.championId),
@@ -135,7 +194,35 @@ export class AutoActionService {
     const allPickedChampions = [
       ...new Set([...pickedChampionsFromActions, ...pickedChampionsFromTeams]),
     ];
+    console.log('已选择的英雄:', allPickedChampions);
+    console.log('当前玩家预选英雄:', currentPlayer?.championPickIntent || 0);
 
+    // 优先选择已预选的英雄（如果可用）
+    const prePickedChampionId = currentPlayer?.championPickIntent || 0;
+    if (prePickedChampionId !== 0) {
+      const prePickedChampionIdStr = prePickedChampionId.toString();
+      // 检查预选的英雄是否在配置列表中且可用
+      if (
+        myPositionInfo.pickChampions.includes(prePickedChampionIdStr) &&
+        !banedChampions.includes(prePickedChampionId) &&
+        !allPickedChampions.includes(prePickedChampionId)
+      ) {
+        console.log(`优先选择已预选的英雄: ${prePickedChampionId}`);
+        try {
+          await banPickService.pickChampion(prePickedChampionId);
+          toast.success(`已自动选择预选英雄: ${prePickedChampionIdStr}`);
+          console.log(`✅ 自动选择预选英雄成功: ${prePickedChampionIdStr}`);
+          return;
+        } catch (error: any) {
+          console.log(
+            `❌ 选择预选英雄 ${prePickedChampionId} 失败: ${error.message}`
+          );
+          // 如果预选英雄选择失败，继续尝试其他英雄
+        }
+      }
+    }
+
+    // 如果没有预选英雄或预选英雄不可用，按配置顺序选择
     for (const championId of myPositionInfo.pickChampions) {
       const championIdNum = parseInt(championId);
 
@@ -150,12 +237,40 @@ export class AutoActionService {
       }
 
       console.log(`正在选择英雄: ${championIdNum}`);
-      await banPickService.pickChampion(championIdNum);
-      toast.success('已自动选择英雄');
-      console.log(`✅ 自动选择英雄成功: ${championId}`);
-      return;
+      try {
+        await banPickService.pickChampion(championIdNum);
+        toast.success(`已自动选择英雄: ${championId}`);
+        console.log(`✅ 自动选择英雄成功: ${championId}`);
+        return;
+      } catch (error: any) {
+        console.log(`❌ 选择英雄 ${championIdNum} 失败: ${error.message}`);
+        // 检查是否是因为没有拥有该英雄
+        if (
+          error.message &&
+          error.message.includes('is not owned by account')
+        ) {
+          console.log(`英雄 ${championIdNum} 未拥有，尝试下一个英雄`);
+          toast.warning(`英雄 ${championId} 未拥有，尝试下一个英雄`);
+          continue;
+        }
+        // 检查是否是因为英雄不在免费轮换中
+        if (error.message && error.message.includes('is not free to play')) {
+          console.log(
+            `英雄 ${championIdNum} 不在免费轮换中且未拥有，尝试下一个英雄`
+          );
+          toast.warning(
+            `英雄 ${championId} 不在免费轮换中且未拥有，尝试下一个英雄`
+          );
+          continue;
+        }
+        // 其他错误，重新抛出
+        console.error(`选择英雄时发生未知错误:`, error);
+        toast.error(`选择英雄失败: ${error.message}`);
+        throw error;
+      }
     }
 
-    console.log('⚠️ 所有预设的选择英雄都不可用（已被禁用或选择）');
+    console.log('⚠️ 所有预设的选择英雄都不可用（已被禁用、选择或未拥有）');
+    toast.warning('所有预设的选择英雄都不可用');
   }
 }
