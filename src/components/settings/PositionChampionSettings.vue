@@ -9,6 +9,7 @@ import { Plus, GripVertical, X } from 'lucide-vue-next';
 import { dataUtils } from '@/assets/versioned-assets';
 import { staticAssets } from '@/assets/data-assets';
 import { AssignedPosition } from '@/types/players-info';
+import { gameDataStore } from '@/lib/db/game-data-db';
 import {
   positions,
   recommendedChampions,
@@ -149,9 +150,7 @@ async function loadChampionData() {
   if (champions.value.length > 0) return;
 
   isLoadingChampions.value = true;
-  const championData = await dataUtils.fetchChampionData();
-  champions.value = Object.values(championData.data);
-  isLoadingChampions.value = false;
+  champions.value = Object.values(gameDataStore.champions);
 
   // 加载完成后同步本地数据
   syncLocalChampions();

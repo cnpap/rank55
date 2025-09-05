@@ -31,14 +31,12 @@ export function useGamePhaseHandler() {
       chatNotificationService.sendSystemMessage('预选成功，15秒内不做检查');
       return;
     }
+    const s = 17000;
 
-    // 如果在预选成功后的15秒内，不做任何检查
-    if (
-      prePickSuccessTime.value &&
-      Date.now() - prePickSuccessTime.value < 15000
-    ) {
+    // 如果在预选成功后的 17 秒内，不做任何检查
+    if (prePickSuccessTime.value && Date.now() - prePickSuccessTime.value < s) {
       chatNotificationService.sendSystemMessage(
-        `预选成功后等待中，剩余${Math.ceil((15000 - (Date.now() - prePickSuccessTime.value)) / 1000)}秒...`
+        `预选成功后等待中，剩余${Math.ceil((s - (Date.now() - prePickSuccessTime.value)) / 1000)}秒...`
       );
       return;
     }
@@ -49,9 +47,9 @@ export function useGamePhaseHandler() {
     );
 
     if (!action) {
-      chatNotificationService.sendSystemMessage(
-        '当前位置未开始选择，等待中...'
-      );
+      // chatNotificationService.sendSystemMessage(
+      //   '当前位置未开始选择，等待中...'
+      // );
       gamePhaseManager.resetActionState();
       return;
     }

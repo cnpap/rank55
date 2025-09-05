@@ -108,9 +108,6 @@ export function useRoomMembers() {
       await fetchRoomMembersDetails(members);
     } catch (error) {
       console.error('更新房间信息失败:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : '获取房间数据失败';
-      toast.error(errorMessage);
 
       // 获取房间信息失败，清理数据
       currentRoom.value = null;

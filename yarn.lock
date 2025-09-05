@@ -5457,6 +5457,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dexie@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "dexie@npm:4.2.0"
+  checksum: 10c0/ba3f84a769ee34910263bce0957736968ba05162eebf47d5dab3dbb599890b122ac0d4a64ceb02428e5ec6a39f66923d8531e120c6341709fce1afbc698ea37c
+  languageName: node
+  linkType: hard
+
 "dfa@npm:^1.2.0":
   version: 1.2.0
   resolution: "dfa@npm:1.2.0"
@@ -9074,6 +9081,7 @@ __metadata:
     commander: "npm:^14.0.0"
     concurrently: "npm:^9.2.0"
     cross-env: "npm:^7.0.3"
+    dexie: "npm:^4.2.0"
     electron: "npm:^37.2.3"
     electron-builder: "npm:^26.0.12"
     electron-log: "npm:^5.4.2"

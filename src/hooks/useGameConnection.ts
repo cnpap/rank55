@@ -7,6 +7,8 @@ import {
   sgpMatchService,
   connectionService,
 } from '@/lib/service/service-manager';
+import { dataUtils } from '@/assets/versioned-assets';
+import { gameDataDB } from '@/lib/db/game-data-db';
 
 export function useGameConnection() {
   const isConnected = ref(false);
@@ -18,13 +20,15 @@ export function useGameConnection() {
       const connected = await connectionService.isConnected();
 
       if (connected !== isConnected.value) {
-        isConnected.value = connected;
-
         if (connected) {
           console.log('🔌 游戏客户端已连接');
+          // 在设置连接状态前，先获取并持久化游戏数据
+          await loadAndPersistGameData();
+          isConnected.value = connected;
         } else {
           console.log('🔌 游戏客户端连接断开');
           clientUserStore.setUser({} as SummonerData);
+          isConnected.value = connected;
         }
       }
 
@@ -57,11 +61,52 @@ export function useGameConnection() {
     isConnected.value = false;
   };
 
+  // 加载并持久化游戏数据到 Dexie 数据库
+  const loadAndPersistGameData = async (): Promise<void> => {
+    try {
+      console.log('📥 开始检查游戏数据...');
+
+      // 检查数据库中是否已有数据
+      const championsCount = await gameDataDB.champions.count();
+      const itemsCount = await gameDataDB.items.count();
+
+      // 如果数据库中已有数据，直接加载到内存
+      if (championsCount > 0 && itemsCount > 0) {
+        console.log('📦 数据库中已有数据，直接加载到内存');
+        await gameDataDB.loadAllChampions();
+        await gameDataDB.loadAllItems();
+        console.log(
+          `✅ 已从数据库加载 ${championsCount} 个英雄和 ${itemsCount} 个物品数据`
+        );
+        return;
+      }
+
+      console.log('📥 数据库中无数据，开始从远程获取...');
+
+      // 获取英雄数据
+      const championData = await dataUtils.fetchChampionData();
+      if (championData && championData.data) {
+        await gameDataDB.saveChampions(championData.data);
+      }
+
+      // 获取物品数据
+      const itemData = await dataUtils.fetchItemData();
+      if (itemData && itemData.data) {
+        await gameDataDB.saveItems(itemData.data);
+      }
+
+      console.log('✅ 游戏数据加载并持久化完成');
+    } catch (error) {
+      console.error('加载游戏数据失败:', error);
+    }
+  };
+
   return {
     isConnected,
     clientUser: clientUserStore.user,
     checkConnection,
     fetchCurrentUser,
     resetConnection,
+    loadAndPersistGameData, // 导出方法以便外部调用
   };
 }

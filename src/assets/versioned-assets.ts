@@ -6,6 +6,9 @@
 import { envConfig } from '@/env';
 import { getMajorVersion } from '@/utils/version';
 import { getDataAsset } from './data-assets';
+import { ItemTiny, ItemTinyData, TagData } from '@/types/item';
+import { ItemStats } from '@/types/item-raw';
+import { Champion } from '@/types/champion';
 
 // 游戏版本配置
 export let GameVersions: {
@@ -62,12 +65,12 @@ export function getS3GameDataAsset(
 }
 
 // 通用的数据获取函数
-async function fetchData(url: string): Promise<any> {
+async function fetchData<T = any>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`获取数据失败: ${response.status} - ${url}`);
   }
-  return response.json();
+  return (await response.json()) as T;
 }
 
 // 导出版本相关的游戏数据访问方法
@@ -103,13 +106,13 @@ export const versionedAssets = {
 export const dataUtils = {
   // 基础数据获取
   fetchItemData: (version?: string) =>
-    fetchData(versionedAssets.getItemTinyData(version)),
+    fetchData<ItemTiny>(versionedAssets.getItemTinyData(version)),
   fetchItemTags: (version?: string) =>
-    fetchData(versionedAssets.getItemTags(version)),
+    fetchData<TagData>(versionedAssets.getItemTags(version)),
   fetchItemStats: (version?: string) =>
-    fetchData(versionedAssets.getItemStats(version)),
+    fetchData<ItemStats>(versionedAssets.getItemStats(version)),
   fetchChampionData: (version?: string) =>
-    fetchData(versionedAssets.getChampionData(version)),
+    fetchData<Champion>(versionedAssets.getChampionData(version)),
 
   // 英雄详细数据获取
   async fetchChampionDetail(

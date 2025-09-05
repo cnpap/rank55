@@ -100,20 +100,32 @@ const startRoomPolling = () => {
     try {
       const current = currentPhase.value;
 
-      // 检查是否需要处理当前阶段
-      if (shouldProcessPhase(current)) {
-        console.log('🏠 阶段变化，处理新阶段:', current);
+      // 检查当前阶段是否需要轮询
+      if (GamePhaseManager.shouldPoll(current)) {
+        // 检查是否是阶段变化
+        const hasPhaseChanged = shouldProcessPhase(current);
+        if (hasPhaseChanged) {
+          console.log('🏠 阶段变化，处理新阶段:', current);
+        }
 
+        // 根据当前阶段执行相应的更新逻辑
         if (current === GameflowPhaseEnum.Lobby) {
+          // Lobby阶段需要持续轮询房间成员变化
           await updateRoomMembers(current);
         } else if (GamePhaseManager.isChampSelectPhase(current)) {
-          await updateChampSelectMembers();
+          // 英雄选择阶段：只在阶段变化时更新一次
+          if (hasPhaseChanged) {
+            await updateChampSelectMembers();
+          }
         } else if (GamePhaseManager.isGameStartPhase(current)) {
-          await updateGameStartMembers(
-            await gamePhaseManager.handleGameStartPhase()
-          );
+          // 游戏开始阶段：只在阶段变化时更新一次
+          if (hasPhaseChanged) {
+            await updateGameStartMembers(
+              await gamePhaseManager.handleGameStartPhase()
+            );
+          }
         }
-      } else if (!GamePhaseManager.shouldPoll(current)) {
+      } else {
         // 不需要轮询的阶段，清理数据
         if (GamePhaseManager.shouldClearDataOnly(current)) {
           console.log('🏠 进入空闲阶段，清理房间数据但保留缓存');
