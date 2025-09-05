@@ -44,50 +44,79 @@ const validMatches = computed(
     <div
       v-for="({ game, player }, index) in validMatches"
       :key="game.json.gameId"
-      class="group hover:bg-muted/30 relative overflow-hidden transition-all duration-200"
+      class="relative overflow-hidden border-l-4"
       :class="{
-        'border-emerald-200/70 bg-gradient-to-r from-emerald-50/30 to-emerald-50/10 dark:border-emerald-800/50 dark:from-emerald-950/20 dark:to-emerald-950/5':
+        'border-l-emerald-500 bg-gradient-to-r from-emerald-50/60 via-emerald-50/30 to-emerald-50/10 shadow-emerald-100/50 dark:border-l-emerald-400 dark:from-emerald-950/40 dark:via-emerald-950/20 dark:to-emerald-950/5 dark:shadow-emerald-900/20':
           player.win,
-        'border-red-200/70 bg-gradient-to-r from-red-50/30 to-red-50/10 dark:border-red-800/50 dark:from-red-950/20 dark:to-red-950/5':
+        'border-l-red-500 bg-gradient-to-r from-red-50/60 via-red-50/30 to-red-50/10 shadow-red-100/50 dark:border-l-red-400 dark:from-red-950/40 dark:via-red-950/20 dark:to-red-950/5 dark:shadow-red-900/20':
           !player.win,
       }"
+      style="box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1)"
     >
       <!-- 分隔线 (除了第一项) -->
       <div
         v-if="index > 0"
-        class="via-border/60 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
+        class="via-border/40 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
       />
 
-      <!-- 胜负状态指示条 -->
+      <!-- 胜负纹理背景 -->
       <div
-        class="absolute top-0 left-0 h-full w-[1.5px]"
+        class="pointer-events-none absolute inset-0 opacity-[0.03]"
         :class="{
-          'bg-emerald-500': player.win,
-          'bg-red-500': !player.win,
+          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.400)_0%,_transparent_50%)]':
+            player.win,
+          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.red.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.red.400)_0%,_transparent_50%)]':
+            !player.win,
         }"
       />
 
-      <!-- 右侧微妙的胜负指示 -->
+      <!-- 左侧强化指示条 -->
       <div
-        class="absolute top-0 right-0 h-full w-0.5 opacity-30"
+        class="absolute top-0 left-0 h-full w-1 opacity-80"
         :class="{
-          'bg-gradient-to-b from-emerald-400/60 to-emerald-500/60': player.win,
-          'bg-gradient-to-b from-red-400/60 to-red-500/60': !player.win,
+          'bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600':
+            player.win,
+          'bg-gradient-to-b from-red-400 via-red-500 to-red-600': !player.win,
         }"
       />
 
-      <div class="flex items-center gap-2 p-2 pl-3">
+      <!-- 右侧装饰条纹 -->
+      <div
+        class="absolute top-0 right-0 h-full w-2 opacity-20"
+        :class="{
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.400),_theme(colors.emerald.400)_2px,_transparent_2px,_transparent_8px)]':
+            player.win,
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.red.400),_theme(colors.red.400)_2px,_transparent_2px,_transparent_8px)]':
+            !player.win,
+        }"
+      />
+
+      <div class="relative flex items-start gap-1 p-2 pl-3">
         <!-- 英雄头像 -->
         <div class="relative flex-shrink-0">
           <img
             :src="staticAssets.getChampionIcon(`${player.championId}`)"
             :alt="`英雄${player.championId}`"
-            class="ring-border/30 h-12 w-12 object-cover ring-2"
+            class="h-12 w-12 rounded-lg object-cover"
+            :class="{
+              'shadow-lg ring-2 shadow-emerald-500/25 ring-emerald-400':
+                player.win,
+              'shadow-lg ring-2 shadow-red-500/25 ring-red-400': !player.win,
+            }"
+          />
+          <!-- 英雄头像装饰光效 -->
+          <div
+            class="pointer-events-none absolute inset-0 rounded-lg opacity-20"
+            :class="{
+              'bg-gradient-to-br from-emerald-400/30 to-transparent':
+                player.win,
+              'bg-gradient-to-br from-red-400/30 to-transparent': !player.win,
+            }"
           />
         </div>
 
         <!-- 召唤师技能 + 天赋 -->
-        <div class="flex flex-shrink-0 items-center gap-1.5">
+        <div class="mt-0.5 flex flex-shrink-0 items-start gap-1.5">
           <!-- 召唤师技能 -->
           <div class="flex flex-col gap-1">
             <img
@@ -142,35 +171,53 @@ const validMatches = computed(
         <div class="flex h-12 min-w-0 flex-1 flex-col justify-center gap-1">
           <div class="flex items-center justify-between">
             <!-- 游戏模式 -->
-            <h4 class="text-foreground truncate text-sm font-semibold">
+            <h4
+              class="truncate text-sm font-semibold"
+              :class="{
+                'text-emerald-800 dark:text-emerald-200': player.win,
+                'text-red-800 dark:text-red-200': !player.win,
+              }"
+            >
               {{ getQueueName(game.json.queueId) }}
             </h4>
 
             <!-- 游戏开始时间 (在小屏幕时隐藏) -->
-            <span class="text-muted-foreground hidden text-xs xl:block">
+            <span
+              class="font-tektur-numbers hidden text-xs xl:block"
+              :class="{
+                'text-emerald-600 dark:text-emerald-400': player.win,
+                'text-red-600 dark:text-red-400': !player.win,
+              }"
+            >
               {{ formatDateToDay(game.json.gameCreation) }}
             </span>
           </div>
 
           <div class="flex items-center justify-between">
             <!-- KDA -->
-            <div class="flex items-center gap-2">
-              <div class="font-tektur-numbers text-foreground font-bold">
+            <div class="flex items-center gap-1">
+              <div
+                class="font-tektur-numbers font-bold"
+                :class="{
+                  'text-emerald-700 dark:text-emerald-300': player.win,
+                  'text-red-700 dark:text-red-300': !player.win,
+                }"
+              >
                 {{ player.kills || 0 }}/{{ player.deaths || 0 }}/{{
                   player.assists || 0
                 }}
               </div>
               <Badge
                 variant="secondary"
-                class="font-tektur-numbers px-1.5 py-0.5 text-xs font-bold"
+                class="font-tektur-numbers px-1 py-0.5 text-xs font-bold shadow-sm"
                 :class="{
-                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
+                  'border border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300':
                     calculateKDA(
                       player.kills || 0,
                       player.deaths || 0,
                       player.assists || 0
                     ).ratio >= 3,
-                  'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
+                  'border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/60 dark:text-amber-300':
                     calculateKDA(
                       player.kills || 0,
                       player.deaths || 0,
@@ -181,7 +228,7 @@ const validMatches = computed(
                       player.deaths || 0,
                       player.assists || 0
                     ).ratio < 3,
-                  'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
+                  'border border-red-200 bg-red-100 text-red-800 dark:border-red-700 dark:bg-red-900/60 dark:text-red-300':
                     calculateKDA(
                       player.kills || 0,
                       player.deaths || 0,
@@ -200,7 +247,13 @@ const validMatches = computed(
             </div>
 
             <!-- 游戏时长 (在小屏幕时隐藏) -->
-            <span class="text-muted-foreground hidden text-xs xl:block">
+            <span
+              class="font-tektur-numbers hidden text-xs xl:block"
+              :class="{
+                'text-emerald-600 dark:text-emerald-400': player.win,
+                'text-red-600 dark:text-red-400': !player.win,
+              }"
+            >
               {{ formatGameDuration(game.json.gameDuration) }}
             </span>
           </div>
