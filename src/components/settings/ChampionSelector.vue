@@ -12,7 +12,7 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
-import { Search, Shield, Sword, Users } from 'lucide-vue-next';
+import { Search, Users } from 'lucide-vue-next';
 
 interface Props {
   isOpen: boolean;

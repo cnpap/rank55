@@ -8,6 +8,13 @@ export const gameDataStore = {
   items: {} as Record<string, ItemTinyData>,
 };
 
+export const getChampionName = (championId: string) => {
+  if (!gameDataStore.champions[championId]) {
+    return championId;
+  }
+  return gameDataStore.champions[championId].name;
+};
+
 // 定义数据库结构
 export class GameDataDB extends Dexie {
   champions!: Table<ChampionData>;
@@ -18,7 +25,7 @@ export class GameDataDB extends Dexie {
 
     // 定义数据库结构
     this.version(1).stores({
-      champions: 'id', // 使用英雄id作为主键
+      champions: 'key', // 使用英雄key作为主键
       items: 'id', // 使用物品id作为主键
     });
   }
@@ -57,10 +64,10 @@ export class GameDataDB extends Dexie {
   async loadAllChampions(): Promise<void> {
     const champions = await this.champions.toArray();
 
-    // 转换为以id为键的对象
+    // 转换为以key为键的对象
     const championsMap = champions.reduce(
       (acc, champion) => {
-        acc[champion.id] = champion;
+        acc[champion.key] = champion;
         return acc;
       },
       {} as Record<string, ChampionData>

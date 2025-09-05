@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import BriefMatchHistory from './BriefMatchHistory.vue';
 import Loading from '@/components/Loading.vue';
+import Button from '@/components/ui/button/Button.vue';
 
 interface Props {
   isLoading: boolean;
@@ -11,9 +12,19 @@ interface Props {
   maxMatches?: number;
 }
 
+interface Emits {
+  (e: 'retry'): void;
+}
+
 const props = withDefaults(defineProps<Props>(), {
   maxMatches: 20,
 });
+
+const emit = defineEmits<Emits>();
+
+const handleRetry = () => {
+  emit('retry');
+};
 </script>
 
 <template>
@@ -56,6 +67,27 @@ const props = withDefaults(defineProps<Props>(), {
           >
             {{ error }}
           </p>
+          <Button
+            @click="handleRetry"
+            :disabled="isLoading"
+            variant="outline"
+            size="sm"
+          >
+            <svg
+              class="mr-1 h-3 w-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {{ isLoading ? '重试中...' : '重试' }}
+          </Button>
         </div>
       </div>
 

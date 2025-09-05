@@ -6,7 +6,6 @@ import { $local, type PositionSettings } from '@/storages/storage-use';
 import type { ChampionData } from '@/types/champion';
 import ChampionSelector from './ChampionSelector.vue';
 import { Plus, GripVertical, X } from 'lucide-vue-next';
-import { dataUtils } from '@/assets/versioned-assets';
 import { staticAssets } from '@/assets/data-assets';
 import { AssignedPosition } from '@/types/players-info';
 import { gameDataStore } from '@/lib/db/game-data-db';

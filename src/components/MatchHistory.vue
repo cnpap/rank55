@@ -7,6 +7,7 @@ import MatchListItem from '@/components/MatchListItem.vue';
 import MatchHistoryHeader from '@/components/MatchHistoryHeader.vue';
 import { useMatchHistoryUI } from '@/lib/composables/useMatchHistoryUI';
 import { useMatchHistoryQuery } from '@/lib/composables/useMatchHistoryQuery';
+import Button from './ui/button/Button.vue';
 
 const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
@@ -76,23 +77,45 @@ const handleRefresh = async () => {
                 v-if="errorMessage"
                 class="flex h-full items-center justify-center"
               >
-                <div
-                  class="border-destructive/20 bg-destructive/5 text-destructive flex max-w-md items-center gap-2 rounded-lg border p-3 text-sm"
-                >
-                  <svg
-                    class="h-4 w-4 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div class="flex flex-col items-center space-y-4">
+                  <div
+                    class="border-destructive/20 bg-destructive/5 text-destructive flex max-w-md items-center gap-2 rounded-lg border p-3 text-sm"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  {{ errorMessage }}
+                    <svg
+                      class="h-4 w-4 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path>
+                    </svg>
+                    {{ errorMessage }}
+                  </div>
+                  <Button
+                    @click="handleRefresh"
+                    :disabled="isLoading"
+                    variant="outline"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      ></path>
+                    </svg>
+                    {{ isLoading ? '刷新中...' : '重新加载' }}
+                  </Button>
                 </div>
               </div>
 

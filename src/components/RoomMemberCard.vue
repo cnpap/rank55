@@ -67,6 +67,15 @@ const handleKick = (summonerId: number) => {
   emit('kick', summonerId);
 };
 
+// 处理重试操作
+const handleRetry = async () => {
+  try {
+    await loadCompleteMatchData();
+  } catch (error) {
+    console.warn(`重试加载成员 ${displayName.value} 战绩失败:`, error);
+  }
+};
+
 // 监听成员数据变化，当有 puuid 时加载战绩
 watch(
   () => props.member.summonerData?.puuid,
@@ -112,6 +121,7 @@ onMounted(() => {
       :match-history="matchHistory"
       :summoner="currentSummoner"
       :max-matches="20"
+      @retry="handleRetry"
     />
 
     <!-- 底部过滤和分页控制区域 -->

@@ -28,7 +28,7 @@ export function useGamePhaseHandler() {
       await autoActionService.executePrePickAction(session);
       // 记录预选成功的时间
       prePickSuccessTime.value = Date.now();
-      chatNotificationService.sendSystemMessage('预选成功，15秒内不做检查');
+      chatNotificationService.sendSystemMessage('预选成功，17秒内不做检查');
       return;
     }
     const s = 17000;
