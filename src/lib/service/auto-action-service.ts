@@ -66,14 +66,10 @@ export class AutoActionService {
         }
         return false;
       } else if (actionType !== 'hover') {
-        // 对于非预选操作，遇到其他错误时抛出
-        chatNotificationService.sendSystemMessage(
-          `${actionText}英雄失败: ${error.message}`
-        );
         throw error;
       } else {
         // 预选操作遇到其他错误
-        chatNotificationService.sendSystemMessage(`预选英雄失败: ${error}`);
+        console.log(`❌ 预选英雄 ${championId} 失败: ${error}`);
         return false;
       }
     }

@@ -86,6 +86,7 @@ export function useGamePhaseHandler() {
 
     // 倒计时结束，执行操作
     if (!gamePhaseManager.currentState.actionExecuted) {
+      resetPhaseState();
       chatNotificationService.sendSystemMessage(
         `⏰ ${type} 倒计时结束，开始执行操作`
       );

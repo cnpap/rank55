@@ -51,6 +51,7 @@ export function useAutoAcceptGame() {
         // 场景 2: 准备检查阶段
         if (phase === GameflowPhaseEnum.ReadyCheck) {
           await phaseHandler.autoActionService.executeReadyCheckAction();
+          phaseHandler.resetPhaseState();
           return;
         }
 
@@ -66,6 +67,7 @@ export function useAutoAcceptGame() {
           phase === GameflowPhaseEnum.InProgress
         ) {
           await phaseHandler.gamePhaseManager.handleGameStartPhase();
+          phaseHandler.resetPhaseState();
           return;
         }
 
