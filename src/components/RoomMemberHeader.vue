@@ -119,10 +119,21 @@ const positionPreferences = computed(() => {
   >
     <!-- 踢出按钮 -->
     <button
-      v-if="!member.isLeader && canKick"
+      :disabled="member.isLeader || !canKick"
       @click="handleKick"
-      class="absolute top-1.5 right-1 z-20 flex h-5 w-5 items-center justify-center border border-red-200 bg-red-50 text-red-600 transition-all duration-150 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70"
-      title="踢出玩家"
+      :class="[
+        'absolute top-1.5 right-1 z-20 flex h-5 w-5 items-center justify-center border transition-all duration-150',
+        member.isLeader || !canKick
+          ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500'
+          : 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70',
+      ]"
+      :title="
+        member.isLeader
+          ? '房主无法被踢出'
+          : !canKick
+            ? '无权限踢出玩家'
+            : '踢出玩家'
+      "
     >
       <svg
         class="h-2.5 w-2.5"

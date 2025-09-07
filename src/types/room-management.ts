@@ -30,7 +30,7 @@ export interface BaseMemberWithDetails {
  * 房间成员详细信息接口 - 继承自 Member 和 BaseMemberWithDetails
  */
 export interface MemberWithDetails extends Member, BaseMemberWithDetails {
-  assignedPosition: string;
+  assignedPosition?: string;
 }
 
 /**
@@ -93,7 +93,7 @@ export interface MemberDataUpdateable {
   rankedStats?: RankedStats;
   isLoading?: boolean;
   error?: string;
-  assignedPosition: string;
+  assignedPosition?: string;
 }
 
 /**

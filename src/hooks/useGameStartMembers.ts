@@ -132,7 +132,9 @@ export function useGameStartMembers() {
               ...existingMember,
               teamId: updatedPlayer.teamId,
               isMyTeam: updatedPlayer.isMyTeam,
-              assignedPosition: updatedPlayer.assignedPosition || updatedPlayer.selectedPosition.toLowerCase(),
+              assignedPosition:
+                updatedPlayer.assignedPosition ||
+                updatedPlayer.selectedPosition.toLowerCase(),
             };
           }
           return existingMember;
