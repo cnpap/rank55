@@ -62,8 +62,8 @@ const isCurrentPlayerMVP = computed(() => {
   <div
     class="font-tektur-numbers absolute top-2 -right-8 z-999 font-bold transition-colors duration-300"
     :class="{
-      'text-emerald-700 dark:text-emerald-300': gameResult === 'victory',
-      'text-red-700 dark:text-red-300': gameResult === 'defeat',
+      'text-emerald-500 dark:text-emerald-300': gameResult === 'victory',
+      'text-red-500 dark:text-red-300': gameResult === 'defeat',
     }"
   >
     {{ index }}

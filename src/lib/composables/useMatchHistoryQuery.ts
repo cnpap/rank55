@@ -162,6 +162,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
     try {
       if (!(await gameState.isConnected.value)) {
+        setError('客户端未连接');
         return;
       }
 

@@ -46,46 +46,89 @@ export function useRoomMembers() {
     const leftMemberIds = roomMembers.value
       .filter(m => !newMemberMap.has(m.summonerId))
       .map(m => m.summonerId);
-
-    // 如果没有变化，直接返回
-    if (newMembers.length === 0 && leftMemberIds.length === 0) {
-      return;
-    }
-
-    console.log(
-      `🏠 房间成员变动: 新增 ${newMembers.length} 人，离开 ${leftMemberIds.length} 人`
+    // 找出需要更新基础信息的现有成员
+    const existingMembers = members.filter(m =>
+      currentMemberMap.has(m.summonerId)
     );
+
+    let hasChanges = false;
 
     // 移除离开的成员
     if (leftMemberIds.length > 0) {
       roomMembers.value = roomMembers.value.filter(
         m => !leftMemberIds.includes(m.summonerId)
       );
+      hasChanges = true;
+      console.log(`🏠 房间成员离开: ${leftMemberIds.length} 人`);
     }
 
-    // 如果没有新成员，直接返回
-    if (newMembers.length === 0) {
-      return;
+    // 更新现有成员的基础信息（位置信息等）
+    if (existingMembers.length > 0) {
+      existingMembers.forEach(newMemberData => {
+        const existingMemberIndex = roomMembers.value.findIndex(
+          m => m.summonerId === newMemberData.summonerId
+        );
+        if (existingMemberIndex !== -1) {
+          const existingMember = roomMembers.value[existingMemberIndex];
+          // 检查基础信息是否有变化
+          const hasBasicInfoChanged =
+            existingMember.firstPositionPreference !==
+              newMemberData.firstPositionPreference ||
+            existingMember.secondPositionPreference !==
+              newMemberData.secondPositionPreference ||
+            existingMember.isLeader !== newMemberData.isLeader ||
+            existingMember.ready !== newMemberData.ready ||
+            existingMember.allowedKickOthers !==
+              newMemberData.allowedKickOthers;
+
+          if (hasBasicInfoChanged) {
+            // 更新基础信息，保留已加载的详细数据
+            roomMembers.value[existingMemberIndex] = {
+              ...newMemberData,
+              summonerData: existingMember.summonerData,
+              rankedStats: existingMember.rankedStats,
+              matchHistory: existingMember.matchHistory,
+              isLoading: existingMember.isLoading,
+              error: existingMember.error,
+            };
+            hasChanges = true;
+          }
+        }
+      });
+
+      if (hasChanges) {
+        console.log(`🏠 房间成员基础信息更新: ${existingMembers.length} 人`);
+      }
     }
 
-    // 为新成员添加基本信息
-    const newMembersWithDetails: MemberWithDetails[] = newMembers.map(
-      member => ({
-        ...member,
-        isLoading: false,
-      })
-    );
+    // 添加新成员
+    if (newMembers.length > 0) {
+      // 为新成员添加基本信息
+      const newMembersWithDetails: MemberWithDetails[] = newMembers.map(
+        member => ({
+          ...member,
+          isLoading: false,
+        })
+      );
 
-    // 添加新成员到列表
-    roomMembers.value = [...roomMembers.value, ...newMembersWithDetails];
+      // 添加新成员到列表
+      roomMembers.value = [...roomMembers.value, ...newMembersWithDetails];
+      hasChanges = true;
+      console.log(`🏠 房间新增成员: ${newMembers.length} 人`);
 
-    // 使用通用函数批量加载召唤师数据和排位统计
-    const summonerIds = newMembers.map(m => m.summonerId).filter(Boolean);
-    const result = await updateMembersData(roomMembers.value, summonerIds);
+      // 使用通用函数批量加载召唤师数据和排位统计
+      const summonerIds = newMembers.map(m => m.summonerId).filter(Boolean);
+      const result = await updateMembersData(roomMembers.value, summonerIds);
 
-    if (!result.success) {
-      console.error('房间成员数据加载失败:', result.error);
-      toast.error(result.error || '房间成员数据加载失败');
+      if (!result.success) {
+        console.error('房间成员数据加载失败:', result.error);
+        toast.error(result.error || '房间成员数据加载失败');
+      }
+    }
+
+    // 如果没有任何变化，记录日志
+    if (!hasChanges) {
+      console.log('🏠 房间成员无变化');
     }
   };
 

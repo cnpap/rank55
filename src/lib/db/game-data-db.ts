@@ -109,8 +109,3 @@ export class GameDataDB extends Dexie {
 
 // 创建数据库实例
 export const gameDataDB = new GameDataDB();
-
-// 初始化数据库
-gameDataDB.initialize().catch(error => {
-  console.error('初始化游戏数据库失败:', error);
-});

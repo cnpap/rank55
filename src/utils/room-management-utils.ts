@@ -107,7 +107,21 @@ export function calculateMemberDetails(
   if (!members) return [];
   return members
     .filter((member): member is AnyMemberWithDetails => member !== null)
-    .map(m => `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}`);
+    .map(m => {
+      // 包含基础信息的变化检测
+      const basicInfo = 'isLeader' in m ? `${m.isLeader}` : 'false';
+      const positionInfo =
+        'firstPositionPreference' in m && 'secondPositionPreference' in m
+          ? `${m.firstPositionPreference || ''}-${m.secondPositionPreference || ''}`
+          : '';
+      const readyInfo = 'ready' in m ? `${m.ready}` : 'true';
+      const assignedPos = m.assignedPosition || '';
+      // 添加英雄选择阶段特有的字段检测
+      const championInfo = 'championId' in m ? `${m.championId || 0}` : '0';
+      const cellInfo = 'cellId' in m ? `${m.cellId || 0}` : '0';
+
+      return `${m.summonerId}-${!!m.summonerData}-${!!m.rankedStats}-${basicInfo}-${positionInfo}-${readyInfo}-${assignedPos}-${championInfo}-${cellInfo}`;
+    });
 }
 
 /**

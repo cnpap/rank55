@@ -52,21 +52,43 @@ export function useChampSelectMembers() {
 
     // 如果没有变化，只更新基本信息（英雄ID、位置等）
     if (newMembers.length === 0 && leftMemberIds.length === 0) {
+      let hasBasicInfoChanged = false;
       champSelectMembers.value = champSelectMembers.value.map(
         existingMember => {
           const updatedMember = myTeam.find(
             m => m.summonerId === existingMember.summonerId
           );
           if (updatedMember) {
+            // 检查基础信息是否有变化
+            const hasChanged =
+              existingMember.championId !== updatedMember.championId ||
+              existingMember.assignedPosition !==
+                updatedMember.assignedPosition;
+
+            if (hasChanged) {
+              hasBasicInfoChanged = true;
+            }
+
             return {
               ...existingMember,
               championId: updatedMember.championId,
               assignedPosition: updatedMember.assignedPosition,
+              // 更新其他可能变化的基础信息
+              cellId: updatedMember.cellId,
+              isLeader: updatedMember.cellId === 0,
+              summonerName:
+                updatedMember.gameName || existingMember.summonerName,
             };
           }
           return existingMember;
         }
       );
+
+      // 如果有基础信息变化，记录日志
+      if (hasBasicInfoChanged) {
+        console.log('🎯 英雄选择基础信息更新: 英雄ID、位置等信息已更新');
+      }
+
       return;
     }
 

@@ -74,6 +74,7 @@ const getPositionIcon = (position: string) => {
     middle: './role/middle.png',
     bottom: './role/bottom.png',
     support: './role/support.png',
+    utility: './role/support.png',
   };
   return positionMap[position.toLowerCase()] || null;
 };
@@ -87,6 +88,7 @@ const getPositionName = (position: string) => {
     middle: '中路',
     bottom: '下路',
     support: '辅助',
+    utility: '辅助',
   };
   return nameMap[position.toLowerCase()] || position;
 };

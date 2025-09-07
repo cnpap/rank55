@@ -111,6 +111,7 @@ export const POSITION_ORDER = [
   'middle',
   'bottom',
   'support',
+  'utility',
 ] as const;
 export type Position = (typeof POSITION_ORDER)[number];
 

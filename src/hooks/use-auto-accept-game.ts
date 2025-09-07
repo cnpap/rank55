@@ -91,7 +91,8 @@ export function useAutoAcceptGame() {
         errorMessage.includes('Connection') ||
         errorMessage.includes('ECONNREFUSED') ||
         errorMessage.includes('timeout') ||
-        errorMessage.includes('网络');
+        errorMessage.includes('网络') ||
+        errorMessage.includes('客户端未运行');
 
       if (isConnectionError) {
         console.log('检测到连接错误，重置游戏阶段');

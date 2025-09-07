@@ -33,16 +33,10 @@ export class GamePhaseManager {
   }
 
   async getCurrentPhase(): Promise<GameflowPhaseEnum> {
-    try {
-      const phase = await gameflowService.getGameflowPhase();
-      this.state.value.lastPhase = this.state.value.currentPhase;
-      this.state.value.currentPhase = phase;
-      return phase;
-    } catch (error) {
-      console.warn('获取游戏阶段失败，保持当前阶段:', error);
-      // 如果获取阶段失败，返回当前阶段而不是None
-      return this.state.value.currentPhase || GameflowPhaseEnum.None;
-    }
+    const phase = await gameflowService.getGameflowPhase();
+    this.state.value.lastPhase = this.state.value.currentPhase;
+    this.state.value.currentPhase = phase;
+    return phase;
   }
 
   async handleGameStartPhase() {

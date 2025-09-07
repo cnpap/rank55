@@ -113,10 +113,8 @@ const startRoomPolling = () => {
           // Lobby阶段需要持续轮询房间成员变化
           await updateRoomMembers(current);
         } else if (GamePhaseManager.isChampSelectPhase(current)) {
-          // 英雄选择阶段：只在阶段变化时更新一次
-          if (hasPhaseChanged) {
-            await updateChampSelectMembers();
-          }
+          // 英雄选择阶段：持续轮询以获取位置变化等基础信息更新
+          await updateChampSelectMembers();
         } else if (GamePhaseManager.isGameStartPhase(current)) {
           // 游戏开始阶段：只在阶段变化时更新一次
           if (hasPhaseChanged) {

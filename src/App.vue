@@ -9,7 +9,6 @@ import { eventBus } from '@/lib/event-bus';
 import { watch } from 'vue';
 import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
 import { versionUtils } from '@/assets/versioned-assets';
-import { useGameConnection } from '@/hooks/useGameConnection';
 import Button from './components/ui/button/Button.vue';
 
 const route = useRoute();
@@ -17,9 +16,6 @@ const route = useRoute();
 // 版本初始化状态
 const isVersionsLoaded = ref(false);
 const isVersionsLoading = ref(true);
-
-// 获取游戏连接相关方法
-const { loadAndPersistGameData } = useGameConnection();
 
 // 使用自动接受游戏功能
 const { currentPhase, clientUser, gamePhaseManager, isConnected } =
@@ -70,10 +66,6 @@ onMounted(async () => {
     // 初始化版本信息
     const versionsInitialized = await versionUtils.initializeVersions();
     isVersionsLoaded.value = versionsInitialized;
-
-    // 应用启动时立即加载游戏数据
-    // 这将检查数据库中是否已有数据，如果有则直接加载，没有则从远程获取
-    await loadAndPersistGameData();
   } catch (error) {
     console.error('应用初始化失败:', error);
     isVersionsLoaded.value = false;

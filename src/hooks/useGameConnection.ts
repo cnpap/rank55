@@ -16,21 +16,19 @@ export function useGameConnection() {
   const matchHistoryStore = useMatchHistoryStore();
 
   const checkConnection = async (): Promise<boolean> => {
-    try {
-      if (isConnected.value) {
-        return true;
-      }
-      await connectionService.isConnected();
+    if (isConnected.value) {
+      return true;
+    }
+    const result = await connectionService.isConnected();
+    if (result) {
       console.log('🔌 游戏客户端已连接');
       // 在设置连接状态前，先获取并持久化游戏数据
       await loadAndPersistGameData();
       isConnected.value = true;
 
       return true;
-    } catch (error) {
-      console.error('检查连接状态失败:', error);
-      return false;
     }
+    return false;
   };
 
   const fetchCurrentUser = async (): Promise<void> => {

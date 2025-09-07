@@ -39,7 +39,7 @@ export function useGameStartMembers() {
       const positionIndexB = POSITION_ORDER.indexOf(b.assignedPosition as any);
       return positionIndexA - positionIndexB;
     });
-
+    console.log(sortedMyTeam, sortedEnemyTeam);
     // 填充我方成员（位置0-4）
     sortedMyTeam.forEach((member, index) => {
       if (index < 5) {
