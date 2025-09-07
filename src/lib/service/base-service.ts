@@ -211,9 +211,6 @@ export abstract class BaseService {
         // 获取序号
         sequence = await RequestLogger.getNextSequence();
 
-        // 记录汇总日志（在请求前记录）
-        await RequestLogger.logSummary(sequence, method, endpoint);
-
         // 调用二进制请求方法
         response = await this.client.makeBinaryRequest(
           method,

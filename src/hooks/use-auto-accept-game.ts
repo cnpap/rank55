@@ -15,7 +15,6 @@ export function useAutoAcceptGame() {
     try {
       // 检查连接状态
       const connected = await connection.checkConnection();
-      console.log(`当前连接状态: ${connected}`);
 
       if (!connected) {
         // 只有当当前阶段不是 None 时才更新
@@ -26,11 +25,11 @@ export function useAutoAcceptGame() {
       }
 
       const phase = await phaseHandler.gamePhaseManager.getCurrentPhase();
-      const lastPhase = phaseHandler.gamePhaseManager.currentState.lastPhase;
 
       // 只有当阶段真正发生变化时才更新 currentPhase
       if (currentPhase.value !== phase) {
         currentPhase.value = phase;
+        const lastPhase = phaseHandler.gamePhaseManager.currentState.lastPhase;
         console.log(`游戏阶段变化: ${lastPhase} -> ${phase}`);
       }
 

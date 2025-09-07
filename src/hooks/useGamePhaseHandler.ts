@@ -7,18 +7,28 @@ import {
 } from '@/lib/service/service-manager';
 import { $local } from '@/storages/storage-use';
 import { GameflowPhaseEnum } from '@/types/gameflow-session';
+import { DebounceCache } from '@/lib/service/debounce-cache';
 
 export function useGamePhaseHandler() {
   const lastPhase = ref<GameflowPhaseEnum | null>(null);
+  const lastGameId = ref<number | null>(null);
   const prePickSuccessTime = ref<number | null>(null);
-  const positionSettingsNotified = ref<boolean>(false); // 记录是否已经提示过位置设置未配置
   const skipChampSelectPhase = ref<boolean>(false); // 记录是否跳过当前选人阶段
+  const chatNotificationHistory = ref<Record<string, boolean>>({});
 
   const handleChampSelectPhase = async (): Promise<void> => {
     const session = await banPickService.getChampSelectSession();
+    const currentGameId = session.gameId;
+    console.log(`gameId`, currentGameId);
     const { actions, myTeam, localPlayerCellId } = session;
     const flatActions = actions.flat();
     const positionSettings = $local.getItem('positionSettings')!;
+
+    // 检查 gameId 是否变化，如果变化则重置状态
+    if (lastGameId.value !== null && lastGameId.value !== currentGameId) {
+      resetPhaseState();
+    }
+    lastGameId.value = currentGameId;
 
     // 如果已经标记跳过当前选人阶段，则直接返回不做任何处理
     if (skipChampSelectPhase.value) {
@@ -46,10 +56,6 @@ export function useGamePhaseHandler() {
     );
 
     if (!action) {
-      // chatNotificationService.sendSystemMessage(
-      //   '当前位置未开始选择，等待中...'
-      // );
-      gamePhaseManager.resetActionState();
       return;
     }
 
@@ -57,16 +63,18 @@ export function useGamePhaseHandler() {
       item => item.cellId === localPlayerCellId
     )?.assignedPosition;
     if (!myPosition) {
-      chatNotificationService.sendSystemMessage('无法获取当前位置');
+      if (!chatNotificationHistory.value['noPosition']) {
+        chatNotificationService.sendSystemMessage('无法获取当前位置');
+        chatNotificationHistory.value['noPosition'] = true;
+      }
       return;
     }
 
     const myPositionInfo = positionSettings[myPosition];
     if (!myPositionInfo) {
-      // 如果还没有提示过，则提示一次并标记跳过当前选人阶段
-      if (!positionSettingsNotified.value) {
+      if (!chatNotificationHistory.value['noPositionSettings']) {
         chatNotificationService.sendSystemMessage('未配置当前位置的设置');
-        positionSettingsNotified.value = true;
+        chatNotificationHistory.value['noPositionSettings'] = true;
         skipChampSelectPhase.value = true;
       }
       return;
@@ -83,26 +91,30 @@ export function useGamePhaseHandler() {
     if (remainingTime > 0) {
       return;
     }
-
     // 倒计时结束，执行操作
-    if (!gamePhaseManager.currentState.actionExecuted) {
-      gamePhaseManager.markActionExecuted();
-
-      if (type === 'ban') {
-        await autoActionService.executeBanAction(flatActions, myPositionInfo);
-      } else if (type === 'pick') {
-        await autoActionService.executePickAction(flatActions, myPositionInfo);
-      }
-      resetPhaseState();
-    }
+    DebounceCache.debounce(
+      'banpick',
+      async () => {
+        if (type === 'ban') {
+          await autoActionService.executeBanAction(flatActions, myPositionInfo);
+        } else if (type === 'pick') {
+          await autoActionService.executePickAction(
+            flatActions,
+            myPositionInfo
+          );
+        }
+        gamePhaseManager.resetActionState();
+      },
+      2000
+    );
   };
 
   const resetPhaseState = () => {
-    gamePhaseManager.resetActionState();
     lastPhase.value = null;
+    lastGameId.value = null;
     prePickSuccessTime.value = null;
-    positionSettingsNotified.value = false;
     skipChampSelectPhase.value = false;
+    chatNotificationHistory.value = {};
   };
 
   return {

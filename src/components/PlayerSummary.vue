@@ -3,8 +3,8 @@ import type { Game } from '@/types/match-history-sgp';
 import { formatNumber } from '@/lib/rank-helpers';
 import { formatDateToDay } from '@/utils/date-utils';
 import { Badge } from '@/components/ui/badge';
-import { Coins, Sword, Shield } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
+import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 import { computed, inject } from 'vue';
 
 interface Props {
@@ -17,12 +17,6 @@ const puuid = inject<string>('puuid');
 // 获取当前玩家信息
 const currentPlayer = computed(() => {
   return props.match.json.participants.find(p => p.puuid === puuid);
-});
-
-// 获取游戏结果
-const gameResult = computed(() => {
-  if (!currentPlayer.value) return 'unknown';
-  return currentPlayer.value.win ? 'victory' : 'defeat';
 });
 
 // 获取当前玩家的装备
@@ -83,13 +77,9 @@ const stats = computed(() => {
 
 // 获取队列类型
 const queueType = computed(() => {
-  const queueMap: Record<number, string> = {
-    420: '单双排位',
-    430: '匹配模式',
-    440: '灵活排位',
-    450: '极地大乱斗',
-  };
-  return queueMap[props.match.json.queueId] || '未知模式';
+  const queueId = props.match.json.queueId;
+  const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
+  return GAME_MODE_TAGS[queueKey] || '未知模式';
 });
 </script>
 

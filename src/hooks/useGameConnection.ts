@@ -18,7 +18,6 @@ export function useGameConnection() {
   const checkConnection = async (): Promise<boolean> => {
     try {
       if (isConnected.value) {
-        console.log('🔌 游戏客户端已连接，无需重复连接');
         return true;
       }
       await connectionService.isConnected();

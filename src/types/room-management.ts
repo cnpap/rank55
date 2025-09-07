@@ -29,7 +29,9 @@ export interface BaseMemberWithDetails {
 /**
  * 房间成员详细信息接口 - 继承自 Member 和 BaseMemberWithDetails
  */
-export interface MemberWithDetails extends Member, BaseMemberWithDetails {}
+export interface MemberWithDetails extends Member, BaseMemberWithDetails {
+  assignedPosition: string;
+}
 
 /**
  * 英雄选择阶段成员详细信息接口
@@ -50,6 +52,7 @@ export interface GameStartMemberWithDetails extends BaseMemberWithDetails {
   // 基本信息
   teamId: number; // 1为我方，2为敌方
   isMyTeam: boolean;
+  assignedPosition: string; // 添加位置信息用于排序
 }
 
 /**
@@ -90,6 +93,7 @@ export interface MemberDataUpdateable {
   rankedStats?: RankedStats;
   isLoading?: boolean;
   error?: string;
+  assignedPosition: string;
 }
 
 /**

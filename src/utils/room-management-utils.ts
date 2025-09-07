@@ -45,6 +45,8 @@ export function convertChampSelectMemberToMemberWithDetails(
   member: ChampSelectMemberWithDetails
 ): MemberWithDetails {
   return {
+    ...createMemberWithDetailsDefaults(),
+    assignedPosition: member.assignedPosition,
     summonerId: member.summonerId,
     summonerName: member.summonerName,
     isLeader: member.isLeader,
@@ -57,7 +59,6 @@ export function convertChampSelectMemberToMemberWithDetails(
     summonerIconId: member.summonerData?.profileIconId || 0,
     summonerLevel: member.summonerData?.summonerLevel || 0,
     teamId: 1,
-    ...createMemberWithDetailsDefaults(),
   } as MemberWithDetails;
 }
 
@@ -68,6 +69,7 @@ export function convertGameStartMemberToMemberWithDetails(
   member: GameStartMemberWithDetails
 ): MemberWithDetails {
   return {
+    ...createMemberWithDetailsDefaults(),
     summonerId: member.summonerId,
     summonerName: member.summonerName,
     isLeader: false, // 游戏开始阶段没有房主概念
@@ -75,12 +77,12 @@ export function convertGameStartMemberToMemberWithDetails(
     rankedStats: member.rankedStats,
     isLoading: member.isLoading,
     error: member.error,
+    assignedPosition: member.assignedPosition,
     isOwner: false,
     puuid: '',
     summonerIconId: member.summonerData?.profileIconId || 0,
     summonerLevel: member.summonerData?.summonerLevel || 0,
     teamId: member.teamId,
-    ...createMemberWithDetailsDefaults(),
   } as MemberWithDetails;
 }
 

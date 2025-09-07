@@ -1,5 +1,6 @@
 import type { Game, Participant, Team } from '@/types/match-history-sgp';
 import type { SummonerData } from '@/types/summoner';
+import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 
 /**
  * KDA 数据接口
@@ -181,14 +182,12 @@ export function findPlayerInGame(
  * @param game SGP 比赛数据
  * @param summoner 召唤师数据
  * @param formatGameDuration 游戏时长格式化函数
- * @param getQueueName 队列名称获取函数
  * @returns 简要比赛数据，如果玩家不在比赛中则返回 null
  */
 export function processBriefMatch(
   game: Game,
   summoner: SummonerData,
-  formatGameDuration: (seconds: number) => string,
-  getQueueName: (queueId: number) => string
+  formatGameDuration: (seconds: number) => string
 ): BriefMatchData | null {
   const currentPlayer = findPlayerInGame(game, summoner);
 
@@ -201,11 +200,16 @@ export function processBriefMatch(
   const assists = currentPlayer.assists || 0;
   const kda = calculateKDA(kills, deaths, assists);
 
+  // 获取队列类型
+  const queueId = game.json.queueId;
+  const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
+  const queueType = GAME_MODE_TAGS[queueKey] || '未知模式';
+
   return {
     gameId: game.json.gameId,
     championId: currentPlayer.championId,
     result: currentPlayer.win ? 'victory' : 'defeat',
-    queueType: getQueueName(game.json.queueId),
+    queueType,
     duration: formatGameDuration(game.json.gameDuration),
     createdAt: game.json.gameCreation.toString(),
     kda,

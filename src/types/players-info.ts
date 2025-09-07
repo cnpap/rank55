@@ -17,6 +17,8 @@ export type AssignedPosition =
 
 export interface RankTeam {
   assignedPosition: AssignedPosition;
+  // 如果进入游戏就应该使用 selectedPosition
+  selectedPosition: AssignedPosition;
   cellId: number;
   championId: number;
   championPickIntent: number;

@@ -3,7 +3,7 @@
  * 用于解耦测试文件中的重复代码
  */
 
-import { gameAssets } from '@/assets/data-assets';
+import { gameAssets, staticAssets } from '@/assets/data-assets';
 
 /**
  * 格式化游戏时长
@@ -14,39 +14,6 @@ export function formatGameDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-/**
- * 获取队列名称
- * @param queueID 队列ID
- * @returns 队列中文名称
- */
-/**
- * 获取队列名称
- * @param queueID 队列ID
- * @returns 队列中文名称
- */
-export function getQueueName(queueID: number): string {
-  switch (queueID) {
-    case 0:
-      return '训练模式';
-    case 420:
-      return '单双排位';
-    case 440:
-      return '灵活排位';
-    case 450:
-      return '极地大乱斗';
-    case 400:
-      return '匹配模式';
-    case 430:
-      return '匹配模式';
-    case 900:
-      return '无限火力';
-    case 1700:
-      return '斗魂竞技场';
-    default:
-      return `队列ID: ${queueID}`;
-  }
 }
 
 /**
@@ -204,7 +171,7 @@ const tierToIconMap: Record<string, string> = {
  */
 export function getRankImageUrl(tier: string): string {
   const iconId = tierToIconMap[tier] || '0';
-  return gameAssets.getRankIcon(iconId);
+  return staticAssets.getRankIcon(iconId);
 }
 
 /**
@@ -214,5 +181,5 @@ export function getRankImageUrl(tier: string): string {
  */
 export function getRankMiniImageUrl(tier: string): string {
   const iconId = tierToIconMap[tier] || '0';
-  return gameAssets.getRankMiniIcon(iconId);
+  return staticAssets.getRankMiniIcon(iconId);
 }

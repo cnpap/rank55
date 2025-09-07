@@ -7,7 +7,6 @@ import {
 import { $local, type PositionSetting } from '@/storages/storage-use';
 import type { ChampSelectSession } from '@/types/champ-select-session';
 import type { AllAction } from '@/types/ban-phase-detail';
-import { GameflowPhaseEnum } from '@/types/gameflow-session';
 import { toast } from 'vue-sonner';
 import { getChampionName } from '../db/game-data-db';
 
@@ -80,16 +79,8 @@ export class AutoActionService {
     if (!autoAcceptEnabled) {
       return false;
     }
-
-    const currentPhase = await gamePhaseManager.getCurrentPhase();
-    if (currentPhase === GameflowPhaseEnum.ReadyCheck) {
-      console.log('检测到待接受的对局，正在自动接受...');
-      await gameflowService.acceptReadyCheck();
-      toast.success('已自动接受对局');
-      console.log('✅ 自动接受对局成功');
-      return true;
-    }
-
+    await gameflowService.acceptReadyCheck();
+    toast.success('已自动接受对局');
     return false;
   }
 
@@ -139,13 +130,6 @@ export class AutoActionService {
     flatActions: AllAction[],
     myPositionInfo: PositionSetting
   ): Promise<void> {
-    const autoBanEnabled = $local.getItem('autoBanEnabled');
-
-    if (!autoBanEnabled || myPositionInfo.banChampions.length === 0) {
-      console.log('未配置自动禁用英雄或开关未开启');
-      return;
-    }
-
     const session = await banPickService.getChampSelectSession();
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)
@@ -198,13 +182,6 @@ export class AutoActionService {
     flatActions: AllAction[],
     myPositionInfo: PositionSetting
   ): Promise<void> {
-    const autoPickEnabled = $local.getItem('autoPickEnabled');
-
-    if (!autoPickEnabled || myPositionInfo.pickChampions.length === 0) {
-      console.log('未配置自动选择英雄或开关未开启');
-      return;
-    }
-
     const session = await banPickService.getChampSelectSession();
     const banedChampions = flatActions
       .filter(a => a.type === 'ban' && a.completed && a.championId !== 0)

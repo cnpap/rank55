@@ -64,6 +64,53 @@ const avatarIconId = computed(() => {
     props.member.summonerData?.profileIconId || props.member.summonerIconId || 1
   );
 });
+
+// 获取位置图标路径
+const getPositionIcon = (position: string) => {
+  if (!position) return null;
+  const positionMap: Record<string, string> = {
+    top: './role/top.png',
+    jungle: './role/jungle.png',
+    middle: './role/middle.png',
+    bottom: './role/bottom.png',
+    support: './role/support.png',
+  };
+  return positionMap[position.toLowerCase()] || null;
+};
+
+// 获取位置显示名称
+const getPositionName = (position: string) => {
+  if (!position) return '';
+  const nameMap: Record<string, string> = {
+    top: '上路',
+    jungle: '打野',
+    middle: '中路',
+    bottom: '下路',
+    support: '辅助',
+  };
+  return nameMap[position.toLowerCase()] || position;
+};
+console.log(props.member);
+// 计算位置偏好
+const positionPreferences = computed(() => {
+  const first = props.member.firstPositionPreference;
+  const second = props.member.secondPositionPreference;
+  const assignedPosition = props.member.assignedPosition;
+  return {
+    first: first
+      ? { icon: getPositionIcon(first), name: getPositionName(first) }
+      : null,
+    second: second
+      ? { icon: getPositionIcon(second), name: getPositionName(second) }
+      : null,
+    assignedPosition: assignedPosition
+      ? {
+          icon: getPositionIcon(assignedPosition.toLowerCase()),
+          name: getPositionName(assignedPosition.toLowerCase()),
+        }
+      : null,
+  };
+});
 </script>
 
 <template>
@@ -74,7 +121,7 @@ const avatarIconId = computed(() => {
     <button
       v-if="!member.isLeader && canKick"
       @click="handleKick"
-      class="absolute top-2 right-2 z-20 flex h-5 w-5 items-center justify-center border border-red-200 bg-red-50 text-red-600 transition-all duration-150 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70"
+      class="absolute top-1.5 right-1 z-20 flex h-5 w-5 items-center justify-center border border-red-200 bg-red-50 text-red-600 transition-all duration-150 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70"
       title="踢出玩家"
     >
       <svg
@@ -92,8 +139,52 @@ const avatarIconId = computed(() => {
       </svg>
     </button>
 
+    <!-- 位置偏好显示区域 -->
+    <div class="absolute top-7.5 right-1 z-10 flex flex-col gap-0.5">
+      <!-- 第一位置偏好 -->
+      <div
+        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+      >
+        <img
+          v-if="positionPreferences.first?.icon"
+          :src="positionPreferences.first.icon"
+          :alt="positionPreferences.first.name"
+          :title="`首选位置: ${positionPreferences.first.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-90"
+        />
+        <img
+          v-else-if="
+            positionPreferences.assignedPosition &&
+            positionPreferences.assignedPosition.icon
+          "
+          :src="positionPreferences.assignedPosition.icon"
+          :alt="positionPreferences.assignedPosition.name"
+          :title="`位置: ${positionPreferences.assignedPosition.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-90"
+        />
+        <div
+          v-else
+          class="h-3.5 w-3.5 rounded border border-dashed border-slate-300 dark:border-slate-600"
+          title="未选择首选位置"
+        ></div>
+      </div>
+
+      <!-- 第二位置偏好 -->
+      <div
+        v-if="positionPreferences.second?.icon"
+        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+      >
+        <img
+          :src="positionPreferences.second.icon"
+          :alt="positionPreferences.second.name"
+          :title="`次选位置: ${positionPreferences.second.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-75"
+        />
+      </div>
+    </div>
+
     <!-- 玩家信息主体 -->
-    <div class="relative flex items-center gap-3">
+    <div class="relative flex items-center gap-1">
       <!-- 头像区域 -->
       <div class="relative flex-shrink-0">
         <!-- 房主皇冠 -->
@@ -153,7 +244,7 @@ const avatarIconId = computed(() => {
         <!-- 段位信息 -->
         <div>
           <!-- 单双排位 -->
-          <div class="flex min-w-0 items-center gap-1.5">
+          <div class="flex min-w-0 items-center gap-1">
             <span
               class="font-tektur-numbers min-w-0 truncate text-xs font-medium text-slate-600 dark:text-slate-400"
             >
@@ -173,7 +264,7 @@ const avatarIconId = computed(() => {
           </div>
 
           <!-- 灵活排位 -->
-          <div class="flex min-w-0 items-center gap-1.5">
+          <div class="flex min-w-0 items-center gap-1">
             <span
               class="font-tektur-numbers min-w-0 truncate text-xs font-medium text-slate-600 dark:text-slate-400"
             >

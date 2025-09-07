@@ -8,7 +8,6 @@ export interface GamePhaseState {
   lastPhase: GameflowPhaseEnum | null;
   actionStartTime: number | null;
   currentActionType: 'ban' | 'pick' | null;
-  actionExecuted: boolean;
 }
 
 export class GamePhaseManager {
@@ -31,7 +30,6 @@ export class GamePhaseManager {
   resetActionState(): void {
     this.state.value.actionStartTime = null;
     this.state.value.currentActionType = null;
-    this.state.value.actionExecuted = false;
   }
 
   async getCurrentPhase(): Promise<GameflowPhaseEnum> {
@@ -58,22 +56,14 @@ export class GamePhaseManager {
   }
 
   setActionState(type: 'ban' | 'pick'): void {
-    if (
-      this.state.value.currentActionType !== type ||
-      this.state.value.actionExecuted
-    ) {
+    if (this.state.value.currentActionType !== type) {
       this.state.value.actionStartTime = Date.now();
       this.state.value.currentActionType = type;
-      this.state.value.actionExecuted = false;
       const countdownKey =
         type === 'ban' ? 'autoBanCountdown' : 'autoPickCountdown';
       const countdown = $local.getItem(countdownKey) || 5;
       console.log(`🕐 开始 ${type} 阶段倒计时 ${countdown} 秒`);
     }
-  }
-
-  markActionExecuted(): void {
-    this.state.value.actionExecuted = true;
   }
 
   getRemainingTime(countdown: number): number {

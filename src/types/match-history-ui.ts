@@ -6,7 +6,6 @@ export interface GameModesFilter {
 // 游戏模式tag选项
 export const GAME_MODE_TAGS = {
   all: '所有模式',
-  current: '当前模式',
   q_420: '单双排位',
   q_430: '匹配模式',
   q_440: '灵活排位',

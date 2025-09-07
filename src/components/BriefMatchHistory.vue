@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import type { SummonerData } from '@/types/summoner';
-import { formatGameDuration, getQueueName } from '@/lib/rank-helpers';
+import { formatGameDuration } from '@/lib/rank-helpers';
 import {
   findPlayerInGame,
   calculateKDA,
@@ -11,6 +11,7 @@ import {
 import { formatDateToDay } from '@/utils/date-utils';
 import { type Game, type Participant } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
+import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 
 interface Props {
   matchHistory: Game[];
@@ -19,6 +20,12 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// 获取队列类型名称
+const getQueueName = (queueId: number): string => {
+  const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
+  return GAME_MODE_TAGS[queueKey] || '未知模式';
+};
 
 // 过滤出当前召唤师参与的比赛
 const validMatches = computed(

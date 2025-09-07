@@ -1,7 +1,10 @@
 import { ref, computed } from 'vue';
 import type { GameflowSession } from '@/types/gameflow-session';
 import { RankTeam } from '@/types/players-info';
-import type { GameStartMemberWithDetails } from '@/types/room-management';
+import {
+  GameStartMemberWithDetails,
+  POSITION_ORDER,
+} from '@/types/room-management';
 import { updateMembersData } from '@/utils/room-management-utils';
 import { toast } from 'vue-sonner';
 
@@ -23,15 +26,29 @@ export function useGameStartMembers() {
       member => !member.isMyTeam
     );
 
+    // 按位置排序我方成员
+    const sortedMyTeam = myTeamMembers.sort((a, b) => {
+      const positionIndexA = POSITION_ORDER.indexOf(a.assignedPosition as any);
+      const positionIndexB = POSITION_ORDER.indexOf(b.assignedPosition as any);
+      return positionIndexA - positionIndexB;
+    });
+
+    // 按位置排序敌方成员
+    const sortedEnemyTeam = enemyTeamMembers.sort((a, b) => {
+      const positionIndexA = POSITION_ORDER.indexOf(a.assignedPosition as any);
+      const positionIndexB = POSITION_ORDER.indexOf(b.assignedPosition as any);
+      return positionIndexA - positionIndexB;
+    });
+
     // 填充我方成员（位置0-4）
-    myTeamMembers.forEach((member, index) => {
+    sortedMyTeam.forEach((member, index) => {
       if (index < 5) {
         slots[index] = member;
       }
     });
 
     // 填充敌方成员（位置5-9）
-    enemyTeamMembers.forEach((member, index) => {
+    sortedEnemyTeam.forEach((member, index) => {
       if (index < 5) {
         slots[5 + index] = member;
       }
@@ -57,6 +74,8 @@ export function useGameStartMembers() {
       summonerName: `Player${player.summonerId}`,
       teamId: player.teamId,
       isMyTeam: player.isMyTeam,
+      assignedPosition:
+        player.assignedPosition || player.selectedPosition.toLowerCase(),
       isLoading: false,
     }));
 
@@ -113,6 +132,7 @@ export function useGameStartMembers() {
               ...existingMember,
               teamId: updatedPlayer.teamId,
               isMyTeam: updatedPlayer.isMyTeam,
+              assignedPosition: updatedPlayer.assignedPosition || updatedPlayer.selectedPosition.toLowerCase(),
             };
           }
           return existingMember;
