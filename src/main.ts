@@ -3,7 +3,15 @@ import { createPinia } from 'pinia';
 import './style.css';
 import App from './App.vue';
 import './utils/theme'; // 初始化主题
+import {
+  initializeLocalStorage,
+  validateAndRepairLocalStorage,
+} from './utils/storage-init'; // 初始化存储
 import router from './router';
+
+// 初始化本地存储数据
+validateAndRepairLocalStorage();
+initializeLocalStorage();
 
 const app = createApp(App);
 const pinia = createPinia();

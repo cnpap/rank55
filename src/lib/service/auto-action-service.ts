@@ -74,6 +74,7 @@ export class AutoActionService {
       }
     }
   }
+
   async executeReadyCheckAction(): Promise<boolean> {
     const autoAcceptEnabled = $local.getItem('autoAcceptGame');
     if (!autoAcceptEnabled) {

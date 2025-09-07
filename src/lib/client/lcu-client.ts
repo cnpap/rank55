@@ -142,17 +142,6 @@ export class LCUClient implements LCUClientInterface {
         riotClientAuthToken: riotClientAuthMatch![1],
       };
 
-      console.log('提取的服务器参数:', {
-        port: credentials.port,
-        region: credentials.region,
-        rsoPlatformId: credentials.rsoPlatformId,
-        locale: credentials.locale,
-        serverHost: credentials.serverHost,
-        // 新增日志输出
-        riotClientPort: credentials.riotClientPort,
-        riotClientAuthToken: credentials.riotClientAuthToken,
-      });
-
       return credentials;
     } catch (error) {
       throw new Error(`获取LCU凭据失败: ${error}`);

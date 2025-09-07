@@ -11,19 +11,21 @@ import { GameflowPhaseEnum } from '@/types/gameflow-session';
 export function useGamePhaseHandler() {
   const lastPhase = ref<GameflowPhaseEnum | null>(null);
   const prePickSuccessTime = ref<number | null>(null);
+  const positionSettingsNotified = ref<boolean>(false); // 记录是否已经提示过位置设置未配置
+  const skipChampSelectPhase = ref<boolean>(false); // 记录是否跳过当前选人阶段
 
   const handleChampSelectPhase = async (): Promise<void> => {
     const session = await banPickService.getChampSelectSession();
     const { actions, myTeam, localPlayerCellId } = session;
     const flatActions = actions.flat();
-    const positionSettings = $local.getItem('positionSettings');
+    const positionSettings = $local.getItem('positionSettings')!;
 
-    if (!positionSettings) {
-      chatNotificationService.sendSystemMessage('未配置位置设置');
+    // 如果已经标记跳过当前选人阶段，则直接返回不做任何处理
+    if (skipChampSelectPhase.value) {
       return;
     }
 
-    // 检查是否是预选阶段，如果预选成功，15 秒以后就是开始 ban 了。
+    // 检查是否是预选阶段，如果预选成功，17 秒以后就是开始 ban 了。
     if (flatActions.every(a => !a.completed) && !prePickSuccessTime.value) {
       await autoActionService.executePrePickAction(session);
       // 记录预选成功的时间
@@ -35,9 +37,6 @@ export function useGamePhaseHandler() {
 
     // 如果在预选成功后的 17 秒内，不做任何检查
     if (prePickSuccessTime.value && Date.now() - prePickSuccessTime.value < s) {
-      chatNotificationService.sendSystemMessage(
-        `预选成功后等待中，剩余${Math.ceil((s - (Date.now() - prePickSuccessTime.value)) / 1000)}秒...`
-      );
       return;
     }
 
@@ -64,7 +63,12 @@ export function useGamePhaseHandler() {
 
     const myPositionInfo = positionSettings[myPosition];
     if (!myPositionInfo) {
-      chatNotificationService.sendSystemMessage('未配置当前位置的设置');
+      // 如果还没有提示过，则提示一次并标记跳过当前选人阶段
+      if (!positionSettingsNotified.value) {
+        chatNotificationService.sendSystemMessage('未配置当前位置的设置');
+        positionSettingsNotified.value = true;
+        skipChampSelectPhase.value = true;
+      }
       return;
     }
 
@@ -77,19 +81,11 @@ export function useGamePhaseHandler() {
     const countdown = $local.getItem(countdownKey) || 5;
     const remainingTime = gamePhaseManager.getRemainingTime(countdown);
     if (remainingTime > 0) {
-      const remainingSeconds = Math.ceil(remainingTime / 1000);
-      chatNotificationService.sendSystemMessage(
-        `⏳ ${type} 操作倒计时中，还剩 ${remainingSeconds} 秒`
-      );
       return;
     }
 
     // 倒计时结束，执行操作
     if (!gamePhaseManager.currentState.actionExecuted) {
-      resetPhaseState();
-      chatNotificationService.sendSystemMessage(
-        `⏰ ${type} 倒计时结束，开始执行操作`
-      );
       gamePhaseManager.markActionExecuted();
 
       if (type === 'ban') {
@@ -97,6 +93,7 @@ export function useGamePhaseHandler() {
       } else if (type === 'pick') {
         await autoActionService.executePickAction(flatActions, myPositionInfo);
       }
+      resetPhaseState();
     }
   };
 
@@ -104,6 +101,8 @@ export function useGamePhaseHandler() {
     gamePhaseManager.resetActionState();
     lastPhase.value = null;
     prePickSuccessTime.value = null;
+    positionSettingsNotified.value = false;
+    skipChampSelectPhase.value = false;
   };
 
   return {

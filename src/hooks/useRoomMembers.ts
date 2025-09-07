@@ -94,8 +94,18 @@ export function useRoomMembers() {
     currentPhase: GameflowPhaseEnum
   ): Promise<void> => {
     // 只在真正的Lobby阶段才调用房间API
-    if (currentPhase !== GameflowPhaseEnum.Lobby) {
-      console.log('🏠 当前不在房间阶段，跳过房间API调用');
+    if (
+      ![GameflowPhaseEnum.Matchmaking, GameflowPhaseEnum.Lobby].includes(
+        currentPhase
+      )
+    ) {
+      return;
+    }
+
+    if (
+      currentPhase === GameflowPhaseEnum.Matchmaking &&
+      roomMembers.value.length > 0
+    ) {
       return;
     }
 

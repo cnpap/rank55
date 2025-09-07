@@ -147,8 +147,6 @@ const currentPosition = computed(() => {
 // 加载英雄数据
 async function loadChampionData() {
   if (champions.value.length > 0) return;
-
-  isLoadingChampions.value = true;
   champions.value = Object.values(gameDataStore.champions);
 
   // 加载完成后同步本地数据

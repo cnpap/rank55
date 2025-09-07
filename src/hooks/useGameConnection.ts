@@ -17,22 +17,17 @@ export function useGameConnection() {
 
   const checkConnection = async (): Promise<boolean> => {
     try {
-      const connected = await connectionService.isConnected();
-
-      if (connected !== isConnected.value) {
-        if (connected) {
-          console.log('🔌 游戏客户端已连接');
-          // 在设置连接状态前，先获取并持久化游戏数据
-          await loadAndPersistGameData();
-          isConnected.value = connected;
-        } else {
-          console.log('🔌 游戏客户端连接断开');
-          clientUserStore.setUser({} as SummonerData);
-          isConnected.value = connected;
-        }
+      if (isConnected.value) {
+        console.log('🔌 游戏客户端已连接，无需重复连接');
+        return true;
       }
+      await connectionService.isConnected();
+      console.log('🔌 游戏客户端已连接');
+      // 在设置连接状态前，先获取并持久化游戏数据
+      await loadAndPersistGameData();
+      isConnected.value = true;
 
-      return connected;
+      return true;
     } catch (error) {
       console.error('检查连接状态失败:', error);
       return false;

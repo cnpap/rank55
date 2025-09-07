@@ -19,9 +19,9 @@ import { useClientUserStore } from '@/stores/client-user';
 import {
   connectionService,
   friendService,
-  summonerService,
 } from '@/lib/service/service-manager';
 import { Friend, SimpleFriend } from '@/types/friend';
+import { useGameState } from '@/lib/composables/useGameState';
 
 // Props 定义
 interface Props {
@@ -45,6 +45,7 @@ const matchHistoryStore = useMatchHistoryStore();
 // 弹出框状态
 const isDropdownOpen = ref(false);
 const searchContainerRef = ref<HTMLDivElement>();
+const { isConnected } = useGameState();
 
 // 本地搜索状态
 const summonerName = ref<SearchHistoryItem>({
@@ -62,11 +63,11 @@ const friendsRefreshTimer = ref<NodeJS.Timeout | null>(null);
 
 // 加载好友列表
 const loadFriends = async () => {
+  if (isConnected.value === false) {
+    return;
+  }
   try {
     isLoadingFriends.value = true;
-    if (!(await connectionService.isConnected())) {
-      return;
-    }
     friends.value = await friendService.getOnlineFriends();
   } catch (error) {
     console.error('获取好友列表失败:', error);
@@ -129,7 +130,7 @@ const simplifiedFriends = computed(() => {
 
 // 搜索功能
 const handleSearch = async () => {
-  if (!(await connectionService.isConnected())) {
+  if (isConnected.value === false) {
     return;
   }
 
@@ -149,7 +150,7 @@ const handleSearch = async () => {
 
 // 搜索当前登录的召唤师
 const searchCurrentSummoner = async () => {
-  if (!(await connectionService.isConnected())) {
+  if (isConnected.value === false) {
     return;
   }
   try {

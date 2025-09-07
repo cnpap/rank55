@@ -96,6 +96,7 @@ export function useAutoAcceptGame() {
 
       if (isConnectionError) {
         console.log('检测到连接错误，重置游戏阶段');
+        connection.resetConnection();
         if (currentPhase.value !== GameflowPhaseEnum.None) {
           currentPhase.value = GameflowPhaseEnum.None;
         }
@@ -110,7 +111,7 @@ export function useAutoAcceptGame() {
 
   const scheduleNextPoll = (): void => {
     if (gamePhaseTimer.value) {
-      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 700);
+      gamePhaseTimer.value = setTimeout(checkGamePhaseAndExecute, 1000);
     }
   };
 

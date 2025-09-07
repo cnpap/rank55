@@ -202,68 +202,65 @@ export abstract class BaseService {
     endpoint: string,
     options?: RequestOptions
   ): Promise<Buffer> {
-    // 将请求添加到队列中
-    return RequestQueue.addToQueue(async () => {
-      if (this.client) {
-        // 使用传入的 LCUClient（测试环境）
-        let response: Buffer;
-        let sequence: number;
+    if (this.client) {
+      // 使用传入的 LCUClient（测试环境）
+      let response: Buffer;
+      let sequence: number;
 
-        try {
-          // 获取序号
-          sequence = await RequestLogger.getNextSequence();
+      try {
+        // 获取序号
+        sequence = await RequestLogger.getNextSequence();
 
-          // 记录汇总日志（在请求前记录）
-          await RequestLogger.logSummary(sequence, method, endpoint);
+        // 记录汇总日志（在请求前记录）
+        await RequestLogger.logSummary(sequence, method, endpoint);
 
-          // 调用二进制请求方法
-          response = await this.client.makeBinaryRequest(
-            method,
-            endpoint,
-            options
-          );
+        // 调用二进制请求方法
+        response = await this.client.makeBinaryRequest(
+          method,
+          endpoint,
+          options
+        );
 
-          // 记录详细日志（对于二进制数据，只记录大小）
+        // 记录详细日志（对于二进制数据，只记录大小）
+        await RequestLogger.logRequest(
+          sequence,
+          method,
+          endpoint,
+          {
+            type: 'binary',
+            size: response.length,
+            preview: response.slice(0, 16).toString('hex'),
+          },
+          'application/octet-stream'
+        );
+
+        return response;
+      } catch (error: any) {
+        // 即使请求失败也要记录详细日志
+        if (sequence!) {
           await RequestLogger.logRequest(
             sequence,
             method,
             endpoint,
             {
-              type: 'binary',
-              size: response.length,
-              preview: response.slice(0, 16).toString('hex'),
+              error: error.message,
             },
             'application/octet-stream'
           );
-
-          return response;
-        } catch (error: any) {
-          // 即使请求失败也要记录详细日志
-          if (sequence!) {
-            await RequestLogger.logRequest(
-              sequence,
-              method,
-              endpoint,
-              {
-                error: error.message,
-              },
-              'application/octet-stream'
-            );
-          }
-          throw error;
         }
-      } else {
-        // 使用 electronAPI（前端环境）
-        if (
-          typeof window !== 'undefined' &&
-          window.electronAPI &&
-          window.electronAPI.lcuBinaryRequest
-        ) {
-          return window.electronAPI.lcuBinaryRequest(method, endpoint, options);
-        } else {
-          throw new Error('无法找到可用的 LCU 客户端连接方式（二进制请求）');
-        }
+        throw error;
       }
-    });
+    } else {
+      // 使用 electronAPI（前端环境）
+      if (
+        typeof window !== 'undefined' &&
+        window.electronAPI &&
+        window.electronAPI.lcuBinaryRequest
+      ) {
+        return window.electronAPI.lcuBinaryRequest(method, endpoint, options);
+      } else {
+        throw new Error('无法找到可用的 LCU 客户端连接方式（二进制请求）');
+      }
+    }
   }
 }
