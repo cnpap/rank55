@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Game } from '@/types/match-history-sgp';
-import { Sword, Shield } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { useClientUserStore } from '@/stores/client-user';
@@ -217,7 +216,7 @@ const formatValue = (value: number) => {
               </span>
               <button
                 @click="searchPlayerHistory(player.summonerName)"
-                class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:underline"
+                class="w-30 cursor-pointer truncate text-sm font-medium transition-colors hover:text-blue-600 hover:underline dark:hover:text-blue-400"
                 :title="`点击查询 ${player.displayName} 的战绩`"
                 :disabled="
                   player.displayName === '未知玩家' ||

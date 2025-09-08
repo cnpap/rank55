@@ -5,7 +5,8 @@ import { VueDraggable } from 'vue-draggable-plus';
 import { $local, type PositionSettings } from '@/storages/storage-use';
 import type { ChampionData } from '@/types/champion';
 import ChampionSelector from './ChampionSelector.vue';
-import { Plus, GripVertical, X } from 'lucide-vue-next';
+import PositionHelpGuide from './PositionHelpGuide.vue';
+import { Settings, GripVertical } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { AssignedPosition } from '@/types/players-info';
 import { gameDataStore } from '@/lib/db/game-data-db';
@@ -349,7 +350,39 @@ defineExpose({
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="space-y-4">
+    <!-- 列标题和说明 -->
+    <div
+      class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400"
+    >
+      <div class="flex min-w-[56px] items-center justify-center">
+        <span class="font-medium">位置</span>
+      </div>
+      <div class="w-[240px]">
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-red-600 dark:text-red-400"
+            >禁用英雄</span
+          >
+          <span class="text-xs">(最多 {{ MAX_BAN_CHAMPIONS }} 个)</span>
+        </div>
+        <div class="mt-1 text-xs text-gray-500">
+          拖拽调整优先级，点击推荐英雄快速添加
+        </div>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-emerald-600 dark:text-emerald-400"
+            >优先英雄</span
+          >
+          <span class="text-xs">(最多 {{ MAX_PICK_CHAMPIONS }} 个)</span>
+        </div>
+        <div class="mt-1 text-xs text-gray-500">
+          拖拽调整选择优先级，点击推荐英雄快速添加
+        </div>
+      </div>
+    </div>
+
+    <!-- 位置设置行 -->
     <div
       v-for="position in positions"
       :key="position.key"
@@ -373,7 +406,18 @@ defineExpose({
           <div
             class="flex h-[56px] items-center justify-start border-2 border-dashed border-red-200 bg-red-50/30 p-2 dark:border-red-800/50 dark:bg-red-950/20"
           >
-            <div class="flex w-full">
+            <!-- 空状态提示 -->
+            <div
+              v-if="
+                localBanChampions[position.key].length === 0 &&
+                getDisplayChampions(position.key, 'ban').recommendedChampions
+                  .length === 0
+              "
+              class="flex w-full items-center justify-center text-xs text-gray-400"
+            >
+              点击设置按钮添加禁用英雄
+            </div>
+            <div v-else class="flex w-full">
               <!-- 用户选择的英雄 - 支持拖拽 -->
               <VueDraggable
                 v-model="localBanChampions[position.key]"
@@ -387,7 +431,7 @@ defineExpose({
                 chosen-class="chosen-item"
                 drag-class="drag-item"
                 handle=".drag-handle"
-                class="flex gap-1"
+                class="flex"
                 @end="
                   () =>
                     handleReorderBan(
@@ -405,7 +449,7 @@ defineExpose({
                     :src="getChampionImageUrl(champion.key)"
                     :alt="champion.name"
                     :title="champion.name"
-                    class="h-8 w-8 cursor-pointer border-2 border-red-500 object-cover"
+                    class="h-10 w-10 cursor-pointer border-2 border-red-500 object-cover"
                   />
 
                   <!-- 拖拽手柄 -->
@@ -415,16 +459,20 @@ defineExpose({
                     <div
                       class="absolute inset-0 flex items-center justify-center bg-black/40"
                     >
-                      <GripVertical class="h-3 w-3 text-white" />
+                      <GripVertical class="h-4 w-4 text-white" />
                     </div>
                   </div>
 
                   <!-- 删除按钮 -->
                   <button
                     @click="removeUserChampion(position.key, 'ban', index)"
-                    class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
                   >
-                    <X class="h-2 w-2 text-white" />
+                    <img
+                      :src="staticAssets.getIcon('close')"
+                      alt="删除"
+                      class="h-4 w-4"
+                    />
                   </button>
                 </div>
               </VueDraggable>
@@ -452,9 +500,10 @@ defineExpose({
           <!-- 嵌入的选择按钮 -->
           <button
             @click="openChampionSelector(position.key, 'ban')"
+            :title="`添加${position.name}位置的禁用英雄`"
             class="absolute top-1/2 -right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-colors hover:bg-red-600"
           >
-            <Plus class="h-3 w-3" />
+            <Settings class="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -465,7 +514,18 @@ defineExpose({
           <div
             class="flex h-[56px] items-center justify-start border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-2 dark:border-emerald-800/50 dark:bg-emerald-950/20"
           >
-            <div class="flex w-full">
+            <!-- 空状态提示 -->
+            <div
+              v-if="
+                localPickChampions[position.key].length === 0 &&
+                getDisplayChampions(position.key, 'pick').recommendedChampions
+                  .length === 0
+              "
+              class="flex w-full items-center justify-center text-xs text-gray-400"
+            >
+              点击设置按钮添加优先英雄
+            </div>
+            <div v-else class="flex w-full">
               <!-- 用户选择的英雄 - 支持拖拽 -->
               <VueDraggable
                 v-model="localPickChampions[position.key]"
@@ -497,7 +557,7 @@ defineExpose({
                     :src="getChampionImageUrl(champion.key)"
                     :alt="champion.name"
                     :title="champion.name"
-                    class="h-8 w-8 cursor-pointer border-2 border-emerald-500 object-cover"
+                    class="h-10 w-10 cursor-pointer border-2 border-emerald-500 object-cover"
                   />
 
                   <!-- 拖拽手柄 -->
@@ -507,16 +567,20 @@ defineExpose({
                     <div
                       class="absolute inset-0 flex items-center justify-center bg-black/40"
                     >
-                      <GripVertical class="h-3 w-3 text-white" />
+                      <GripVertical class="h-4 w-4 text-white" />
                     </div>
                   </div>
 
                   <!-- 删除按钮 -->
                   <button
                     @click="removeUserChampion(position.key, 'pick', index)"
-                    class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 opacity-0 transition-opacity group-hover:opacity-100"
                   >
-                    <X class="h-3 w-3 text-white" />
+                    <img
+                      :src="staticAssets.getIcon('close')"
+                      alt="删除"
+                      class="h-4 w-4"
+                    />
                   </button>
                 </div>
               </VueDraggable>
@@ -548,9 +612,10 @@ defineExpose({
           <!-- 嵌入的选择按钮 -->
           <button
             @click="openChampionSelector(position.key, 'pick')"
+            :title="`添加${position.name}位置的优先英雄`"
             class="absolute top-1/2 -right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg transition-colors hover:bg-emerald-600"
           >
-            <Plus class="h-3 w-3" />
+            <Settings class="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -569,6 +634,9 @@ defineExpose({
       @remove-champion="removeChampion"
       @reorder-champions="reorderChampions"
     />
+
+    <!-- 帮助说明组件 -->
+    <PositionHelpGuide />
   </div>
 </template>
 

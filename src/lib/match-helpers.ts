@@ -465,7 +465,7 @@ export function calculateMVPScores(game: Game): MVPScoreData[] {
   const participants = game.json?.participants;
   if (!participants || participants.length === 0) return [];
 
-  // 计算团队平均伤害数据
+  // 计算团队平均数据
   const totalDamageDealt = participants.reduce(
     (sum, p) => sum + (p.totalDamageDealtToChampions || 0),
     0
@@ -474,9 +474,20 @@ export function calculateMVPScores(game: Game): MVPScoreData[] {
     (sum, p) => sum + (p.totalDamageTaken || 0),
     0
   );
+  const totalGold = participants.reduce(
+    (sum, p) => sum + (p.goldEarned || 0),
+    0
+  );
+  const totalCS = participants.reduce(
+    (sum, p) =>
+      sum + ((p.totalMinionsKilled || 0) + (p.neutralMinionsKilled || 0)),
+    0
+  );
 
   const avgDamageDealt = totalDamageDealt / participants.length;
   const avgDamageTaken = totalDamageTaken / participants.length;
+  const avgGold = totalGold / participants.length;
+  const avgCS = totalCS / participants.length;
 
   // 为每个玩家计算MVP分数
   const mvpScores: MVPScoreData[] = participants.map(participant => {
@@ -485,22 +496,32 @@ export function calculateMVPScores(game: Game): MVPScoreData[] {
     const assists = participant.assists || 0;
     const damageDealt = participant.totalDamageDealtToChampions || 0;
     const damageTaken = participant.totalDamageTaken || 0;
+    const gold = participant.goldEarned || 0;
+    const cs =
+      (participant.totalMinionsKilled || 0) +
+      (participant.neutralMinionsKilled || 0);
+    const killParticipation = participant.challenges?.killParticipation || 0;
 
-    // 计算KDA
+    // 计算KDA（降低权重）
     const kda = calculateKDAValue(kills, deaths, assists);
 
-    // 规范化伤害数据
+    // 规范化各项数据
     const normalizedDamageDealt =
       avgDamageDealt > 0 ? damageDealt / avgDamageDealt : 0;
     const normalizedDamageTaken =
       avgDamageTaken > 0 ? damageTaken / avgDamageTaken : 0;
+    const normalizedGold = avgGold > 0 ? gold / avgGold : 0;
+    const normalizedCS = avgCS > 0 ? cs / avgCS : 0;
 
-    // 计算MVP分数（通用版公式）
-    // MVP Score = 0.4 × KDA + 0.3 × Norm_Damage_Dealt × KDA + 0.3 × min(Norm_Damage_Taken, 2.0)
+    // 计算MVP分数（重新平衡的公式）
+    // 降低KDA权重，增加伤害输出、经济发育、参团率的重要性
     const mvpScore =
-      0.4 * kda +
-      0.3 * normalizedDamageDealt * kda +
-      0.3 * Math.min(normalizedDamageTaken, 2.0);
+      0.25 * Math.min(kda, 8) + // KDA权重降低，并设置上限避免极端值
+      0.35 * normalizedDamageDealt + // 纯伤害输出权重增加
+      0.15 * normalizedGold + // 经济发育
+      0.1 * normalizedCS + // 补刀发育
+      0.1 * (killParticipation * 2) + // 参团率（0-1转换为0-2）
+      0.05 * Math.min(normalizedDamageTaken, 2.0); // 承伤能力（坦克加分）
 
     return {
       participant,

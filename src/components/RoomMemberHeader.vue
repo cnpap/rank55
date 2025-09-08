@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { Crown, Copy } from 'lucide-vue-next';
 import type { MemberWithDetails } from '@/types/room-management';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/lib/player-helpers';
 import { getRankMiniImageUrl } from '@/lib/rank-helpers';
 import { staticAssets } from '@/assets/data-assets';
+import { useMatchHistoryStore } from '@/stores/match-history';
 
 interface Props {
   member: MemberWithDetails;
@@ -23,6 +24,8 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+const matchHistoryStore = useMatchHistoryStore();
+const serverId = inject<string>('serverId');
 
 // 获取单双排位信息
 const soloRankInfo = computed(() => {
@@ -56,6 +59,12 @@ const handleKick = () => {
 // 复制玩家名称
 const handleCopyName = async () => {
   await copyToClipboard(props.displayName, '玩家名称已复制到剪贴板');
+};
+
+// 搜索玩家战绩函数
+const searchPlayerHistory = async (displayName: string) => {
+  console.log(`displayName: ${displayName}`);
+  await matchHistoryStore.searchSummonerByName(displayName, serverId);
 };
 // 在 script setup 部分添加计算属性
 const avatarIconId = computed(() => {
@@ -117,87 +126,10 @@ const positionPreferences = computed(() => {
 
 <template>
   <div
-    class="relative overflow-hidden border-b border-slate-200/80 bg-white/90 p-3 dark:border-[#454545]/60 dark:bg-[#121212]/90"
+    class="flex items-center justify-between border-b border-slate-200/80 bg-white/90 dark:border-[#454545]/60 dark:bg-[#121212]/90"
   >
-    <!-- 踢出按钮 -->
-    <button
-      :disabled="member.isLeader || !canKick"
-      @click="handleKick"
-      :class="[
-        'absolute top-1.5 right-1 z-20 flex h-5 w-5 items-center justify-center border transition-all duration-150',
-        member.isLeader || !canKick
-          ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500'
-          : 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70',
-      ]"
-      :title="
-        member.isLeader
-          ? '房主无法被踢出'
-          : !canKick
-            ? '无权限踢出玩家'
-            : '踢出玩家'
-      "
-    >
-      <svg
-        class="h-2.5 w-2.5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2.5"
-          d="M6 18L18 6M6 6l12 12"
-        />
-      </svg>
-    </button>
-
-    <!-- 位置偏好显示区域 -->
-    <div class="absolute top-7.5 right-1 z-10 flex flex-col gap-0.5">
-      <!-- 第一位置偏好 -->
-      <div
-        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
-      >
-        <img
-          v-if="positionPreferences.first?.icon"
-          :src="positionPreferences.first.icon"
-          :alt="positionPreferences.first.name"
-          :title="`首选位置: ${positionPreferences.first.name}`"
-          class="h-3.5 w-3.5 object-contain opacity-90"
-        />
-        <img
-          v-else-if="
-            positionPreferences.assignedPosition &&
-            positionPreferences.assignedPosition.icon
-          "
-          :src="positionPreferences.assignedPosition.icon"
-          :alt="positionPreferences.assignedPosition.name"
-          :title="`位置: ${positionPreferences.assignedPosition.name}`"
-          class="h-3.5 w-3.5 object-contain opacity-90"
-        />
-        <div
-          v-else
-          class="h-3.5 w-3.5 rounded border border-dashed border-slate-300 dark:border-slate-600"
-          title="未选择首选位置"
-        ></div>
-      </div>
-
-      <!-- 第二位置偏好 -->
-      <div
-        v-if="positionPreferences.second?.icon"
-        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
-      >
-        <img
-          :src="positionPreferences.second.icon"
-          :alt="positionPreferences.second.name"
-          :title="`次选位置: ${positionPreferences.second.name}`"
-          class="h-3.5 w-3.5 object-contain opacity-75"
-        />
-      </div>
-    </div>
-
-    <!-- 玩家信息主体 -->
-    <div class="relative flex items-center gap-1">
+    <!-- 左侧：玩家信息主体 -->
+    <div class="flex min-w-0 flex-1 items-center gap-1 p-3">
       <!-- 头像区域 -->
       <div class="relative flex-shrink-0">
         <!-- 房主皇冠 -->
@@ -240,11 +172,16 @@ const positionPreferences = computed(() => {
       <div class="min-w-0 flex-1">
         <!-- 玩家名称行 -->
         <div class="mb-0 flex min-w-0 items-center gap-2">
-          <h3
-            class="min-w-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
+          <button
+            @click="searchPlayerHistory(displayName)"
+            class="min-w-0 truncate text-sm font-semibold text-slate-900 transition-colors hover:text-blue-600 hover:underline dark:text-slate-100 dark:hover:text-blue-400"
+            :title="`点击查询 ${displayName} 的战绩`"
+            :disabled="
+              displayName === '未知玩家' || matchHistoryStore.isSearching
+            "
           >
             {{ displayName }}
-          </h3>
+          </button>
           <button
             @click="handleCopyName"
             class="flex-shrink-0 text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -296,6 +233,85 @@ const positionPreferences = computed(() => {
             </span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 右侧：操作按钮和位置信息 -->
+    <div
+      class="flex h-full w-7 flex-shrink-0 flex-col items-center justify-center gap-0.5"
+    >
+      <!-- 踢出按钮 -->
+      <button
+        :disabled="member.isLeader || !canKick"
+        @click="handleKick"
+        :class="[
+          'flex h-5 w-5 items-center justify-center border transition-all duration-150',
+          member.isLeader || !canKick
+            ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500'
+            : 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70',
+        ]"
+        :title="
+          member.isLeader
+            ? '房主无法被踢出'
+            : !canKick
+              ? '无权限踢出玩家'
+              : '踢出玩家'
+        "
+      >
+        <svg
+          class="h-2.5 w-2.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+      <!-- 第一位置偏好 -->
+      <div
+        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+      >
+        <img
+          v-if="positionPreferences.first?.icon"
+          :src="positionPreferences.first.icon"
+          :alt="positionPreferences.first.name"
+          :title="`首选位置: ${positionPreferences.first.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-90"
+        />
+        <img
+          v-else-if="
+            positionPreferences.assignedPosition &&
+            positionPreferences.assignedPosition.icon
+          "
+          :src="positionPreferences.assignedPosition.icon"
+          :alt="positionPreferences.assignedPosition.name"
+          :title="`位置: ${positionPreferences.assignedPosition.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-90"
+        />
+        <div
+          v-else
+          class="h-3.5 w-3.5 rounded border border-dashed border-slate-300 dark:border-slate-600"
+          title="未选择首选位置"
+        ></div>
+      </div>
+
+      <!-- 第二位置偏好 -->
+      <div
+        v-if="positionPreferences.second?.icon"
+        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+      >
+        <img
+          :src="positionPreferences.second.icon"
+          :alt="positionPreferences.second.name"
+          :title="`次选位置: ${positionPreferences.second.name}`"
+          class="h-3.5 w-3.5 object-contain opacity-75"
+        />
       </div>
     </div>
   </div>
