@@ -13,7 +13,7 @@ function applyTheme(theme: Theme) {
 }
 
 // 主题状态
-const theme = useLocalStorage<Theme>(STORAGE_KEY, 'light');
+const theme = useLocalStorage<Theme>(STORAGE_KEY, 'dark');
 
 // 监听主题变化并应用
 watch(theme, applyTheme, { immediate: true });
