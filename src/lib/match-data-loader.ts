@@ -77,7 +77,8 @@ export class MatchDataLoader {
         this.serverId,
         puuid,
         0,
-        pageSize
+        pageSize,
+        'q_420'
       );
       const participant = sgpResult.games[0].json.participants.find(
         (p: any) => p.puuid === puuid
@@ -105,7 +106,7 @@ export class MatchDataLoader {
     puuid: string,
     currentPage: number,
     pageSize: number,
-    tag: string = 'all'
+    tag: string = 'q_420'
   ): Promise<{ games: any[]; totalCount: number }> {
     const startIndex = (currentPage - 1) * pageSize;
 

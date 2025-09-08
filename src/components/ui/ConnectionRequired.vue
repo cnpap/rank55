@@ -25,7 +25,7 @@
 
     <!-- 描述 -->
     <p class="mb-4 text-sm text-gray-600 dark:text-gray-400 max-w-md leading-relaxed">
-      {{ message || '此功能需要连接到英雄联盟客户端才能使用。请启动游戏客户端后，相关设置选项将自动显示。' }}
+      {{ message || '此功能需要连接到英雄联盟客户端才能使用。' }}
     </p>
   </div>
 </template>

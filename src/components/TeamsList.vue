@@ -3,6 +3,7 @@ import type { Game } from '@/types/match-history-sgp';
 import { Sword, Shield } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { useMatchHistoryStore } from '@/stores/match-history';
+import { useClientUserStore } from '@/stores/client-user';
 import { computed, inject } from 'vue';
 import type { Ref } from 'vue';
 
@@ -13,6 +14,7 @@ interface Props {
 const props = defineProps<Props>();
 const puuid = inject<string>('puuid');
 const matchHistoryStore = useMatchHistoryStore();
+const clientUserStore = useClientUserStore();
 const serverId = inject<string>('serverId');
 const dataDisplayMode = inject<Ref<'damage' | 'tank'>>('dataDisplayMode');
 
@@ -31,6 +33,7 @@ const teams = computed(() => {
         summonerName:
           `${p.riotIdGameName}#${p.riotIdTagline}` || p.summonerName,
         isCurrentPlayer: p.puuid === puuid,
+        isClientUser: p.puuid === clientUserStore.user.puuid,
         level: p.champLevel,
         kda: {
           kills: p.kills,
@@ -52,6 +55,7 @@ const teams = computed(() => {
         summonerName:
           `${p.riotIdGameName}#${p.riotIdTagline}` || p.summonerName,
         isCurrentPlayer: p.puuid === puuid,
+        isClientUser: p.puuid === clientUserStore.user.puuid,
         level: p.champLevel,
         kda: {
           kills: p.kills,
@@ -222,6 +226,15 @@ const formatValue = (value: number) => {
               >
                 {{ player.displayName }}
               </button>
+              <!-- "我"标签 - 绝对定位到左上角 -->
+              <span
+                v-if="player.isClientUser"
+                class="absolute -top-1 -left-2 z-10 flex h-3 w-3 items-center justify-center border border-white/20 bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-white shadow-md"
+                title="当前客户端用户"
+                style="font-size: 8px"
+              >
+                我
+              </span>
             </span>
             <span class="flex w-20 items-center justify-center">
               <span class="text-center text-xs font-medium">

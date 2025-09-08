@@ -51,6 +51,7 @@ export function useGameConnection() {
 
   const resetConnection = () => {
     isConnected.value = false;
+    clientUserStore.setUser({} as SummonerData);
   };
 
   // 加载并持久化游戏数据到 Dexie 数据库

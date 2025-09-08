@@ -8,7 +8,7 @@ import { inject, computed } from 'vue';
 import { ref } from 'vue';
 import Button from './ui/button/Button.vue';
 import { staticAssets } from '@/assets/data-assets';
-import { findMVPPlayer, isPlayerMVP } from '@/lib/match-helpers';
+import { isPlayerMVP } from '@/lib/match-helpers';
 
 interface Props {
   match: Game;
@@ -35,11 +35,6 @@ const currentPlayer = computed(() => {
 const gameResult = computed(() => {
   if (!currentPlayer.value) return 'unknown';
   return currentPlayer.value.win ? 'victory' : 'defeat';
-});
-
-// 使用工具函数计算MVP
-const mvpPlayer = computed(() => {
-  return findMVPPlayer(props.match);
 });
 
 // 判断当前玩家是否是 MVP

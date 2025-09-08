@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Game } from '@/types/match-history-sgp';
-import { formatNumber } from '@/lib/rank-helpers';
+import { formatNumber, formatGameDuration } from '@/lib/rank-helpers';
 import { formatDateToDay } from '@/utils/date-utils';
 import { Badge } from '@/components/ui/badge';
 import { staticAssets } from '@/assets/data-assets';
@@ -162,9 +162,16 @@ const queueType = computed(() => {
           <h4 class="text-foreground text-sm font-semibold">
             {{ queueType }}
           </h4>
-          <p class="text-muted-foreground text-xs">
-            {{ formatDateToDay(match.json.gameCreation as unknown as string) }}
-          </p>
+          <div class="flex items-center gap-2">
+            <p class="text-muted-foreground text-xs">
+              {{
+                formatDateToDay(match.json.gameCreation as unknown as string)
+              }}
+            </p>
+            <p class="text-muted-foreground text-xs font-medium">
+              {{ formatGameDuration(match.json.gameDuration) }}
+            </p>
+          </div>
         </div>
       </div>
 

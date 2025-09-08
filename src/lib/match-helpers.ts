@@ -428,11 +428,115 @@ export function collectAllItemIds(matchDetail: Game): Set<number> {
 }
 
 /**
- * 计算比赛中的MVP玩家（基于KDA最高）
+ * MVP分数数据接口
+ */
+export interface MVPScoreData {
+  participant: Participant;
+  kda: number;
+  normalizedDamageDealt: number;
+  normalizedDamageTaken: number;
+  mvpScore: number;
+}
+
+/**
+ * 计算KDA值（处理死亡为0的情况）
+ * @param kills 击杀数
+ * @param deaths 死亡数
+ * @param assists 助攻数
+ * @returns KDA值
+ */
+export function calculateKDAValue(
+  kills: number,
+  deaths: number,
+  assists: number
+): number {
+  if (deaths === 0) {
+    return (kills + assists) * 1.5; // 社区常见调整，避免无限高
+  }
+  return (kills + assists) / deaths;
+}
+
+/**
+ * 计算综合MVP分数
+ * @param game SGP 比赛数据
+ * @returns 所有玩家的MVP分数数据数组
+ */
+export function calculateMVPScores(game: Game): MVPScoreData[] {
+  const participants = game.json?.participants;
+  if (!participants || participants.length === 0) return [];
+
+  // 计算团队平均伤害数据
+  const totalDamageDealt = participants.reduce(
+    (sum, p) => sum + (p.totalDamageDealtToChampions || 0),
+    0
+  );
+  const totalDamageTaken = participants.reduce(
+    (sum, p) => sum + (p.totalDamageTaken || 0),
+    0
+  );
+
+  const avgDamageDealt = totalDamageDealt / participants.length;
+  const avgDamageTaken = totalDamageTaken / participants.length;
+
+  // 为每个玩家计算MVP分数
+  const mvpScores: MVPScoreData[] = participants.map(participant => {
+    const kills = participant.kills || 0;
+    const deaths = participant.deaths || 0;
+    const assists = participant.assists || 0;
+    const damageDealt = participant.totalDamageDealtToChampions || 0;
+    const damageTaken = participant.totalDamageTaken || 0;
+
+    // 计算KDA
+    const kda = calculateKDAValue(kills, deaths, assists);
+
+    // 规范化伤害数据
+    const normalizedDamageDealt =
+      avgDamageDealt > 0 ? damageDealt / avgDamageDealt : 0;
+    const normalizedDamageTaken =
+      avgDamageTaken > 0 ? damageTaken / avgDamageTaken : 0;
+
+    // 计算MVP分数（通用版公式）
+    // MVP Score = 0.4 × KDA + 0.3 × Norm_Damage_Dealt × KDA + 0.3 × min(Norm_Damage_Taken, 2.0)
+    const mvpScore =
+      0.4 * kda +
+      0.3 * normalizedDamageDealt * kda +
+      0.3 * Math.min(normalizedDamageTaken, 2.0);
+
+    return {
+      participant,
+      kda,
+      normalizedDamageDealt,
+      normalizedDamageTaken,
+      mvpScore,
+    };
+  });
+
+  return mvpScores;
+}
+
+/**
+ * 计算比赛中的MVP玩家（基于综合分数）
  * @param game SGP 比赛数据
  * @returns MVP玩家数据，如果没有参与者则返回null
  */
 export function findMVPPlayer(game: Game): Participant | null {
+  const mvpScores = calculateMVPScores(game);
+  if (mvpScores.length === 0) return null;
+
+  // 找到分数最高的玩家
+  const bestScore = mvpScores.reduce((best, current) => {
+    return current.mvpScore > best.mvpScore ? current : best;
+  });
+
+  return bestScore.participant;
+}
+
+/**
+ * 计算比赛中的MVP玩家（基于KDA最高，保留旧版本兼容性）
+ * @param game SGP 比赛数据
+ * @returns MVP玩家数据，如果没有参与者则返回null
+ */
+export function findMVPPlayerByKDA(game: Game): Participant | null {
   const participants = game.json?.participants;
   if (!participants || participants.length === 0) return null;
 
@@ -462,4 +566,18 @@ export function findMVPPlayer(game: Game): Participant | null {
 export function isPlayerMVP(game: Game, puuid: string): boolean {
   const mvpPlayer = findMVPPlayer(game);
   return mvpPlayer?.puuid === puuid;
+}
+
+/**
+ * 获取玩家的MVP分数数据
+ * @param game SGP 比赛数据
+ * @param puuid 玩家PUUID
+ * @returns 玩家的MVP分数数据，如果未找到则返回null
+ */
+export function getPlayerMVPScore(
+  game: Game,
+  puuid: string
+): MVPScoreData | null {
+  const mvpScores = calculateMVPScores(game);
+  return mvpScores.find(score => score.participant.puuid === puuid) || null;
 }

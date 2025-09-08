@@ -86,7 +86,7 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
   // 游戏模式过滤器
   const gameModesFilter = reactive<GameModesFilter>({
-    selectedTag: 'all',
+    selectedTag: 'q_420',
   });
 
   // 数据加载器
