@@ -6,7 +6,7 @@ import { $local, type PositionSettings } from '@/storages/storage-use';
 import type { ChampionData } from '@/types/champion';
 import ChampionSelector from './ChampionSelector.vue';
 import PositionHelpGuide from './PositionHelpGuide.vue';
-import { Settings, GripVertical } from 'lucide-vue-next';
+import { Settings, GripVertical, Plus } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { AssignedPosition } from '@/types/players-info';
 import { gameDataStore } from '@/lib/db/game-data-db';
@@ -360,9 +360,9 @@ defineExpose({
       </div>
       <div class="w-[240px]">
         <div class="flex items-center gap-2">
-          <span class="font-medium text-red-600 dark:text-red-400"
-            >禁用英雄</span
-          >
+          <span class="font-medium text-red-500 dark:text-red-400">
+            禁用英雄
+          </span>
           <span class="text-xs">(最多 {{ MAX_BAN_CHAMPIONS }} 个)</span>
         </div>
         <div class="mt-1 text-xs text-gray-500">
@@ -371,9 +371,9 @@ defineExpose({
       </div>
       <div class="flex-1">
         <div class="flex items-center gap-2">
-          <span class="font-medium text-emerald-600 dark:text-emerald-400"
-            >优先英雄</span
-          >
+          <span class="font-medium text-emerald-500 dark:text-emerald-400">
+            优先英雄
+          </span>
           <span class="text-xs">(最多 {{ MAX_PICK_CHAMPIONS }} 个)</span>
         </div>
         <div class="mt-1 text-xs text-gray-500">
@@ -503,7 +503,7 @@ defineExpose({
             :title="`添加${position.name}位置的禁用英雄`"
             class="absolute top-1/2 -right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-colors hover:bg-red-600"
           >
-            <Settings class="h-4 w-4" />
+            <Plus class="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -615,7 +615,7 @@ defineExpose({
             :title="`添加${position.name}位置的优先英雄`"
             class="absolute top-1/2 -right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg transition-colors hover:bg-emerald-600"
           >
-            <Settings class="h-4 w-4" />
+            <Plus class="h-4 w-4" />
           </button>
         </div>
       </div>

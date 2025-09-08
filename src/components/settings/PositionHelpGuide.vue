@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { staticAssets } from '@/assets/data-assets';
-import { Settings } from 'lucide-vue-next';
+import { Plus, Settings } from 'lucide-vue-next';
 // 帮助说明组件 - 无背景色设计
 </script>
 
@@ -71,11 +71,11 @@ import { Settings } from 'lucide-vue-next';
           <div class="h-3 w-3 rounded-sm bg-pink-500 shadow-sm"></div>
           <span class="flex items-center gap-1">
             <span class="font-medium"> 添加英雄 </span>
-            - 点击设置按钮
+            - 点击添加按钮
             <div
               class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-white shadow-sm"
             >
-              <Settings class="h-2.5 w-2.5" />
+              <Plus class="h-2.5 w-2.5" />
             </div>
             打开选择器
           </span>

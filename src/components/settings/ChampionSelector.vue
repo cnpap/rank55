@@ -12,7 +12,8 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
-import { Search, Users } from 'lucide-vue-next';
+import { Search, Users, X } from 'lucide-vue-next';
+import { staticAssets } from '@/assets/data-assets';
 
 interface Props {
   isOpen: boolean;
@@ -62,8 +63,18 @@ function handleReorderChampions(champions: ChampionData[]) {
 </script>
 
 <template>
-  <AlertDialog :open="isOpen" @update:open="open => !open && handleClose()">
-    <AlertDialogContent class="flex h-[85vh] w-[90vw] max-w-6xl flex-col p-0">
+  <AlertDialog
+    :open="isOpen"
+    @update:open="
+      open => {
+        if (!open) handleClose();
+      }
+    "
+  >
+    <AlertDialogContent
+      class="flex h-[85vh] w-[90vw] max-w-6xl flex-col p-0"
+      @pointer-down-outside="handleClose"
+    >
       <!-- 简化的标题栏 -->
       <div
         class="flex flex-shrink-0 items-center justify-between border-b px-6 py-4"
@@ -78,28 +89,20 @@ function handleReorderChampions(champions: ChampionData[]) {
           />
           <span class="text-lg font-semibold">{{ position.name }}</span>
         </div>
-
-        <div class="text-muted-foreground flex items-center gap-2 text-sm">
-          <Users class="h-4 w-4" />
-          <span>已选择:</span>
-          <Badge
-            variant="outline"
-            :class="{
-              'border-red-500/50 text-red-700 dark:text-red-400':
-                selectionType === 'ban',
-              'border-emerald-500/50 text-emerald-700 dark:text-emerald-400':
-                selectionType === 'pick',
-            }"
-          >
-            {{ selectedChampions.length }}
-          </Badge>
-        </div>
+        <AlertDialogCancel asChild>
+          <Button variant="ghost" size="icon">
+            <X class="h-4 w-4" />
+          </Button>
+        </AlertDialogCancel>
       </div>
 
       <!-- 内容区域 -->
       <div class="flex flex-1 flex-col overflow-hidden">
         <!-- 已选英雄区域 - 始终显示，避免布局抖动 -->
-        <div class="flex-shrink-0 px-6 pt-4">
+        <div
+          v-if="selectedChampions.length > 0"
+          class="flex-shrink-0 px-6 py-3"
+        >
           <SelectedChampionsList
             :champions="selectedChampions"
             :type="selectionType"
@@ -135,20 +138,6 @@ function handleReorderChampions(champions: ChampionData[]) {
           />
         </div>
       </div>
-
-      <!-- 底部操作栏 -->
-      <AlertDialogFooter class="flex-shrink-0 border-t px-6 py-4">
-        <div class="flex w-full items-center justify-between">
-          <div class="text-muted-foreground text-sm">
-            {{
-              selectionType === 'ban' ? '点击英雄进行禁用' : '点击英雄进行选择'
-            }}
-          </div>
-          <AlertDialogCancel asChild>
-            <Button variant="outline"> 关闭 </Button>
-          </AlertDialogCancel>
-        </div>
-      </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
 </template>

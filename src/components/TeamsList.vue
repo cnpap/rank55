@@ -228,7 +228,7 @@ const formatValue = (value: number) => {
               <!-- "我"标签 - 绝对定位到左上角 -->
               <span
                 v-if="player.isClientUser"
-                class="absolute -top-1 -left-2 z-10 flex h-3 w-3 items-center justify-center border border-white/20 bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-white shadow-md"
+                class="absolute -top-1 -left-1 z-10 flex h-3 w-3 items-center justify-center border border-white/20 bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-white shadow-md"
                 title="当前客户端用户"
                 style="font-size: 8px"
               >

@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 import type { ChampionData } from '@/types/champion';
-import { gameAssets } from '@/assets/data-assets';
+import { gameAssets, staticAssets } from '@/assets/data-assets';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, GripVertical } from 'lucide-vue-next';
@@ -47,15 +47,8 @@ function onEnd() {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <div class="flex items-center gap-2">
-      <h4 class="text-foreground text-sm font-medium">已选择的英雄</h4>
-      <Badge variant="secondary" class="text-xs">
-        {{ champions.length }}
-      </Badge>
-    </div>
-
-    <!-- 当有选择的英雄时显示拖拽列表 -->
+  <div>
+    <!-- 拖拽列表 -->
     <VueDraggable
       v-if="champions.length > 0"
       v-model="localChampions"
@@ -99,14 +92,16 @@ function onEnd() {
           </div>
 
           <!-- 删除按钮 -->
-          <Button
+          <span
             @click="handleRemove(index)"
-            size="sm"
-            variant="destructive"
             class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
           >
-            <X class="h-3 w-3" />
-          </Button>
+            <img
+              :src="staticAssets.getIcon('close')"
+              alt="删除"
+              class="h-5 w-5"
+            />
+          </span>
         </div>
       </div>
     </VueDraggable>
