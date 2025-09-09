@@ -252,7 +252,7 @@ defineExpose({
         <!-- 服务器选择框 - 作为输入框的前缀 -->
         <Select v-model="selectedServerId">
           <SelectTrigger
-            class="border-input bg-muted/30 -mt-1 h-8 w-28 border-0 text-xs ring-0 ring-offset-0 outline-none focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+            class="border-input bg-muted/30 -mt-1 h-8 w-24 border-0 text-xs ring-0 ring-offset-0 outline-none focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
           >
             <SelectValue placeholder="服务器" class="h-8" />
           </SelectTrigger>
@@ -272,7 +272,7 @@ defineExpose({
           <Input
             v-model="summonerName.name"
             placeholder="召唤师名称#00000..."
-            class="h-8 border-0 pr-20 pl-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+            class="h-8 border-0 pr-12 pl-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
             @keyup.enter="handleSearch"
             @focus="handleInputFocus"
             :disabled="isSearching"

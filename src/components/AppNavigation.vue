@@ -32,13 +32,13 @@ const navigateTo = async (path: string) => {
 
 <template>
   <!-- 桌面端导航 -->
-  <nav class="flex w-full items-center justify-between">
+  <nav class="flex h-full w-full items-center justify-between">
     <!-- 左侧导航菜单 -->
-    <div class="flex items-center space-x-1">
+    <div class="flex h-full items-center">
       <button
         v-for="item in navigationItems"
         :key="item.name"
-        class="relative px-3 py-1.5 text-sm font-medium transition-all duration-200"
+        class="relative h-full px-3 text-sm font-medium transition-all duration-200"
         :class="{
           'bg-primary/10': currentRoute === item.name,
           'text-muted-foreground hover:text-foreground hover:bg-muted/50':

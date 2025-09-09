@@ -48,7 +48,7 @@ const handleDoubleClick = () => {
       >
         <!-- 左侧导航 -->
         <div
-          class="flex h-full items-center px-3"
+          class="flex h-full items-center"
           style="-webkit-app-region: no-drag"
         >
           <AppNavigation />
@@ -70,26 +70,27 @@ const handleDoubleClick = () => {
           >
             <!-- 头像 -->
             <div class="relative">
-              <img
-                v-if="profileIconUrl"
-                :src="profileIconUrl"
-                :alt="displayName"
-                class="border-border h-6 w-6 border"
-                @error="() => {}"
-              />
+              <!-- 装饰外环 -->
               <div
-                v-else
-                class="bg-muted border-border flex h-6 w-6 items-center justify-center border"
-              >
-                <User class="text-muted-foreground h-3 w-3" />
-              </div>
-              <!-- 等级标识 -->
+                class="absolute -inset-0.5 rounded-full bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 blur-sm"
+              ></div>
+              <!-- 头像容器 -->
               <div
-                v-if="Boolean(summonerLevel)"
-                class="bg-primary text-primary-foreground absolute -right-2 -bottom-1.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-sm px-1 text-xs"
-                style="font-size: 10px; line-height: 1"
+                class="relative rounded-full bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-pink-500/50 p-0.5"
               >
-                {{ summonerLevel }}
+                <img
+                  v-if="profileIconUrl"
+                  :src="profileIconUrl"
+                  :alt="displayName"
+                  class="border-background h-5 w-5 rounded-full border-2 shadow-sm"
+                  @error="() => {}"
+                />
+                <div
+                  v-else
+                  class="bg-muted border-background flex h-5 w-5 items-center justify-center rounded-full border-2 shadow-sm"
+                >
+                  <User class="text-muted-foreground h-3 w-3" />
+                </div>
               </div>
             </div>
             <!-- 用户名 -->

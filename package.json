@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "rank55",
   "private": true,
-  "version": "0.0.21",
+  "version": "0.0.22",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {

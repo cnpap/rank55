@@ -210,11 +210,6 @@ const recentChampions = computed(() => {
                 class="absolute -top-2.5 -right-2.5 h-5 w-5"
                 alt="如果选中"
               />
-              <img
-                :src="staticAssets.getIcon('fire')"
-                class="h-5 w-5"
-                alt="输出图标"
-              />
               <span>看输出</span>
             </Button>
 
@@ -231,11 +226,6 @@ const recentChampions = computed(() => {
                 class="absolute -top-2.5 -right-2.5 h-5 w-5"
                 alt="如果选中"
               />
-              <img
-                :src="staticAssets.getIcon('protection')"
-                class="h-5 w-5"
-                alt="防护图标"
-              />
               <span>看承伤</span>
             </Button>
           </div>
@@ -247,16 +237,16 @@ const recentChampions = computed(() => {
         <div class="flex w-60 items-start">
           <!-- 左侧：最近对局和常用英雄（调整为与左侧筛选分页对齐） -->
           <div class="flex-shrink-0">
-            <!-- 第一行：最近对局统计（与筛选器对齐） -->
-            <div class="mb-3 flex h-8 items-center gap-1">
+            <!-- 第一行：最近对局统计（与看输出按钮对齐） -->
+            <div class="mb-1 flex h-9 items-center gap-1">
               <div class="font-tektur-numbers flex items-center gap-3 text-sm">
                 <span
                   class="font-medium text-emerald-600 dark:text-emerald-400"
                 >
-                  {{ overallStats.totalWins }}胜
+                  WIN: {{ overallStats.totalWins }}
                 </span>
                 <span class="font-medium text-red-500 dark:text-red-400">
-                  {{ overallStats.totalLosses }}负
+                  LOSS: {{ overallStats.totalLosses }}
                 </span>
                 <span class="font-medium text-slate-700 dark:text-slate-200">
                   {{ overallStats.winRate }}%
@@ -267,18 +257,20 @@ const recentChampions = computed(() => {
                 <span
                   class="flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400"
                 >
-                  <img
+                  <!-- <img
                     :src="staticAssets.getIcon('most-valuable-player2')"
                     class="h-4 w-4"
                     alt="MVP"
-                  />
-                  {{ overallStats.mvpCount }}次 ({{ overallStats.mvpRate }}%)
+                  /> -->
+                  MVP: {{ overallStats.mvpCount }}次 ({{
+                    overallStats.mvpRate
+                  }}%)
                 </span>
               </div>
             </div>
 
-            <!-- 第二行：常用英雄头像（与分页控制对齐） -->
-            <div class="flex h-8 items-center gap-3">
+            <!-- 第二行：常用英雄头像（与看承伤按钮对齐） -->
+            <div class="flex h-9 items-center gap-3">
               <div class="flex items-center gap-2">
                 <div
                   v-for="champion in recentChampions"
@@ -296,7 +288,7 @@ const recentChampions = computed(() => {
                       class="h-8 w-8 border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
                     <div
-                      class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-xs font-medium text-white shadow-sm"
+                      class="bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
                     >
                       {{ champion.games }}
                     </div>
@@ -382,7 +374,7 @@ const recentChampions = computed(() => {
                       <div
                         v-if="stat.count > 0"
                         :class="[
-                          'absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full text-xs font-medium text-white shadow-sm',
+                          'absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center text-xs font-medium text-white shadow-sm',
                           'bg-white text-blue-500',
                         ]"
                       >
