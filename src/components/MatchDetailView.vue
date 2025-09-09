@@ -572,12 +572,12 @@ const searchPlayerHistory = async (name: string) => {
                       <div
                         class="h-full"
                         :class="{
-                          'bg-green-500 dark:bg-green-400':
+                          'bg-green-500 dark:bg-green-600/70':
                             (participant.goldEarned || 0) === maxStats.maxGold,
-                          'bg-blue-400 dark:bg-slate-600':
+                          'bg-slate-600 dark:bg-slate-600':
                             participant.teamId === 100 &&
                             (participant.goldEarned || 0) !== maxStats.maxGold,
-                          'bg-red-400 dark:bg-slate-500':
+                          'bg-slate-500 dark:bg-slate-500':
                             participant.teamId === 200 &&
                             (participant.goldEarned || 0) !== maxStats.maxGold,
                         }"
@@ -608,7 +608,7 @@ const searchPlayerHistory = async (name: string) => {
                       <div
                         class="h-full"
                         :class="{
-                          'bg-green-500 dark:bg-green-400':
+                          'bg-green-500 dark:bg-green-600/70':
                             calculateCS(participant) === maxStats.maxCS,
                           'bg-blue-400 dark:bg-slate-600':
                             participant.teamId === 100 &&
@@ -651,14 +651,14 @@ const searchPlayerHistory = async (name: string) => {
                       <div
                         class="h-full"
                         :class="{
-                          'bg-green-500 dark:bg-green-400':
+                          'bg-green-500 dark:bg-green-600/70':
                             (participant.totalDamageDealtToChampions || 0) ===
                             maxStats.maxDamage,
-                          'bg-blue-400 dark:bg-slate-600':
+                          'bg-slate-600 dark:bg-slate-600':
                             participant.teamId === 100 &&
                             (participant.totalDamageDealtToChampions || 0) !==
                               maxStats.maxDamage,
-                          'bg-red-400 dark:bg-slate-500':
+                          'bg-slate-500 dark:bg-slate-500':
                             participant.teamId === 200 &&
                             (participant.totalDamageDealtToChampions || 0) !==
                               maxStats.maxDamage,
@@ -694,14 +694,14 @@ const searchPlayerHistory = async (name: string) => {
                       <div
                         class="h-full"
                         :class="{
-                          'bg-green-500 dark:bg-green-400':
+                          'bg-green-500 dark:bg-green-600/70':
                             (participant.totalDamageTaken || 0) ===
                             maxStats.maxDamageTaken,
-                          'bg-blue-400 dark:bg-slate-600':
+                          'bg-slate-600 dark:bg-slate-600':
                             participant.teamId === 100 &&
                             (participant.totalDamageTaken || 0) !==
                               maxStats.maxDamageTaken,
-                          'bg-red-400 dark:bg-slate-500':
+                          'bg-slate-500 dark:bg-slate-500':
                             participant.teamId === 200 &&
                             (participant.totalDamageTaken || 0) !==
                               maxStats.maxDamageTaken,

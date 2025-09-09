@@ -468,7 +468,7 @@ function generatePath(line: LineData): string {
             ></div>
             <div
               v-else-if="isBasicItem(node)"
-              class="absolute -right-1 -bottom-1 h-2 w-2 rounded-full border border-white bg-green-400 shadow-lg dark:border-gray-800"
+              class="absolute -right-1 -bottom-1 h-2 w-2 rounded-full border border-white bg-green-400 shadow-lg dark:border-gray-800 dark:bg-green-500/70"
             ></div>
           </div>
 
@@ -481,7 +481,7 @@ function generatePath(line: LineData): string {
                 node.level === 0
                   ? 'text-yellow-700 dark:text-yellow-300'
                   : isBasicItem(node)
-                    ? 'text-green-700 dark:text-green-300'
+                    ? 'text-green-700 dark:text-green-400/80'
                     : 'text-blue-700 dark:text-blue-300',
               ]"
               :title="node.item.name"
@@ -497,7 +497,7 @@ function generatePath(line: LineData): string {
                   node.level === 0
                     ? 'text-yellow-600 dark:text-yellow-400'
                     : isBasicItem(node)
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-green-600 dark:text-green-500/80'
                       : 'text-blue-600 dark:text-blue-400',
                 ]"
               >

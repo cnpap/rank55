@@ -94,6 +94,7 @@ const handleRetry = () => {
       <!-- 战绩信息 -->
       <div v-else-if="matchHistory && summoner">
         <BriefMatchHistory
+          class="gap-1"
           :match-history="matchHistory"
           :summoner="summoner"
           :max-matches="maxMatches"

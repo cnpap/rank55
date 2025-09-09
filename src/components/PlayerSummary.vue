@@ -75,8 +75,16 @@ const stats = computed(() => {
   };
 });
 
+// 判断是否为重开游戏（游戏时长小于5分钟）
+const isRemakeGame = computed(() => {
+  return props.match.json.gameDuration < 300; // 5分钟 = 300秒
+});
+
 // 获取队列类型
 const queueType = computed(() => {
+  if (isRemakeGame.value) {
+    return '重开';
+  }
   const queueId = props.match.json.queueId;
   const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
   return GAME_MODE_TAGS[queueKey] || '未知模式';
@@ -88,7 +96,7 @@ const queueType = computed(() => {
     <!-- 前三行：左右两个容器的布局 -->
     <div class="flex items-start justify-between">
       <!-- 左侧容器：英雄信息 + 游戏模式时间 (2行) -->
-      <div class="flex flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col">
         <!-- 第一行：英雄头像 + 召唤师技能 -->
         <div class="flex items-start gap-0.5">
           <!-- 英雄头像 + 等级 -->
@@ -102,13 +110,13 @@ const queueType = computed(() => {
               :alt="currentPlayer?.championName || '未知英雄'"
               class="ring-border/30 h-12 w-12 rounded object-cover ring-2"
             />
-            <div
+            <!-- <div
               class="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white"
             >
               <span class="font-tektur-numbers text-xs font-bold">
                 {{ stats.level }}
               </span>
-            </div>
+            </div> -->
           </div>
 
           <!-- 召唤师技能 + 天赋 -->
@@ -158,17 +166,17 @@ const queueType = computed(() => {
         </div>
 
         <!-- 第二行：游戏模式和时间 -->
-        <div class="text-left">
-          <h4 class="text-foreground text-sm font-semibold">
+        <div class="flex items-center gap-4">
+          <h4 class="text-foreground flex-shrink-0 text-sm font-semibold">
             {{ queueType }}
           </h4>
-          <div class="flex items-center gap-2">
-            <p class="text-muted-foreground text-xs">
+          <div class="text-muted-foreground flex items-center gap-2 text-xs">
+            <p class="whitespace-nowrap">
               {{
                 formatDateToDay(match.json.gameCreation as unknown as string)
               }}
             </p>
-            <p class="text-muted-foreground text-xs font-medium">
+            <p class="font-medium whitespace-nowrap">
               {{ formatGameDuration(match.json.gameDuration) }}
             </p>
           </div>
@@ -203,7 +211,7 @@ const queueType = computed(() => {
         </div>
 
         <!-- 第二行：经济 -->
-        <div class="flex items-center justify-end gap-1 text-xs">
+        <!-- <div class="flex items-center justify-end gap-1 text-xs">
           <span
             class="font-tektur-numbers flex w-12 items-center gap-1 font-semibold"
           >
@@ -216,10 +224,10 @@ const queueType = computed(() => {
             <span></span>
             {{ stats.cs }} CS
           </span>
-        </div>
+        </div> -->
 
         <!-- 第三行：伤害 -->
-        <div class="flex items-center justify-end gap-3 text-xs">
+        <!-- <div class="flex items-center justify-end gap-3 text-xs">
           <div class="flex w-12 items-center gap-1">
             <img class="h-3 w-3" :src="staticAssets.getIcon('fire')" />
             <span class="font-tektur-numbers font-semibold">
@@ -232,7 +240,7 @@ const queueType = computed(() => {
               {{ formatNumber(stats.damageTaken) }}
             </span>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -241,7 +249,7 @@ const queueType = computed(() => {
       <div
         v-for="(_itemId, index) in Array.from({ length: 6 })"
         :key="index"
-        class="relative h-8 w-8"
+        class="relative h-6 w-6"
       >
         <img
           v-if="items[index]"

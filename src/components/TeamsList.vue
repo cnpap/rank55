@@ -20,7 +20,7 @@ const dataDisplayMode = inject<Ref<'damage' | 'tank'>>('dataDisplayMode');
 // 获取队伍信息
 const teams = computed(() => {
   const blueTeam = props.match.json.participants.filter(p => p.teamId === 100);
-  const redTeam = props.match.json.participants.filter(p => p.teamId === 200);
+  const pinkTeam = props.match.json.participants.filter(p => p.teamId === 200);
 
   return [
     {
@@ -46,7 +46,7 @@ const teams = computed(() => {
       })),
     },
     {
-      players: redTeam.map(p => ({
+      players: pinkTeam.map(p => ({
         puuid: p.puuid,
         championId: p.championId,
         championName: p.championName,
@@ -166,8 +166,8 @@ const formatValue = (value: number) => {
     <!-- 队伍循环 -->
     <template v-for="(team, teamIndex) in teams" :key="teamIndex">
       <!-- 队伍玩家列表 -->
-      <div class="w-80">
-        <div class="space-y-0.5">
+      <div class="w-86">
+        <div class="">
           <div
             v-for="player in team?.players || []"
             :key="player.puuid"
@@ -175,12 +175,12 @@ const formatValue = (value: number) => {
             :class="{
               'bg-blue-100 dark:bg-blue-900/40':
                 teamIndex === 0 && player.isCurrentPlayer,
-              'bg-red-100 dark:bg-red-900/40':
+              'bg-pink-100 dark:bg-pink-900/40':
                 teamIndex === 1 && player.isCurrentPlayer,
             }"
           >
             <!-- 最高伤害和防御图标 -->
-            <div
+            <!-- <div
               class="absolute top-1/2 -right-0 z-10 flex -translate-y-1/2 gap-0.5"
             >
               <img
@@ -195,8 +195,8 @@ const formatValue = (value: number) => {
                 title="最高承伤"
                 :src="staticAssets.getIcon('protection')"
               />
-            </div>
-            <span class="relative flex w-34 items-center gap-0.5 py-0.5">
+            </div> -->
+            <span class="relative flex w-40 items-center gap-0.5">
               <img
                 :src="staticAssets.getChampionIcon(`${player.championId}`)"
                 :alt="player.championName"
@@ -206,9 +206,8 @@ const formatValue = (value: number) => {
               <span
                 class="w-9 text-center text-xs font-medium"
                 :class="{
-                  'font-bold text-green-600 dark:text-green-400': hasMaxLevel(
-                    player.level
-                  ),
+                  'font-bold text-green-600 dark:text-green-500/80':
+                    hasMaxLevel(player.level),
                 }"
                 :title="`等级: ${player.level}`"
               >
@@ -239,16 +238,15 @@ const formatValue = (value: number) => {
               <span class="text-center text-xs font-medium">
                 <span
                   :class="{
-                    'font-bold text-green-600 dark:text-green-400': hasMaxKills(
-                      player.kda.kills
-                    ),
+                    'font-bold text-green-600 dark:text-green-500/80':
+                      hasMaxKills(player.kda.kills),
                   }"
                   >{{ player.kda.kills }}</span
                 >
                 /
                 <span
                   :class="{
-                    'font-bold text-green-600 dark:text-green-400':
+                    'font-bold text-green-600 dark:text-green-500/80':
                       hasMinDeaths(player.kda.deaths),
                   }"
                   >{{ player.kda.deaths }}</span
@@ -256,7 +254,7 @@ const formatValue = (value: number) => {
                 /
                 <span
                   :class="{
-                    'font-bold text-green-600 dark:text-green-400':
+                    'font-bold text-green-600 dark:text-green-500/80':
                       hasMaxAssists(player.kda.assists),
                   }"
                   >{{ player.kda.assists }}</span
@@ -264,14 +262,10 @@ const formatValue = (value: number) => {
               </span>
             </span>
 
-            <span class="flex w-17 items-center">
+            <span class="flex w-24 items-center">
               <!-- 数值 -->
               <span
-                class="w-8 text-xs font-medium"
-                :class="{
-                  'text-blue-700 dark:text-slate-400': teamIndex === 0,
-                  'text-red-700 dark:text-slate-400': teamIndex === 1,
-                }"
+                class="w-8 text-xs font-medium text-slate-500 dark:text-slate-400"
               >
                 {{ formatValue(getPlayerValue(player)) }}
               </span>
@@ -283,12 +277,12 @@ const formatValue = (value: number) => {
                   <div
                     class="h-full"
                     :class="{
-                      'bg-green-500 dark:bg-green-400':
+                      'bg-green-500 dark:bg-green-600/70':
                         getPlayerValue(player) === maxValueForCurrentMode,
-                      'bg-blue-400 dark:bg-slate-600':
+                      'bg-slate-600 dark:bg-slate-600':
                         teamIndex === 0 &&
                         getPlayerValue(player) !== maxValueForCurrentMode,
-                      'bg-red-400 dark:bg-slate-500':
+                      'bg-slate-500 dark:bg-slate-500':
                         teamIndex === 1 &&
                         getPlayerValue(player) !== maxValueForCurrentMode,
                     }"

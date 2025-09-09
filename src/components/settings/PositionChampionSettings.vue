@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted, watch } from 'vue';
-import { toast } from 'vue-sonner';
+import { onMounted } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
-import { $local, type PositionSettings } from '@/storages/storage-use';
-import type { ChampionData } from '@/types/champion';
+import type { PositionSettings } from '@/storages/storage-use';
 import ChampionSelector from './ChampionSelector.vue';
 import PositionHelpGuide from './PositionHelpGuide.vue';
-import { Settings, GripVertical, Plus } from 'lucide-vue-next';
+import { GripVertical, Plus } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
-import { AssignedPosition } from '@/types/players-info';
-import { gameDataStore } from '@/lib/db/game-data-db';
 import {
   positions,
-  recommendedChampions,
   MAX_BAN_CHAMPIONS,
   MAX_PICK_CHAMPIONS,
 } from '@/config/position-config';
+import { usePositionChampionSettings } from '@/lib/composables/usePositionChampionSettings';
 
 // Props
 interface Props {
@@ -32,304 +28,32 @@ const props = withDefaults(defineProps<Props>(), {
   }),
 });
 
-// 英雄数据
-const champions = ref<ChampionData[]>([]);
-const isLoadingChampions = ref(false);
+// 使用业务逻辑 composable
+const {
+  champions,
+  isLoadingChampions,
+  positionSettings,
+  championSelection,
+  localBanChampions,
+  localPickChampions,
+  currentSelectedChampions,
+  currentPosition,
+  getDisplayChampions,
+  loadSettings,
+  loadChampionData,
+  resetSettings,
+  openChampionSelector,
+  closeChampionSelector,
+  toggleChampion,
+  removeChampion,
+  reorderChampions,
+  handleReorderBan,
+  handleReorderPick,
+  removeUserChampion,
+  selectRecommendedChampion,
+} = usePositionChampionSettings(props.modelValue);
 
-// 位置设置
-const positionSettings = reactive<PositionSettings>({ ...props.modelValue });
-
-// 英雄选择状态
-const championSelection = reactive<{
-  isOpen: boolean;
-  currentPosition: AssignedPosition;
-  currentType: '' | 'ban' | 'pick';
-}>({
-  isOpen: false,
-  currentPosition: '' as any,
-  currentType: '', // 'ban' 或 'pick'
-});
-
-// 拖拽用的本地数据
-const localBanChampions = ref<Record<AssignedPosition, ChampionData[]>>({
-  top: [],
-  jungle: [],
-  middle: [],
-  bottom: [],
-  support: [],
-});
-
-const localPickChampions = ref<Record<AssignedPosition, ChampionData[]>>({
-  top: [],
-  jungle: [],
-  middle: [],
-  bottom: [],
-  support: [],
-});
-
-// 获取显示的英雄列表（用户选择的 + 推荐的）
-function getDisplayChampions(position: AssignedPosition, type: 'ban' | 'pick') {
-  const setting = positionSettings[position];
-  const userChampions =
-    type === 'ban' ? setting.banChampions : setting.pickChampions;
-  const maxCount = type === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
-  const recommended = recommendedChampions[position];
-  const recommendedList =
-    type === 'ban' ? recommended.banChampions : recommended.pickChampions;
-
-  // 用户选择的英雄（转换为字符串key）
-  const userChampionKeys = userChampions.slice(0, maxCount);
-
-  // 获取推荐英雄，排除用户已选择的
-  const availableRecommended = recommendedList
-    .map(r => r.championId.toString())
-    .filter(key => !userChampionKeys.includes(key));
-
-  // 计算需要填充的推荐英雄数量
-  const needRecommendedCount = maxCount - userChampionKeys.length;
-  const recommendedToShow = availableRecommended.slice(0, needRecommendedCount);
-
-  // 返回显示列表：用户选择的 + 推荐的
-  return {
-    userChampions: userChampionKeys
-      .map(key => getChampionByKey(key))
-      .filter(Boolean) as ChampionData[],
-    recommendedChampions: recommendedToShow
-      .map(key => getChampionByKey(key))
-      .filter(Boolean) as ChampionData[],
-    totalDisplay: [...userChampionKeys, ...recommendedToShow],
-  };
-}
-
-// 同步本地拖拽数据
-function syncLocalChampions() {
-  positions.forEach(position => {
-    const displayData = getDisplayChampions(position.key, 'ban');
-    localBanChampions.value[position.key] = displayData.userChampions;
-
-    const pickDisplayData = getDisplayChampions(position.key, 'pick');
-    localPickChampions.value[position.key] = pickDisplayData.userChampions;
-  });
-}
-
-// 监听设置变化，同步本地数据
-watch(
-  () => positionSettings,
-  () => {
-    syncLocalChampions();
-  },
-  { deep: true }
-);
-
-// 当前选择的英雄列表
-const currentSelectedChampions = computed(() => {
-  if (!championSelection.currentPosition || !championSelection.currentType)
-    return [];
-
-  const setting = positionSettings[championSelection.currentPosition];
-  const championKeys =
-    championSelection.currentType === 'ban'
-      ? setting.banChampions
-      : setting.pickChampions;
-
-  return championKeys
-    .map(key => getChampionByKey(key))
-    .filter(Boolean) as ChampionData[];
-});
-
-// 当前位置信息
-const currentPosition = computed(() => {
-  return (
-    positions.find(p => p.key === championSelection.currentPosition) ||
-    positions[0]
-  );
-});
-
-// 加载英雄数据
-async function loadChampionData() {
-  if (champions.value.length > 0) return;
-  champions.value = Object.values(gameDataStore.champions);
-
-  // 加载完成后同步本地数据
-  syncLocalChampions();
-}
-
-// 加载设置
-function loadSettings() {
-  const savedPositionSettings = $local.getItem('positionSettings');
-  if (savedPositionSettings) {
-    Object.assign(positionSettings, savedPositionSettings);
-  }
-}
-
-// 保存设置
-function saveSettings() {
-  $local.setItem('positionSettings', positionSettings);
-  toast.success('位置设置已保存');
-}
-
-// 重置设置
-function resetSettings() {
-  Object.keys(positionSettings).forEach(key => {
-    positionSettings[key as AssignedPosition] = {
-      banChampions: [],
-      pickChampions: [],
-    };
-  });
-  saveSettings();
-}
-
-// 打开英雄选择器
-function openChampionSelector(position: string, type: 'ban' | 'pick') {
-  championSelection.currentPosition = position as AssignedPosition;
-  championSelection.currentType = type;
-  championSelection.isOpen = true;
-  loadChampionData();
-}
-
-// 关闭英雄选择器
-function closeChampionSelector() {
-  championSelection.isOpen = false;
-}
-
-// 切换英雄选择状态
-function toggleChampion(champion: ChampionData) {
-  const { currentPosition, currentType } = championSelection;
-  const setting = positionSettings[currentPosition];
-  const maxCount =
-    currentType === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
-
-  if (currentType === 'ban') {
-    const index = setting.banChampions.indexOf(champion.key);
-    if (index > -1) {
-      setting.banChampions.splice(index, 1);
-    } else if (setting.banChampions.length < maxCount) {
-      setting.banChampions.push(champion.key);
-    } else {
-      toast.error(`最多只能选择 ${maxCount} 个禁用英雄`);
-      return;
-    }
-  } else {
-    const index = setting.pickChampions.indexOf(champion.key);
-    if (index > -1) {
-      setting.pickChampions.splice(index, 1);
-    } else if (setting.pickChampions.length < maxCount) {
-      setting.pickChampions.push(champion.key);
-    } else {
-      toast.error(`最多只能选择 ${maxCount} 个优先英雄`);
-      return;
-    }
-  }
-
-  saveSettings();
-}
-
-// 从已选列表中移除英雄
-function removeChampion(index: number) {
-  const { currentPosition, currentType } = championSelection;
-  const setting = positionSettings[currentPosition];
-
-  if (currentType === 'ban') {
-    setting.banChampions.splice(index, 1);
-  } else {
-    setting.pickChampions.splice(index, 1);
-  }
-
-  saveSettings();
-}
-
-// 重新排序英雄
-function reorderChampions(newChampions: ChampionData[]) {
-  const { currentPosition, currentType } = championSelection;
-  const setting = positionSettings[currentPosition];
-  const newKeys = newChampions.map(c => c.key);
-
-  if (currentType === 'ban') {
-    setting.banChampions.splice(0, setting.banChampions.length, ...newKeys);
-  } else {
-    setting.pickChampions.splice(0, setting.pickChampions.length, ...newKeys);
-  }
-
-  saveSettings();
-}
-
-// 拖拽重新排序
-function handleReorderBan(
-  position: AssignedPosition,
-  newChampions: ChampionData[]
-) {
-  const newKeys = newChampions.map(c => c.key);
-  positionSettings[position].banChampions.splice(
-    0,
-    positionSettings[position].banChampions.length,
-    ...newKeys
-  );
-  saveSettings();
-}
-
-function handleReorderPick(
-  position: AssignedPosition,
-  newChampions: ChampionData[]
-) {
-  const newKeys = newChampions.map(c => c.key);
-  positionSettings[position].pickChampions.splice(
-    0,
-    positionSettings[position].pickChampions.length,
-    ...newKeys
-  );
-  saveSettings();
-}
-
-// 移除用户选择的英雄
-function removeUserChampion(
-  position: AssignedPosition,
-  type: 'ban' | 'pick',
-  index: number
-) {
-  const setting = positionSettings[position];
-
-  if (type === 'ban') {
-    setting.banChampions.splice(index, 1);
-  } else {
-    setting.pickChampions.splice(index, 1);
-  }
-
-  saveSettings();
-}
-
-// 点击推荐英雄
-function selectRecommendedChampion(
-  position: AssignedPosition,
-  type: 'ban' | 'pick',
-  championKey: string
-) {
-  const setting = positionSettings[position];
-  const maxCount = type === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
-
-  if (type === 'ban') {
-    if (
-      setting.banChampions.length < maxCount &&
-      !setting.banChampions.includes(championKey)
-    ) {
-      setting.banChampions.push(championKey);
-      saveSettings();
-    }
-  } else {
-    if (
-      setting.pickChampions.length < maxCount &&
-      !setting.pickChampions.includes(championKey)
-    ) {
-      setting.pickChampions.push(championKey);
-      saveSettings();
-    }
-  }
-}
-
-// 通过英雄key获取英雄信息
-function getChampionByKey(championKey: string): ChampionData | undefined {
-  return champions.value.find(c => c.key === championKey);
-}
-
+// 视图相关的辅助函数
 function getChampionImageUrl(championKey: string): string {
   return staticAssets.getChampionIcon(championKey);
 }

@@ -78,7 +78,7 @@ export interface ProcessedTeam {
 export interface BriefMatchData {
   gameId: number;
   championId: number;
-  result: 'victory' | 'defeat';
+  result: 'victory' | 'defeat' | 'remake';
   queueType: string;
   duration: string;
   createdAt: string;
@@ -200,15 +200,27 @@ export function processBriefMatch(
   const assists = currentPlayer.assists || 0;
   const kda = calculateKDA(kills, deaths, assists);
 
+  // 判断是否为重开游戏（游戏时长小于5分钟）
+  const isRemakeGame = game.json.gameDuration < 300;
+
   // 获取队列类型
   const queueId = game.json.queueId;
   const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
-  const queueType = GAME_MODE_TAGS[queueKey] || '未知模式';
+  const queueType = isRemakeGame
+    ? '重开'
+    : GAME_MODE_TAGS[queueKey] || '未知模式';
+
+  // 获取游戏结果
+  const result = isRemakeGame
+    ? 'remake'
+    : currentPlayer.win
+      ? 'victory'
+      : 'defeat';
 
   return {
     gameId: game.json.gameId,
     championId: currentPlayer.championId,
-    result: currentPlayer.win ? 'victory' : 'defeat',
+    result: result as 'victory' | 'defeat' | 'remake',
     queueType,
     duration: formatGameDuration(game.json.gameDuration),
     createdAt: game.json.gameCreation.toString(),

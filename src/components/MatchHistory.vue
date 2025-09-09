@@ -124,7 +124,7 @@ const handleRefresh = async () => {
                 <div ref="sentinelRef" class="h-0"></div>
                 <!-- 召唤师资料 -->
                 <div
-                  class="sticky top-10 z-50 bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-[#131313]/80 dark:to-[#151515]/90"
+                  class="sticky top-10 z-50 border border-t-0 bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm dark:from-[#131313]/80 dark:to-[#151515]/90"
                 >
                   <div class="pl-4">
                     <SummonerProfileComponent
@@ -144,9 +144,9 @@ const handleRefresh = async () => {
                   />
                 </div>
                 <!-- 历史战绩 - 直接使用 MatchListItem -->
-                <div v-if="showMatchHistory && matchHistory">
+                <div v-if="showMatchHistory && matchHistory" class="pt-2">
                   <div
-                    class="relative"
+                    class="relative mb-2"
                     v-for="(match, index) in matchHistory"
                     :key="`${match.json.gameId}-${index}`"
                   >

@@ -22,9 +22,18 @@ interface Props {
 const props = defineProps<Props>();
 
 // 获取队列类型名称
-const getQueueName = (queueId: number): string => {
+const getQueueName = (queueId: number, gameDuration: number): string => {
+  // 如果游戏时长小于5分钟，显示为重开
+  if (gameDuration < 300) {
+    return '重开';
+  }
   const queueKey = `q_${queueId}` as keyof typeof GAME_MODE_TAGS;
   return GAME_MODE_TAGS[queueKey] || '未知模式';
+};
+
+// 判断是否为重开游戏
+const isRemakeGame = (gameDuration: number): boolean => {
+  return gameDuration < 300; // 5分钟 = 300秒
 };
 
 // 过滤出当前召唤师参与的比赛
@@ -47,58 +56,52 @@ const validMatches = computed(
 </script>
 
 <template>
-  <div class="overflow-hidden">
+  <div class="gap-2 overflow-hidden pt-1">
     <div
       v-for="({ game, player }, index) in validMatches"
       :key="game.json.gameId"
-      class="relative overflow-hidden border-l-4"
-      :class="{
-        'border-l-emerald-500 bg-gradient-to-r from-emerald-50/60 via-emerald-50/30 to-emerald-50/10 shadow-emerald-100/50 dark:border-l-emerald-400 dark:from-emerald-950/40 dark:via-emerald-950/20 dark:to-emerald-950/5 dark:shadow-emerald-900/20':
-          player.win,
-        'border-l-red-500 bg-gradient-to-r from-red-50/60 via-red-50/30 to-red-50/10 shadow-red-100/50 dark:border-l-red-400 dark:from-red-950/40 dark:via-red-950/20 dark:to-red-950/5 dark:shadow-red-900/20':
-          !player.win,
-      }"
-      style="box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1)"
+      class="group bg-card relative mb-1 overflow-hidden border transition-all duration-300"
     >
-      <!-- 分隔线 (除了第一项) -->
-      <div
-        v-if="index > 0"
-        class="via-border/40 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent"
-      />
-
       <!-- 胜负纹理背景 -->
       <div
-        class="pointer-events-none absolute inset-0 opacity-[0.03]"
+        class="pointer-events-none absolute inset-0 opacity-[0.08] dark:opacity-[0.04]"
         :class="{
-          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.400)_0%,_transparent_50%)]':
-            player.win,
-          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.red.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.red.400)_0%,_transparent_50%)]':
-            !player.win,
+          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.300)_0%,_transparent_50%)]':
+            player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.pink.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.pink.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.rose.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.rose.300)_0%,_transparent_50%)]':
+            !player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.gray.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.gray.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.gray.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.gray.300)_0%,_transparent_50%)]':
+            isRemakeGame(game.json.gameDuration),
         }"
       />
 
-      <!-- 左侧强化指示条 -->
+      <!-- 左侧装饰条纹 -->
       <div
-        class="absolute top-0 left-0 h-full w-1 opacity-80"
+        class="absolute top-0 left-0 h-full w-2 opacity-60 dark:opacity-40"
         :class="{
-          'bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600':
-            player.win,
-          'bg-gradient-to-b from-red-400 via-red-500 to-red-600': !player.win,
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.600),_theme(colors.emerald.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.500),_theme(colors.emerald.500)_3px,_transparent_3px,_transparent_6px)]':
+            player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.pink.600),_theme(colors.pink.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
+            !player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.gray.600),_theme(colors.gray.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.gray.500),_theme(colors.gray.500)_3px,_transparent_3px,_transparent_6px)]':
+            isRemakeGame(game.json.gameDuration),
         }"
       />
 
       <!-- 右侧装饰条纹 -->
       <div
-        class="absolute top-0 right-0 h-full w-2 opacity-20"
+        class="absolute top-0 right-0 h-full w-2 opacity-60 dark:opacity-40"
         :class="{
-          'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.400),_theme(colors.emerald.400)_2px,_transparent_2px,_transparent_8px)]':
-            player.win,
-          'bg-[repeating-linear-gradient(45deg,_theme(colors.red.400),_theme(colors.red.400)_2px,_transparent_2px,_transparent_8px)]':
-            !player.win,
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.600),_theme(colors.emerald.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.500),_theme(colors.emerald.500)_3px,_transparent_3px,_transparent_6px)]':
+            player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.pink.600),_theme(colors.pink.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
+            !player.win && !isRemakeGame(game.json.gameDuration),
+          'bg-[repeating-linear-gradient(45deg,_theme(colors.gray.600),_theme(colors.gray.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.gray.500),_theme(colors.gray.500)_3px,_transparent_3px,_transparent_6px)]':
+            isRemakeGame(game.json.gameDuration),
         }"
       />
 
-      <div class="relative flex items-start gap-1 p-2 pl-3">
+      <div class="relative flex items-start gap-1 p-2 px-3">
         <!-- 英雄头像 -->
         <div class="relative flex-shrink-0">
           <img
@@ -106,9 +109,13 @@ const validMatches = computed(
             :alt="`英雄${player.championId}`"
             class="h-12 w-12 rounded-lg object-cover"
             :class="{
-              'shadow-lg ring-2 shadow-emerald-500/25 ring-emerald-400':
-                player.win,
-              'shadow-lg ring-2 shadow-red-500/25 ring-red-400': !player.win,
+              'shadow-lg shadow-emerald-500/25':
+                player.win && !isRemakeGame(game.json.gameDuration),
+              'shadow-lg shadow-pink-500/25 dark:shadow-rose-500/25':
+                !player.win && !isRemakeGame(game.json.gameDuration),
+              'shadow-lg shadow-gray-500/25': isRemakeGame(
+                game.json.gameDuration
+              ),
             }"
           />
           <!-- 英雄头像装饰光效 -->
@@ -116,8 +123,12 @@ const validMatches = computed(
             class="pointer-events-none absolute inset-0 rounded-lg opacity-20"
             :class="{
               'bg-gradient-to-br from-emerald-400/30 to-transparent':
-                player.win,
-              'bg-gradient-to-br from-red-400/30 to-transparent': !player.win,
+                player.win && !isRemakeGame(game.json.gameDuration),
+              'bg-gradient-to-br from-pink-400/30 to-transparent dark:from-rose-400/30':
+                !player.win && !isRemakeGame(game.json.gameDuration),
+              'bg-gradient-to-br from-gray-400/30 to-transparent': isRemakeGame(
+                game.json.gameDuration
+              ),
             }"
           />
         </div>
@@ -178,22 +189,21 @@ const validMatches = computed(
         <div class="flex h-12 min-w-0 flex-1 flex-col justify-center gap-1">
           <div class="flex items-center justify-between">
             <!-- 游戏模式 -->
-            <h4
-              class="truncate text-sm font-semibold"
-              :class="{
-                'text-emerald-800 dark:text-emerald-200': player.win,
-                'text-red-800 dark:text-red-200': !player.win,
-              }"
-            >
-              {{ getQueueName(game.json.queueId) }}
+            <h4 class="truncate text-sm font-semibold">
+              {{ getQueueName(game.json.queueId, game.json.gameDuration) }}
             </h4>
 
             <!-- 游戏开始时间 (在小屏幕时隐藏) -->
             <span
               class="font-tektur-numbers hidden text-xs xl:block"
               :class="{
-                'text-emerald-600 dark:text-emerald-400': player.win,
-                'text-red-600 dark:text-red-400': !player.win,
+                'text-emerald-600 dark:text-emerald-400':
+                  player.win && !isRemakeGame(game.json.gameDuration),
+                'text-pink-600 dark:text-rose-400':
+                  !player.win && !isRemakeGame(game.json.gameDuration),
+                'text-gray-600 dark:text-gray-400': isRemakeGame(
+                  game.json.gameDuration
+                ),
               }"
             >
               {{ formatDateToDay(game.json.gameCreation) }}
@@ -203,13 +213,7 @@ const validMatches = computed(
           <div class="flex items-center justify-between">
             <!-- KDA -->
             <div class="flex items-center gap-1">
-              <div
-                class="font-tektur-numbers font-bold"
-                :class="{
-                  'text-emerald-700 dark:text-emerald-300': player.win,
-                  'text-red-700 dark:text-red-300': !player.win,
-                }"
-              >
+              <div class="font-tektur-numbers font-bold">
                 {{ player.kills || 0 }}/{{ player.deaths || 0 }}/{{
                   player.assists || 0
                 }}
@@ -235,7 +239,7 @@ const validMatches = computed(
                       player.deaths || 0,
                       player.assists || 0
                     ).ratio < 3,
-                  'border border-red-200 bg-red-100 text-red-800 dark:border-red-700 dark:bg-red-900/60 dark:text-red-300':
+                  'border border-pink-200 bg-pink-100 text-pink-800 dark:border-rose-700 dark:bg-rose-900/60 dark:text-rose-300':
                     calculateKDA(
                       player.kills || 0,
                       player.deaths || 0,
@@ -257,8 +261,13 @@ const validMatches = computed(
             <span
               class="font-tektur-numbers hidden text-xs xl:block"
               :class="{
-                'text-emerald-600 dark:text-emerald-400': player.win,
-                'text-red-600 dark:text-red-400': !player.win,
+                'text-emerald-600 dark:text-emerald-400':
+                  player.win && !isRemakeGame(game.json.gameDuration),
+                'text-pink-600 dark:text-rose-400':
+                  !player.win && !isRemakeGame(game.json.gameDuration),
+                'text-gray-600 dark:text-gray-400': isRemakeGame(
+                  game.json.gameDuration
+                ),
               }"
             >
               {{ formatGameDuration(game.json.gameDuration) }}
