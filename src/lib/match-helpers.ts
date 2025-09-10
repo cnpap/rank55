@@ -391,55 +391,6 @@ export function processMatchDetail(
 }
 
 /**
- * 收集比赛中所有的英雄ID
- * @param matchDetail SGP 比赛数据
- * @returns 英雄ID集合
- */
-export function collectAllChampionIds(matchDetail: Game): Set<number> {
-  const allChampionIds = new Set<number>();
-
-  // 收集参与者的英雄ID
-  if (matchDetail.json?.participants) {
-    for (const participant of matchDetail.json.participants) {
-      allChampionIds.add(participant.championId);
-    }
-  }
-
-  // 收集禁用英雄ID
-  if (matchDetail.json?.teams) {
-    for (const team of matchDetail.json.teams) {
-      if (team.bans) {
-        for (const ban of team.bans) {
-          if (ban.championId && ban.championId !== -1) {
-            allChampionIds.add(ban.championId);
-          }
-        }
-      }
-    }
-  }
-
-  return allChampionIds;
-}
-
-/**
- * 收集比赛中所有的装备ID
- * @param matchDetail SGP 比赛数据
- * @returns 装备ID集合
- */
-export function collectAllItemIds(matchDetail: Game): Set<number> {
-  const allItemIds = new Set<number>();
-
-  if (matchDetail.json?.participants) {
-    for (const participant of matchDetail.json.participants) {
-      const items = collectPlayerItems(participant);
-      items.forEach(item => allItemIds.add(item));
-    }
-  }
-
-  return allItemIds;
-}
-
-/**
  * MVP分数数据接口
  */
 export interface MVPScoreData {

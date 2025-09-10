@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ChampionData } from '@/types/champion';
 import Loading from '@/components/Loading.vue';
 import { staticAssets } from '@/assets/data-assets';
+import { ChampionSummary } from '@/types/lol-game-data';
 
 interface Props {
-  champions: ChampionData[];
+  champions: ChampionSummary[];
   selectedChampionIds: string[];
   searchTerm: string;
   isLoading: boolean;
   selectionType: 'ban' | 'pick';
 }
+console.log();
 
 interface Emits {
-  (e: 'toggle-champion', champion: ChampionData): void;
+  (e: 'toggle-champion', champion: ChampionSummary): void;
 }
 
 const props = defineProps<Props>();
@@ -25,30 +26,16 @@ const filteredChampions = computed(() => {
   }
 
   const term = props.searchTerm.toLowerCase();
-  return props.champions.filter(champion => {
-    // 优先使用 query 字段进行搜索（包含拼音）
-    if (champion.query) {
-      return champion.query.toLowerCase().includes(term);
-    }
-
-    // 降级处理：如果没有 query 字段，使用原有逻辑
-    return (
+  return props.champions.filter(
+    champion =>
       champion.name.toLowerCase().includes(term) ||
-      champion.id.toLowerCase().includes(term) ||
-      champion.title.toLowerCase().includes(term)
-    );
-  });
+      champion.id.toString().toLowerCase().includes(term) ||
+      champion.description.toLowerCase().includes(term) ||
+      champion.alias.toLowerCase().includes(term)
+  );
 });
 
-function getChampionImageUrl(championKey: string): string {
-  return staticAssets.getChampionIcon(championKey);
-}
-
-function isChampionSelected(championId: string): boolean {
-  return props.selectedChampionIds.includes(championId);
-}
-
-function handleToggleChampion(champion: ChampionData) {
+function handleToggleChampion(champion: ChampionSummary) {
   emit('toggle-champion', champion);
 }
 </script>
@@ -71,18 +58,18 @@ function handleToggleChampion(champion: ChampionData) {
         @click="handleToggleChampion(champion)"
         class="cursor-pointer p-1 transition-colors"
         :class="
-          isChampionSelected(champion.id)
+          selectedChampionIds.includes(champion.id.toString())
             ? 'bg-blue-100 dark:bg-blue-900/30'
             : 'hover:bg-gray-100 dark:hover:bg-gray-800'
         "
       >
         <img
-          :src="getChampionImageUrl(champion.key)"
+          :src="staticAssets.getChampionIcon(champion.id)"
           :alt="champion.name"
           :title="champion.name"
           class="border-2 object-cover"
           :class="
-            isChampionSelected(champion.id)
+            selectedChampionIds.includes(champion.id.toString())
               ? selectionType === 'ban'
                 ? 'border-red-500'
                 : 'border-blue-500'

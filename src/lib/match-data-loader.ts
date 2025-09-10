@@ -2,7 +2,6 @@ import type { SummonerData } from '@/types/summoner';
 import type { LocalSearchResult } from '@/lib/composables/useMatchHistoryState';
 import { SgpMatchService } from './sgp/sgp-match-service';
 import { SummonerService } from './service/summoner-service';
-import { $local } from '@/storages/storage-use';
 
 /**
  * 战绩数据加载服务
@@ -11,25 +10,18 @@ export class MatchDataLoader {
   private summonerService: SummonerService;
   private sgpMatchService: SgpMatchService;
   private clientUser: SummonerData;
-  private clientServerId: string;
   private serverId: string;
 
   constructor(
     summonerService: SummonerService,
     sgpMatchService: SgpMatchService,
     clientUser: SummonerData,
-    clientServerId: string,
     serverId: string
   ) {
     this.summonerService = summonerService;
     this.sgpMatchService = sgpMatchService;
     this.clientUser = clientUser;
-    this.clientServerId = clientServerId;
     this.serverId = serverId;
-  }
-
-  private eqServerId() {
-    return this.serverId === this.clientServerId;
   }
 
   /**

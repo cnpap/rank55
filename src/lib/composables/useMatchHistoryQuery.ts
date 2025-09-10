@@ -96,7 +96,6 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     summonerService,
     sgpMatchService,
     userStore.user!,
-    userStore.serverId,
     serverId
   );
 

@@ -4,8 +4,6 @@
  * 版本相关资源请使用：import { versionedAssets, dataUtils, versionUtils } from '@/assets/versioned-assets'
  */
 
-import { envConfig } from '@/env';
-
 // 静态资源路径枚举（不需要版本控制的资源）
 export enum StaticAssets {
   // 版本信息文件
@@ -33,8 +31,6 @@ export enum StaticAssets {
   // 其他 icon 目录
   ICON_IMAGES = 'icon/',
 }
-
-const s3BaseDir = `http://${envConfig.endpoint()}/static`;
 
 /**
  * 获取 data 目录中的静态资源 URL
@@ -74,9 +70,8 @@ export const staticAssets = {
   // 图片资源（不需要版本控制）
   getItemIcon: (itemId: string) =>
     getDataAsset(`${StaticAssets.ITEM_IMAGES}${itemId}.png`),
-  getChampionIcon: (championKey: string) =>
+  getChampionIcon: (championKey: string | number) =>
     `rank55://lol-game-data/assets/v1/champion-icons/${championKey}.png`,
-  // getDataAsset(`${StaticAssets.CHAMPION_IMAGES}${championKey}.png`),
   getRankIcon: (rankId: string) =>
     getDataAsset(`${StaticAssets.RANK_IMAGES}${rankId}.png`),
   getRankMiniIcon: (rankId: string) =>
@@ -86,7 +81,6 @@ export const staticAssets = {
   getIcon: (iconName: string) => `./${StaticAssets.ICON_IMAGES}${iconName}.png`,
   getProfileIcon: (profileIconId: string) =>
     `rank55://lol-game-data/assets/v1/profile-icons/${profileIconId}.jpg`,
-  // `${s3BaseDir}/${StaticAssets.PROFILE_ICON_IMAGES}${profileIconId}.png`,
   getSpellIcon: (spellId: string) =>
     `./${StaticAssets.SPELL_IMAGES}${spellId}.png`,
 };

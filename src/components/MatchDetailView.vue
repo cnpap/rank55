@@ -5,20 +5,14 @@ import { Copy } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { getRankMiniImageUrl, getTierName } from '@/lib/rank-helpers';
 import { copyToClipboard } from '@/lib/player-helpers';
-import {
-  calculateKDA,
-  calculateCS,
-  getPlayerRunes,
-  collectAllChampionIds,
-  collectAllItemIds,
-} from '@/lib/match-helpers';
+import { calculateKDA, calculateCS, getPlayerRunes } from '@/lib/match-helpers';
 import { summonerService } from '@/lib/service/service-manager';
-import { BrowserDataLoader } from '@/lib/data-loader';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-vue-next';
 import { Game, Participant, Team } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
+import { gameDataStore } from '@/lib/db';
 
 interface Props {
   game: Game;
@@ -33,12 +27,6 @@ const matchHistoryStore = useMatchHistoryStore();
 
 const serverId = inject<string>('serverId');
 
-// 创建服务实例
-const dataLoader = new BrowserDataLoader();
-
-// 英雄和装备名称缓存
-const championNames = ref<Map<string, string>>(new Map());
-const itemNames = ref<Map<string, string>>(new Map());
 // 玩家段位信息缓存
 const playerRanks = ref<Map<string, [string, string, number]>>(new Map());
 
@@ -78,9 +66,7 @@ const getTeamBans = (team: Team) => {
     .filter(ban => ban.championId && ban.championId !== -1)
     .map(ban => ({
       championId: ban.championId,
-      championName:
-        championNames.value.get(String(ban.championId)) ||
-        `英雄${ban.championId}`,
+      championName: gameDataStore.champions[ban.championId]!.name,
     }));
 };
 
@@ -91,7 +77,7 @@ const getPlayerName = (participant: Participant): string => {
 
 // 获取英雄名称
 const getChampionName = (championId: number): string => {
-  return championNames.value.get(String(championId)) || `英雄${championId}`;
+  return gameDataStore.champions[championId]!.name;
 };
 
 // 获取玩家段位信息
@@ -101,19 +87,6 @@ const getPlayerRankInfo = (puuid: string): [string, string, number] => {
 
 // 初始化数据加载
 const initializeData = async () => {
-  // 收集所有英雄ID和装备ID
-  const allChampionIds = collectAllChampionIds(game);
-  const allItemIds = collectAllItemIds(game);
-
-  // 批量获取名称
-  const [champNames, itemNamesMap] = await Promise.all([
-    dataLoader.getChampionNames(Array.from(allChampionIds)),
-    dataLoader.getItemNames(Array.from(allItemIds)),
-  ]);
-
-  championNames.value = champNames;
-  itemNames.value = itemNamesMap;
-
   // 异步获取所有玩家的段位信息（不阻塞页面显示）
   loadPlayerRanks();
 };
@@ -750,54 +723,6 @@ const searchPlayerHistory = async (name: string) => {
                             ][index]
                           }`
                         )
-                      "
-                      :alt="
-                        itemNames.get(
-                          String(
-                            [
-                              participant.item0,
-                              participant.item1,
-                              participant.item2,
-                              participant.item3,
-                              participant.item4,
-                              participant.item5,
-                            ][index]
-                          )
-                        ) ||
-                        `装备${
-                          [
-                            participant.item0,
-                            participant.item1,
-                            participant.item2,
-                            participant.item3,
-                            participant.item4,
-                            participant.item5,
-                          ][index]
-                        }`
-                      "
-                      :title="
-                        itemNames.get(
-                          String(
-                            [
-                              participant.item0,
-                              participant.item1,
-                              participant.item2,
-                              participant.item3,
-                              participant.item4,
-                              participant.item5,
-                            ][index]
-                          )
-                        ) ||
-                        `装备${
-                          [
-                            participant.item0,
-                            participant.item1,
-                            participant.item2,
-                            participant.item3,
-                            participant.item4,
-                            participant.item5,
-                          ][index]
-                        }`
                       "
                       class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
                     />

@@ -6,9 +6,8 @@
 import { envConfig } from '@/env';
 import { getMajorVersion } from '@/utils/version';
 import { getDataAsset } from './data-assets';
-import { ItemTiny, ItemTinyData, TagData } from '@/types/item';
+import { TagData } from '@/types/item';
 import { ItemStats } from '@/types/item-raw';
-import { Champion } from '@/types/champion';
 
 // 游戏版本配置
 export let GameVersions: {
@@ -104,15 +103,10 @@ export const versionedAssets = {
 
 // 版本相关的数据加载工具
 export const dataUtils = {
-  // 基础数据获取
-  fetchItemData: (version?: string) =>
-    fetchData<ItemTiny>(versionedAssets.getItemTinyData(version)),
   fetchItemTags: (version?: string) =>
     fetchData<TagData>(versionedAssets.getItemTags(version)),
   fetchItemStats: (version?: string) =>
     fetchData<ItemStats>(versionedAssets.getItemStats(version)),
-  fetchChampionData: (version?: string) =>
-    fetchData<Champion>(versionedAssets.getChampionData(version)),
 
   // 英雄详细数据获取
   async fetchChampionDetail(

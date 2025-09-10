@@ -1,8 +1,7 @@
 import { LCUClientInterface, RequestOptions } from '../client/interface';
-import { RequestLogger } from './request-logger';
+// import { RequestLogger } from './request-logger';
 import { RequestQueue } from './request-queue';
 import { DebounceCache } from './debounce-cache';
-import { connectionService } from './service-manager';
 
 /**
  * 基础服务类
@@ -34,81 +33,46 @@ export abstract class BaseService {
       if (this.client) {
         // 使用传入的 LCUClient（测试环境）
         let response: any;
-        let sequence: number;
-
-        try {
-          // 获取序号
-          sequence = await RequestLogger.getNextSequence();
-
-          // 记录汇总日志（在请求前记录）
-          await RequestLogger.logSummary(sequence, method, endpoint);
-
-          // 根据 isRiotApi 选择调用方式
-          if (isRiotApi) {
-            response = await this.client.makeRiotRequest<T>(
-              method,
-              endpoint,
-              options
-            );
-          } else {
-            response = await this.client.makeRequest<T>(
-              method,
-              endpoint,
-              options
-            );
-          }
-
-          // 推断 Content-Type（基于响应内容）
-          let contentType = 'application/json'; // 默认值
-          let statusCode: number | undefined;
-
-          // 检查响应类型并推断 Content-Type
-          if (response === null || response === undefined) {
-            contentType = 'application/json';
-          } else if (typeof response === 'string') {
-            contentType = 'text/plain';
-          } else if (typeof response === 'object') {
-            contentType = 'application/json';
-          }
-
-          // 如果响应包含元数据（未来扩展）
-          if (
-            response &&
-            typeof response === 'object' &&
-            response.hasOwnProperty('data') &&
-            response.hasOwnProperty('headers')
-          ) {
-            contentType = response.headers?.['content-type'] || contentType;
-            statusCode = response.statusCode;
-            response = response.data;
-          }
-
-          // 记录详细日志
-          await RequestLogger.logRequest(
-            sequence,
+        // 根据 isRiotApi 选择调用方式
+        if (isRiotApi) {
+          response = await this.client.makeRiotRequest<T>(
             method,
             endpoint,
-            response,
-            contentType,
-            statusCode
+            options
           );
-
-          return response;
-        } catch (error: any) {
-          // 即使请求失败也要记录详细日志
-          if (sequence!) {
-            await RequestLogger.logRequest(
-              sequence,
-              method,
-              endpoint,
-              {
-                error: error.message,
-              },
-              'application/json'
-            );
-          }
-          throw error;
+        } else {
+          response = await this.client.makeRequest<T>(
+            method,
+            endpoint,
+            options
+          );
         }
+
+        // 推断 Content-Type（基于响应内容）
+        let contentType = 'application/json'; // 默认值
+        let statusCode: number | undefined;
+
+        // 检查响应类型并推断 Content-Type
+        if (response === null || response === undefined) {
+          contentType = 'application/json';
+        } else if (typeof response === 'string') {
+          contentType = 'text/plain';
+        } else if (typeof response === 'object') {
+          contentType = 'application/json';
+        }
+
+        // 如果响应包含元数据（未来扩展）
+        if (
+          response &&
+          typeof response === 'object' &&
+          response.hasOwnProperty('data') &&
+          response.hasOwnProperty('headers')
+        ) {
+          contentType = response.headers?.['content-type'] || contentType;
+          statusCode = response.statusCode;
+          response = response.data;
+        }
+        return response;
       } else {
         // 使用 electronAPI（前端环境）
         if (
@@ -205,48 +169,11 @@ export abstract class BaseService {
     if (this.client) {
       // 使用传入的 LCUClient（测试环境）
       let response: Buffer;
-      let sequence: number;
 
-      try {
-        // 获取序号
-        sequence = await RequestLogger.getNextSequence();
+      // 调用二进制请求方法
+      response = await this.client.makeBinaryRequest(method, endpoint, options);
 
-        // 调用二进制请求方法
-        response = await this.client.makeBinaryRequest(
-          method,
-          endpoint,
-          options
-        );
-
-        // 记录详细日志（对于二进制数据，只记录大小）
-        await RequestLogger.logRequest(
-          sequence,
-          method,
-          endpoint,
-          {
-            type: 'binary',
-            size: response.length,
-            preview: response.slice(0, 16).toString('hex'),
-          },
-          'application/octet-stream'
-        );
-
-        return response;
-      } catch (error: any) {
-        // 即使请求失败也要记录详细日志
-        if (sequence!) {
-          await RequestLogger.logRequest(
-            sequence,
-            method,
-            endpoint,
-            {
-              error: error.message,
-            },
-            'application/octet-stream'
-          );
-        }
-        throw error;
-      }
+      return response;
     } else {
       // 使用 electronAPI（前端环境）
       if (

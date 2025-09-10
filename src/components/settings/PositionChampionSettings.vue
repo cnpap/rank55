@@ -32,7 +32,6 @@ const props = withDefaults(defineProps<Props>(), {
 const {
   champions,
   isLoadingChampions,
-  positionSettings,
   championSelection,
   localBanChampions,
   localPickChampions,
@@ -40,7 +39,7 @@ const {
   currentPosition,
   getDisplayChampions,
   loadSettings,
-  loadChampionData,
+  loadChampionSummaries,
   resetSettings,
   openChampionSelector,
   closeChampionSelector,
@@ -54,17 +53,13 @@ const {
 } = usePositionChampionSettings(props.modelValue);
 
 // 视图相关的辅助函数
-function getChampionImageUrl(championKey: string): string {
-  return staticAssets.getChampionIcon(championKey);
-}
-
-function getPositionIconUrl(iconName: string): string {
-  return `./role/${iconName}`;
+function getChampionImageUrl(championKey: string | number): string {
+  return staticAssets.getChampionIcon(championKey as string);
 }
 
 onMounted(() => {
   loadSettings();
-  loadChampionData();
+  loadChampionSummaries();
 });
 
 // 暴露方法给父组件
@@ -116,7 +111,7 @@ defineExpose({
       <div class="flex min-w-[56px] items-center justify-center border">
         <div class="flex h-[56px] w-[56px] items-center justify-center p-3">
           <img
-            :src="getPositionIconUrl(position.icon)"
+            :src="`./role/${position.icon}`"
             :alt="position.name"
             :title="position.name"
             class="h-6 w-6 object-cover opacity-70 brightness-0 dark:invert"
@@ -166,11 +161,11 @@ defineExpose({
               >
                 <div
                   v-for="(champion, index) in localBanChampions[position.key]"
-                  :key="`user-ban-${champion.key}`"
+                  :key="`user-ban-${champion.id}`"
                   class="group relative mr-1"
                 >
                   <img
-                    :src="getChampionImageUrl(champion.key)"
+                    :src="getChampionImageUrl(champion.id)"
                     :alt="champion.name"
                     :title="champion.name"
                     class="h-10 w-10 cursor-pointer border-2 border-red-500 object-cover"
@@ -205,16 +200,16 @@ defineExpose({
               <div
                 v-for="champion in getDisplayChampions(position.key, 'ban')
                   .recommendedChampions"
-                :key="`rec-ban-${champion.key}`"
+                :key="`rec-ban-${champion.id}`"
                 class="group relative mr-1"
               >
                 <img
-                  :src="getChampionImageUrl(champion.key)"
+                  :src="getChampionImageUrl(champion.id)"
                   :alt="champion.name"
                   :title="`推荐禁用: ${champion.name}`"
                   class="h-8 w-8 cursor-pointer border border-red-300 object-cover grayscale transition-all hover:grayscale-0"
                   @click="
-                    selectRecommendedChampion(position.key, 'ban', champion.key)
+                    selectRecommendedChampion(position.key, 'ban', champion.id)
                   "
                 />
               </div>
@@ -274,11 +269,11 @@ defineExpose({
               >
                 <div
                   v-for="(champion, index) in localPickChampions[position.key]"
-                  :key="`user-pick-${champion.key}`"
+                  :key="`user-pick-${champion.id}`"
                   class="group relative mr-1"
                 >
                   <img
-                    :src="getChampionImageUrl(champion.key)"
+                    :src="getChampionImageUrl(champion.id)"
                     :alt="champion.name"
                     :title="champion.name"
                     class="h-10 w-10 cursor-pointer border-2 border-emerald-500 object-cover"
@@ -313,20 +308,16 @@ defineExpose({
               <div
                 v-for="champion in getDisplayChampions(position.key, 'pick')
                   .recommendedChampions"
-                :key="`rec-pick-${champion.key}`"
+                :key="`rec-pick-${champion.id}`"
                 class="group relative mr-1"
               >
                 <img
-                  :src="getChampionImageUrl(champion.key)"
+                  :src="getChampionImageUrl(champion.id)"
                   :alt="champion.name"
                   :title="`推荐选择: ${champion.name}`"
                   class="h-8 w-8 cursor-pointer border border-emerald-300 object-cover grayscale transition-all hover:grayscale-0"
                   @click="
-                    selectRecommendedChampion(
-                      position.key,
-                      'pick',
-                      champion.key
-                    )
+                    selectRecommendedChampion(position.key, 'pick', champion.id)
                   "
                 />
               </div>

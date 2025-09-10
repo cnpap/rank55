@@ -1,24 +1,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { ChampionData } from '@/types/champion';
 import ChampionList from './ChampionList.vue';
 import SelectedChampionsList from './SelectedChampionsList.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
-import { Search, Users, X } from 'lucide-vue-next';
-import { staticAssets } from '@/assets/data-assets';
+import { Search, X } from 'lucide-vue-next';
+import { ChampionSummary } from '@/types/lol-game-data';
 
 interface Props {
   isOpen: boolean;
-  champions: ChampionData[];
-  selectedChampions: ChampionData[];
+  champions: ChampionSummary[];
+  selectedChampions: ChampionSummary[];
   position: { key: string; name: string; icon: string };
   selectionType: 'ban' | 'pick';
   isLoading: boolean;
@@ -26,9 +23,9 @@ interface Props {
 
 interface Emits {
   (e: 'close'): void;
-  (e: 'toggle-champion', champion: ChampionData): void;
+  (e: 'toggle-champion', champion: ChampionSummary): void;
   (e: 'remove-champion', index: number): void;
-  (e: 'reorder-champions', champions: ChampionData[]): void;
+  (e: 'reorder-champions', champions: ChampionSummary[]): void;
 }
 
 const props = defineProps<Props>();
@@ -37,19 +34,15 @@ const emit = defineEmits<Emits>();
 const searchTerm = ref('');
 
 const selectedChampionIds = computed(() =>
-  props.selectedChampions.map(c => c.id)
+  props.selectedChampions.map(c => c.id.toString())
 );
-
-function getPositionIconUrl(iconName: string): string {
-  return `./role/${iconName}`;
-}
 
 function handleClose() {
   searchTerm.value = '';
   emit('close');
 }
 
-function handleToggleChampion(champion: ChampionData) {
+function handleToggleChampion(champion: ChampionSummary) {
   emit('toggle-champion', champion);
 }
 
@@ -57,7 +50,7 @@ function handleRemoveChampion(index: number) {
   emit('remove-champion', index);
 }
 
-function handleReorderChampions(champions: ChampionData[]) {
+function handleReorderChampions(champions: ChampionSummary[]) {
   emit('reorder-champions', champions);
 }
 </script>
@@ -83,7 +76,7 @@ function handleReorderChampions(champions: ChampionData[]) {
           class="flex items-center gap-3 object-cover opacity-70 brightness-0 dark:invert"
         >
           <img
-            :src="getPositionIconUrl(position.icon)"
+            :src="`./role/${position.icon}`"
             :alt="position.name"
             class="h-8 w-8"
           />

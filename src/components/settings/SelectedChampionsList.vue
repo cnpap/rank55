@@ -1,27 +1,25 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
-import type { ChampionData } from '@/types/champion';
-import { gameAssets, staticAssets } from '@/assets/data-assets';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { X, GripVertical } from 'lucide-vue-next';
+import { staticAssets } from '@/assets/data-assets';
+import { GripVertical } from 'lucide-vue-next';
+import { ChampionSummary } from '@/types/lol-game-data';
 
 interface Props {
-  champions: ChampionData[];
+  champions: ChampionSummary[];
   type: 'ban' | 'pick';
 }
 
 interface Emits {
   (e: 'remove', index: number): void;
-  (e: 'reorder', champions: ChampionData[]): void;
+  (e: 'reorder', champions: ChampionSummary[]): void;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // 使用本地响应式数据来处理拖拽
-const localChampions = ref<ChampionData[]>([...props.champions]);
+const localChampions = ref<ChampionSummary[]>([...props.champions]);
 
 // 监听props变化，同步到本地数据
 watch(
@@ -32,8 +30,8 @@ watch(
   { deep: true }
 );
 
-function getChampionImageUrl(championKey: string): string {
-  return gameAssets.getChampionIcon(championKey);
+function getChampionImageUrl(championId: string | number): string {
+  return staticAssets.getChampionIcon(championId as string);
 }
 
 function handleRemove(index: number) {
@@ -73,7 +71,7 @@ function onEnd() {
         <!-- 英雄头像容器 -->
         <div class="relative h-full w-full">
           <img
-            :src="getChampionImageUrl(champion.key)"
+            :src="getChampionImageUrl(champion.id)"
             :alt="champion.name"
             :title="champion.name"
             class="h-full w-full border-2 object-cover transition-all duration-200 group-hover:scale-105"

@@ -1,7 +1,6 @@
 import { reactive, computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { $local, type PositionSettings } from '@/storages/storage-use';
-import type { ChampionData } from '@/types/champion';
 import { AssignedPosition } from '@/types/players-info';
 import { gameDataStore } from '@/lib/db/game-data-db';
 import {
@@ -10,6 +9,7 @@ import {
   MAX_BAN_CHAMPIONS,
   MAX_PICK_CHAMPIONS,
 } from '@/config/position-config';
+import { ChampionSummary } from '@/types/lol-game-data';
 
 /**
  * 位置英雄设置的业务逻辑 Composable
@@ -18,7 +18,7 @@ export function usePositionChampionSettings(
   initialSettings?: PositionSettings
 ) {
   // 状态管理
-  const champions = ref<ChampionData[]>([]);
+  const champions = ref<ChampionSummary[]>([]);
   const isLoadingChampions = ref(false);
 
   const positionSettings = reactive<PositionSettings>(
@@ -42,7 +42,7 @@ export function usePositionChampionSettings(
   });
 
   // 拖拽用的本地数据
-  const localBanChampions = ref<Record<AssignedPosition, ChampionData[]>>({
+  const localBanChampions = ref<Record<AssignedPosition, ChampionSummary[]>>({
     top: [],
     jungle: [],
     middle: [],
@@ -50,7 +50,7 @@ export function usePositionChampionSettings(
     support: [],
   });
 
-  const localPickChampions = ref<Record<AssignedPosition, ChampionData[]>>({
+  const localPickChampions = ref<Record<AssignedPosition, ChampionSummary[]>>({
     top: [],
     jungle: [],
     middle: [],
@@ -71,7 +71,7 @@ export function usePositionChampionSettings(
 
     return championKeys
       .map(key => getChampionByKey(key))
-      .filter(Boolean) as ChampionData[];
+      .filter(Boolean) as ChampionSummary[];
   });
 
   const currentPosition = computed(() => {
@@ -82,8 +82,8 @@ export function usePositionChampionSettings(
   });
 
   // 核心业务方法
-  function getChampionByKey(championKey: string): ChampionData | undefined {
-    return champions.value.find(c => c.key === championKey);
+  function getChampionByKey(championKey: string): ChampionSummary | undefined {
+    return champions.value.find(c => c.id.toString() === championKey);
   }
 
   function getDisplayChampions(
@@ -112,10 +112,10 @@ export function usePositionChampionSettings(
     return {
       userChampions: userChampionKeys
         .map(key => getChampionByKey(key))
-        .filter(Boolean) as ChampionData[],
+        .filter(Boolean) as ChampionSummary[],
       recommendedChampions: recommendedToShow
         .map(key => getChampionByKey(key))
-        .filter(Boolean) as ChampionData[],
+        .filter(Boolean) as ChampionSummary[],
       totalDisplay: [...userChampionKeys, ...recommendedToShow],
     };
   }
@@ -131,7 +131,7 @@ export function usePositionChampionSettings(
   }
 
   // 数据加载
-  async function loadChampionData() {
+  async function loadChampionSummaries() {
     if (champions.value.length > 0) return;
     champions.value = Object.values(gameDataStore.champions);
     syncLocalChampions();
@@ -164,7 +164,7 @@ export function usePositionChampionSettings(
     championSelection.currentPosition = position as AssignedPosition;
     championSelection.currentType = type;
     championSelection.isOpen = true;
-    loadChampionData();
+    loadChampionSummaries();
   }
 
   function closeChampionSelector() {
@@ -172,28 +172,28 @@ export function usePositionChampionSettings(
   }
 
   // 英雄操作
-  function toggleChampion(champion: ChampionData) {
+  function toggleChampion(champion: ChampionSummary) {
     const { currentPosition, currentType } = championSelection;
     const setting = positionSettings[currentPosition];
     const maxCount =
       currentType === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
 
     if (currentType === 'ban') {
-      const index = setting.banChampions.indexOf(champion.key);
+      const index = setting.banChampions.indexOf(champion.id.toString());
       if (index > -1) {
         setting.banChampions.splice(index, 1);
       } else if (setting.banChampions.length < maxCount) {
-        setting.banChampions.push(champion.key);
+        setting.banChampions.push(champion.id.toString());
       } else {
         toast.error(`最多只能选择 ${maxCount} 个禁用英雄`);
         return;
       }
     } else {
-      const index = setting.pickChampions.indexOf(champion.key);
+      const index = setting.pickChampions.indexOf(champion.id.toString());
       if (index > -1) {
         setting.pickChampions.splice(index, 1);
       } else if (setting.pickChampions.length < maxCount) {
-        setting.pickChampions.push(champion.key);
+        setting.pickChampions.push(champion.id.toString());
       } else {
         toast.error(`最多只能选择 ${maxCount} 个优先英雄`);
         return;
@@ -216,10 +216,10 @@ export function usePositionChampionSettings(
     saveSettings();
   }
 
-  function reorderChampions(newChampions: ChampionData[]) {
+  function reorderChampions(newChampions: ChampionSummary[]) {
     const { currentPosition, currentType } = championSelection;
     const setting = positionSettings[currentPosition];
-    const newKeys = newChampions.map(c => c.key);
+    const newKeys = newChampions.map(c => c.id.toString());
 
     if (currentType === 'ban') {
       setting.banChampions.splice(0, setting.banChampions.length, ...newKeys);
@@ -232,9 +232,9 @@ export function usePositionChampionSettings(
 
   function handleReorderBan(
     position: AssignedPosition,
-    newChampions: ChampionData[]
+    newChampions: ChampionSummary[]
   ) {
-    const newKeys = newChampions.map(c => c.key);
+    const newKeys = newChampions.map(c => c.id.toString());
     positionSettings[position].banChampions.splice(
       0,
       positionSettings[position].banChampions.length,
@@ -245,9 +245,9 @@ export function usePositionChampionSettings(
 
   function handleReorderPick(
     position: AssignedPosition,
-    newChampions: ChampionData[]
+    newChampions: ChampionSummary[]
   ) {
-    const newKeys = newChampions.map(c => c.key);
+    const newKeys = newChampions.map(c => c.id.toString());
     positionSettings[position].pickChampions.splice(
       0,
       positionSettings[position].pickChampions.length,
@@ -275,8 +275,11 @@ export function usePositionChampionSettings(
   function selectRecommendedChampion(
     position: AssignedPosition,
     type: 'ban' | 'pick',
-    championKey: string
+    championKey: string | number
   ) {
+    if (typeof championKey === 'number') {
+      championKey = championKey.toString();
+    }
     const setting = positionSettings[position];
     const maxCount = type === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
 
@@ -325,7 +328,7 @@ export function usePositionChampionSettings(
     getChampionByKey,
     getDisplayChampions,
     syncLocalChampions,
-    loadChampionData,
+    loadChampionSummaries,
     loadSettings,
     saveSettings,
     resetSettings,
