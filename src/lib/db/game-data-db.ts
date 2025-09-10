@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { ChampionSummary, Item } from '@/types/lol-game-data';
+import { $local } from '@/storages/storage-use';
 
 // 创建一个全局的数据存储对象，用于同步访问
 export const gameDataStore = {
@@ -29,6 +30,39 @@ export class GameDataDB extends Dexie {
       champions: 'id', // 使用英雄key作为主键
       items: 'id', // 使用物品id作为主键
     });
+
+    // 检查版本并决定是否重建数据库
+    this.checkVersionAndRebuild();
+  }
+
+  // 检查版本并重建数据库
+  private async checkVersionAndRebuild(): Promise<void> {
+    try {
+      const cachedVersion = $local.getItem('gameDataDBVersion') || 0;
+      const currentVersion = v;
+
+      if (currentVersion > cachedVersion) {
+        console.log(
+          `🔄 数据库版本更新：${cachedVersion} -> ${currentVersion}，正在重建数据库...`
+        );
+
+        // 删除旧数据库
+        await this.delete();
+
+        // 重新打开数据库
+        await this.open();
+
+        // 更新缓存版本
+        $local.setItem('gameDataDBVersion', currentVersion);
+
+        console.log(`✅ 数据库重建完成，版本已更新为 ${currentVersion}`);
+      } else {
+        // 版本相同或更旧，只更新缓存版本
+        $local.setItem('gameDataDBVersion', currentVersion);
+      }
+    } catch (error) {
+      console.error('❌ 检查数据库版本时出错:', error);
+    }
   }
 
   // 保存英雄数据

@@ -45,6 +45,9 @@ type $LocalStorage = {
 
   // 添加搜索历史
   searchHistory: SearchHistoryItem[]; // 召唤师搜索历史
+
+  // 游戏数据库版本
+  gameDataDBVersion: number; // 游戏数据库版本号
 };
 
 export const $local = new TypedStorageService<$LocalStorage>(localStorage);
