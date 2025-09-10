@@ -71,6 +71,11 @@ function initializeSearchHistory(): void {
     $local.setItem('searchHistory', []);
     console.log('已初始化搜索历史');
   }
+
+  const defaultGameMode = $local.getItem('defaultGameMode');
+  if (!defaultGameMode) {
+    $local.setItem('defaultGameMode', 'all');
+  }
 }
 
 /**

@@ -190,6 +190,13 @@ defineExpose({
                 <GripVertical class="h-4 w-4 text-gray-400" />
               </div>
 
+              <!-- 序号 -->
+              <div
+                class="flex h-5 w-5 items-center justify-center text-xs font-bold"
+              >
+                {{ index + 1 }}
+              </div>
+
               <!-- 英雄头像 -->
               <img
                 :src="getChampionImageUrl(champion.id)"
@@ -305,6 +312,13 @@ defineExpose({
               <!-- 拖拽手柄 -->
               <div class="drag-handle cursor-move">
                 <GripVertical class="h-4 w-4 text-gray-400" />
+              </div>
+
+              <!-- 序号 -->
+              <div
+                class="flex h-5 w-5 items-center justify-center text-xs font-bold"
+              >
+                {{ index + 1 }}
               </div>
 
               <!-- 英雄头像 -->
