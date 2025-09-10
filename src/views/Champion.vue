@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChampionAnalyzer from '@/components/ChampionAnalyzer.vue';
+// import ChampionAnalyzer from '@/components/ChampionAnalyzer.vue';
 </script>
 
 <template>
@@ -12,7 +12,7 @@ import ChampionAnalyzer from '@/components/ChampionAnalyzer.vue';
       </div>
 
       <!-- 英雄分析组件 -->
-      <ChampionAnalyzer />
+      <!-- <ChampionAnalyzer /> -->
     </div>
   </main>
 </template>

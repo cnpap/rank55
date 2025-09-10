@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ItemAnalyzer from '@/components/ItemAnalyzer.vue';
+// import ItemAnalyzer from '@/components/ItemAnalyzer.vue';
 </script>
 
 <template>
@@ -14,7 +14,7 @@ import ItemAnalyzer from '@/components/ItemAnalyzer.vue';
       </div>
 
       <!-- 装备分析组件 -->
-      <ItemAnalyzer />
+      <!-- <ItemAnalyzer /> -->
     </div>
   </main>
 </template>
