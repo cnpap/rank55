@@ -2,6 +2,7 @@ import type { SummonerData } from '@/types/summoner';
 import type { LocalSearchResult } from '@/lib/composables/useMatchHistoryState';
 import { SgpMatchService } from './sgp/sgp-match-service';
 import { SummonerService } from './service/summoner-service';
+import { $local } from '@/storages/storage-use';
 
 /**
  * 战绩数据加载服务
@@ -63,7 +64,8 @@ export class MatchDataLoader {
    */
   async loadCompleteMatchData(
     puuid: string,
-    pageSize: number
+    pageSize: number,
+    tag: string = 'all'
   ): Promise<LocalSearchResult> {
     try {
       // 获取召唤师数据
@@ -78,7 +80,7 @@ export class MatchDataLoader {
         puuid,
         0,
         pageSize,
-        'q_420'
+        tag
       );
       const participant = sgpResult.games[0].json.participants.find(
         (p: any) => p.puuid === puuid
@@ -106,7 +108,7 @@ export class MatchDataLoader {
     puuid: string,
     currentPage: number,
     pageSize: number,
-    tag: string = 'q_420'
+    tag: string = 'all'
   ): Promise<{ games: any[]; totalCount: number }> {
     const startIndex = (currentPage - 1) * pageSize;
 

@@ -38,6 +38,8 @@ type $LocalStorage = {
   autoBanCountdown: number; // 自动禁用倒计时（秒）
   autoPickCountdown: number; // 自动选择倒计时（秒）
 
+  defaultGameMode: string; // 游戏模式过滤
+
   // 位置设置
   positionSettings: PositionSettings; // 位置设置 {position: {banChampions: [], pickChampions: []}}
 

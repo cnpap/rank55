@@ -18,6 +18,7 @@ import {
   sgpMatchService,
 } from '@/lib/service/service-manager';
 import { useGameState } from './useGameState';
+import { $local } from '@/storages/storage-use';
 
 // 查询结果接口
 export interface MatchHistoryQueryResult {
@@ -84,9 +85,10 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
   const currentPage = ref(1);
   const pageSize = ref(20);
 
-  // 游戏模式过滤器
+  // 游戏模式过滤器 - 从本地存储读取默认值
+  const savedDefaultGameMode = $local.getItem('defaultGameMode');
   const gameModesFilter = reactive<GameModesFilter>({
-    selectedTag: 'q_420',
+    selectedTag: savedDefaultGameMode || 'all',
   });
 
   // 数据加载器
@@ -168,7 +170,8 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
 
       const result = await dataLoader.loadCompleteMatchData(
         puuid,
-        pageSize.value
+        pageSize.value,
+        gameModesFilter.selectedTag
       );
       queryResult.value = result;
       currentPage.value = 1;
@@ -261,7 +264,8 @@ export function useMatchHistoryQuery(options: MatchHistoryQueryOptions) {
     clearQueryResult();
     currentPage.value = 1;
     pageSize.value = 20;
-    gameModesFilter.selectedTag = 'all';
+    const savedDefaultGameMode = $local.getItem('defaultGameMode');
+    gameModesFilter.selectedTag = savedDefaultGameMode || 'all';
   };
 
   // 创建分页控制对象
