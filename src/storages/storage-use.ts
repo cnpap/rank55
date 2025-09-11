@@ -1,6 +1,7 @@
 // session
 import { AssignedPosition } from '@/types/players-info';
 import { TypedStorageService } from './storage';
+import type { RegionType, TierType } from '@/lib/service/opgg/types';
 
 type $SessionStorage = {};
 
@@ -39,6 +40,8 @@ type $LocalStorage = {
   autoPickCountdown: number; // 自动选择倒计时（秒）
 
   defaultGameMode: string; // 游戏模式过滤
+  defaultRegion: RegionType; // 默认服务器
+  defaultTier: TierType; // 默认分段
 
   // 位置设置
   positionSettings: PositionSettings; // 位置设置 {position: {banChampions: [], pickChampions: []}}
