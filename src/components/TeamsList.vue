@@ -85,21 +85,6 @@ const bestKdaStats = computed(() => {
   };
 });
 
-// 计算最高伤害和最高防御
-const bestDamageStats = computed(() => {
-  const allPlayers = props.match.json.participants;
-
-  const maxDamage = Math.max(
-    ...allPlayers.map(p => p.totalDamageDealtToChampions)
-  );
-  const maxDamageTaken = Math.max(...allPlayers.map(p => p.totalDamageTaken));
-
-  return {
-    maxDamage,
-    maxDamageTaken,
-  };
-});
-
 // 计算最高等级
 const bestLevelStats = computed(() => {
   const allPlayers = props.match.json.participants;
@@ -116,12 +101,6 @@ const hasMinDeaths = (deaths: number) =>
   deaths === bestKdaStats.value.minDeaths;
 const hasMaxAssists = (assists: number) =>
   assists === bestKdaStats.value.maxAssists;
-
-// 判断玩家是否有最高伤害和防御的函数
-const hasMaxDamage = (damage: number) =>
-  damage === bestDamageStats.value.maxDamage;
-const hasMaxDamageTaken = (damageTaken: number) =>
-  damageTaken === bestDamageStats.value.maxDamageTaken;
 
 // 判断玩家是否有最高等级的函数
 const hasMaxLevel = (level: number) => level === bestLevelStats.value.maxLevel;
@@ -175,7 +154,7 @@ const formatValue = (value: number) => {
             :class="{
               'bg-blue-100 dark:bg-blue-900/40':
                 teamIndex === 0 && player.isCurrentPlayer,
-              'bg-pink-100 dark:bg-pink-900/40':
+              'bg-red-100 dark:bg-red-900/40':
                 teamIndex === 1 && player.isCurrentPlayer,
             }"
           >
@@ -224,15 +203,6 @@ const formatValue = (value: number) => {
               >
                 {{ player.displayName }}
               </button>
-              <!-- "我"标签 - 绝对定位到左上角 -->
-              <span
-                v-if="player.isClientUser"
-                class="absolute -top-1 -left-1 z-10 flex h-3 w-3 items-center justify-center border border-white/20 bg-gradient-to-r from-blue-500 to-blue-600 font-bold text-white shadow-md"
-                title="当前客户端用户"
-                style="font-size: 8px"
-              >
-                我
-              </span>
             </span>
             <span class="flex w-20 items-center justify-center">
               <span class="text-center text-xs font-medium">
@@ -302,3 +272,5 @@ const formatValue = (value: number) => {
     </template>
   </div>
 </template>
+
+<style scoped></style>

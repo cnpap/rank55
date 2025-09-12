@@ -12,6 +12,7 @@ import { ConnectionService } from './connection-service';
 import { ChatNotificationService } from './chat-notification-service';
 import { SimpleSgpApi } from '../sgp/sgp-api';
 import { SgpMatchService } from '../sgp/sgp-match-service';
+import { OpggService } from './opgg-service';
 
 /**
  * 全局服务实例
@@ -35,3 +36,6 @@ export const banPickService = new BanPickService();
 export const gamePhaseManager = new GamePhaseManager();
 export const autoActionService = new AutoActionService();
 export const sgpMatchService = new SgpMatchService(sgpApi);
+
+// 第三方服务实例
+export const opggService = new OpggService();

@@ -8,7 +8,7 @@ import { $local, type PositionSetting } from '@/storages/storage-use';
 import type { ChampSelectSession } from '@/types/champ-select-session';
 import type { AllAction } from '@/types/ban-phase-detail';
 import { toast } from 'vue-sonner';
-import { getChampionName } from '../db/game-data-db';
+import { getChampionName } from '../../storages/game-data-db';
 
 export class AutoActionService {
   // 记录无法使用的英雄（未拥有或不在免费轮换中）

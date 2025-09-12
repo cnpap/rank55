@@ -82,14 +82,14 @@ const handleDoubleClick = () => {
                   v-if="profileIconUrl"
                   :src="profileIconUrl"
                   :alt="displayName"
-                  class="border-background h-5 w-5 rounded-full border-2 shadow-sm"
+                  class="h-6 w-6 rounded-full shadow-sm"
                   @error="() => {}"
                 />
                 <div
                   v-else
-                  class="bg-muted border-background flex h-5 w-5 items-center justify-center rounded-full border-2 shadow-sm"
+                  class="bg-muted flex h-6 w-6 items-center justify-center rounded-full shadow-sm"
                 >
-                  <User class="text-muted-foreground h-3 w-3" />
+                  <User class="text-muted-foreground h-3.5 w-3.5 opacity-30" />
                 </div>
               </div>
             </div>

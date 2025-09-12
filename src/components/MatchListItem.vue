@@ -64,7 +64,7 @@ const isCurrentPlayerMVP = computed(() => {
     class="font-tektur-numbers absolute top-2 -right-8 z-999 font-bold transition-colors duration-300"
     :class="{
       'text-emerald-500 dark:text-emerald-400': gameResult === 'victory',
-      'text-pink-500 dark:text-rose-400': gameResult === 'defeat',
+      'text-red-500 dark:text-rose-400': gameResult === 'defeat',
       'text-gray-500 dark:text-gray-400': gameResult === 'remake',
     }"
   >
@@ -80,7 +80,7 @@ const isCurrentPlayerMVP = computed(() => {
       :class="{
         'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.emerald.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.emerald.300)_0%,_transparent_50%)]':
           gameResult === 'victory',
-        'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.pink.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.pink.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.rose.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.rose.300)_0%,_transparent_50%)]':
+        'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.red.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.red.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.rose.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.rose.300)_0%,_transparent_50%)]':
           gameResult === 'defeat',
         'bg-[radial-gradient(circle_at_20%_50%,_theme(colors.gray.500)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.gray.400)_0%,_transparent_50%)] dark:bg-[radial-gradient(circle_at_20%_50%,_theme(colors.gray.400)_0%,_transparent_50%),_radial-gradient(circle_at_80%_50%,_theme(colors.gray.300)_0%,_transparent_50%)]':
           gameResult === 'remake',
@@ -93,7 +93,7 @@ const isCurrentPlayerMVP = computed(() => {
       :class="{
         'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.600),_theme(colors.emerald.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.500),_theme(colors.emerald.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'victory',
-        'bg-[repeating-linear-gradient(45deg,_theme(colors.pink.600),_theme(colors.pink.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
+        'bg-[repeating-linear-gradient(45deg,_theme(colors.red.600),_theme(colors.red.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'defeat',
         'bg-[repeating-linear-gradient(45deg,_theme(colors.gray.600),_theme(colors.gray.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.gray.500),_theme(colors.gray.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'remake',
@@ -106,7 +106,7 @@ const isCurrentPlayerMVP = computed(() => {
       :class="{
         'bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.600),_theme(colors.emerald.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.emerald.500),_theme(colors.emerald.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'victory',
-        'bg-[repeating-linear-gradient(45deg,_theme(colors.pink.600),_theme(colors.pink.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
+        'bg-[repeating-linear-gradient(45deg,_theme(colors.red.600),_theme(colors.red.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.rose.500),_theme(colors.rose.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'defeat',
         'bg-[repeating-linear-gradient(45deg,_theme(colors.gray.600),_theme(colors.gray.600)_3px,_transparent_3px,_transparent_6px)] dark:bg-[repeating-linear-gradient(45deg,_theme(colors.gray.500),_theme(colors.gray.500)_3px,_transparent_3px,_transparent_6px)]':
           gameResult === 'remake',

@@ -149,7 +149,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto rounded-lg border-1 border-red-200 bg-red-50/30 p-3 dark:border-red-800/50 dark:bg-red-950/20"
+          class="h-[300px] overflow-y-auto rounded-lg bg-red-50/30 p-3 dark:bg-red-950/20"
         >
           <div
             v-if="currentPositionBanChampions.length === 0"
@@ -183,7 +183,7 @@ defineExpose({
             <div
               v-for="(champion, index) in currentPositionBanChampions"
               :key="`ban-${champion.id}`"
-              class="group bg-card flex items-center gap-3 rounded-lg border border-red-200 p-2 dark:border-red-800/50"
+              class="group bg-card flex items-center gap-3 rounded-lg p-2"
             >
               <!-- 拖拽手柄 -->
               <div class="drag-handle cursor-move">
@@ -229,7 +229,7 @@ defineExpose({
             推荐禁用
           </h5>
           <div
-            class="flex flex-wrap gap-1 rounded-lg border border-red-200 bg-red-50/50 p-2 dark:border-red-800/50 dark:bg-red-950/10"
+            class="flex flex-wrap gap-1 rounded-lg bg-red-50/50 p-2 dark:bg-red-950/10"
           >
             <div
               v-for="champion in currentPositionBanRecommended"
@@ -273,7 +273,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto rounded-lg border-1 border-emerald-200 bg-emerald-50/30 p-3 dark:border-emerald-800/50 dark:bg-emerald-950/20"
+          class="h-[300px] overflow-y-auto rounded-lg bg-emerald-50/30 p-3 dark:bg-emerald-950/20"
         >
           <div
             v-if="currentPositionPickChampions.length === 0"
@@ -307,7 +307,7 @@ defineExpose({
             <div
               v-for="(champion, index) in currentPositionPickChampions"
               :key="`pick-${champion.id}`"
-              class="group bg-card flex items-center gap-3 rounded-lg border border-emerald-200 p-2 dark:border-emerald-800/50"
+              class="group bg-card flex items-center gap-3 rounded-lg p-2"
             >
               <!-- 拖拽手柄 -->
               <div class="drag-handle cursor-move">
@@ -353,7 +353,7 @@ defineExpose({
             推荐选择
           </h5>
           <div
-            class="flex flex-wrap gap-1 rounded-lg border border-emerald-200 bg-emerald-50/50 p-2 dark:border-emerald-800/50 dark:bg-emerald-950/10"
+            class="flex flex-wrap gap-1 rounded-lg bg-emerald-50/50 p-2 dark:bg-emerald-950/10"
           >
             <div
               v-for="champion in currentPositionPickRecommended"

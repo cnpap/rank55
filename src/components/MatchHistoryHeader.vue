@@ -288,7 +288,7 @@ const recentChampions = computed(() => {
                       class="h-8 w-8 border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
                     <div
-                      class="bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
+                      class="font-tektur-numbers bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
                     >
                       {{ champion.games }}
                     </div>

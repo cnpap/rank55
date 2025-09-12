@@ -92,12 +92,12 @@ const queueType = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-0.5">
-    <!-- 前三行：左右两个容器的布局 -->
+  <div class="flex w-38.5 flex-col gap-0.5">
+    <!-- 第一行：左右两个容器的布局 -->
     <div class="flex items-start justify-between">
-      <!-- 左侧容器：英雄信息 + 游戏模式时间 (2行) -->
-      <div class="flex min-w-0 flex-1 flex-col">
-        <!-- 第一行：英雄头像 + 召唤师技能 -->
+      <!-- 左侧容器：英雄信息 -->
+      <div class="flex flex-1 flex-col">
+        <!-- 英雄头像 + 召唤师技能 -->
         <div class="flex items-start gap-0.5">
           <!-- 英雄头像 + 等级 -->
           <div class="relative flex-shrink-0">
@@ -108,7 +108,7 @@ const queueType = computed(() => {
                 )
               "
               :alt="currentPlayer?.championName || '未知英雄'"
-              class="ring-border/30 h-12 w-12 rounded object-cover ring-2"
+              class="h-12 w-12"
             />
             <!-- <div
               class="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white"
@@ -164,28 +164,11 @@ const queueType = computed(() => {
             </div>
           </div>
         </div>
-
-        <!-- 第二行：游戏模式和时间 -->
-        <div class="flex items-center gap-4">
-          <h4 class="text-foreground flex-shrink-0 text-sm font-semibold">
-            {{ queueType }}
-          </h4>
-          <div class="text-muted-foreground flex items-center gap-2 text-xs">
-            <p class="whitespace-nowrap">
-              {{
-                formatDateToDay(match.json.gameCreation as unknown as string)
-              }}
-            </p>
-            <p class="font-medium whitespace-nowrap">
-              {{ formatGameDuration(match.json.gameDuration) }}
-            </p>
-          </div>
-        </div>
       </div>
 
-      <!-- 右侧容器：KDA + 经济 + 伤害 (3行) -->
+      <!-- 右侧容器：KDA -->
       <div class="flex flex-col gap-1">
-        <!-- 第一行：KDA -->
+        <!-- KDA -->
         <div class="text-right">
           <div class="font-tektur-numbers text-foreground font-bold">
             {{ kda.kills }}/{{ kda.deaths }}/{{ kda.assists }}
@@ -244,7 +227,22 @@ const queueType = computed(() => {
       </div>
     </div>
 
-    <!-- 第四行：装备 (最下面一行) -->
+    <!-- 第二行：游戏模式和时间 -->
+    <div class="flex w-full items-center justify-between gap-4">
+      <h4 class="text-foreground flex-shrink-0 text-sm font-semibold">
+        {{ queueType }}
+      </h4>
+      <div class="text-muted-foreground flex items-center gap-2 text-xs">
+        <p class="whitespace-nowrap">
+          {{ formatDateToDay(match.json.gameCreation as unknown as string) }}
+        </p>
+        <p class="font-medium whitespace-nowrap">
+          {{ formatGameDuration(match.json.gameDuration) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- 第三行：装备 (最下面一行) -->
     <div class="flex gap-0.5">
       <div
         v-for="(_itemId, index) in Array.from({ length: 6 })"

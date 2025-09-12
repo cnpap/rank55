@@ -2,7 +2,7 @@ import { reactive, computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { $local, type PositionSettings } from '@/storages/storage-use';
 import { AssignedPosition } from '@/types/players-info';
-import { gameDataStore } from '@/lib/db/game-data-db';
+import { gameDataStore } from '@/storages/game-data-db';
 import {
   positions,
   recommendedChampions,

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-vue-next';
 import { Game, Participant, Team } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
-import { gameDataStore } from '@/lib/db';
+import { gameDataStore } from '@/storages';
 
 interface Props {
   game: Game;
@@ -186,7 +186,7 @@ const searchPlayerHistory = async (name: string) => {
         <div v-for="team in teams" :key="team.teamId">
           <!-- 队伍标题 -->
           <div
-            class="flex items-center justify-between border-b px-3 py-1 pl-4"
+            class="flex items-center justify-between border-b px-2"
             :class="{
               'bg-blue-50/80 dark:bg-blue-950/30':
                 getTeamDisplayInfo(team.teamId).color === 'blue',
@@ -214,7 +214,7 @@ const searchPlayerHistory = async (name: string) => {
             <div class="flex items-center gap-2">
               <!-- 禁用英雄 -->
               <div v-if="getTeamBans(team).length > 0">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center">
                   <div class="flex gap-2">
                     <div
                       v-for="ban in getTeamBans(team)"
@@ -227,7 +227,12 @@ const searchPlayerHistory = async (name: string) => {
                         :title="ban.championName"
                         class="h-10 w-10 rounded object-cover opacity-60 grayscale"
                       />
-                      <div
+                      <!-- 适度透明 -->
+                      <img
+                        :src="staticAssets.getIcon('forbidden')"
+                        class="absolute top-1/2 left-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 opacity-60"
+                      />
+                      <!-- <div
                         class="absolute inset-0 flex items-center justify-center"
                       >
                         <div
@@ -235,44 +240,83 @@ const searchPlayerHistory = async (name: string) => {
                         >
                           <span class="text-xs font-bold">×</span>
                         </div>
-                      </div>
+                      </div> -->
                     </div>
                   </div>
                 </div>
               </div>
               <!-- 队伍统计 -->
-              <div class="grid grid-cols-4 gap-1 text-center">
-                <div>
-                  <p class="text-muted-foreground text-xs">小龙</p>
-                  <p
-                    class="font-tektur-numbers text-foreground text-lg font-bold"
-                  >
-                    {{ getTeamStats(team).dragonKills }}
-                  </p>
+              <div class="grid grid-cols-4 gap-2 text-center">
+                <div
+                  class="relative flex h-10 w-10 flex-col items-center justify-center rounded"
+                >
+                  <div
+                    class="absolute inset-0 rounded bg-cover bg-center bg-no-repeat opacity-50"
+                    :style="{
+                      backgroundImage: `url(${staticAssets.getIcon('dalong2')})`,
+                      backgroundSize: '50px 50px',
+                    }"
+                  ></div>
+                  <div class="relative z-10">
+                    <p class="dark:text-muted-foreground text-xs text-gray-800">
+                      大龙
+                    </p>
+                    <p
+                      class="font-tektur-numbers text-foreground text-lg font-bold"
+                    >
+                      {{ getTeamStats(team).baronKills }}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-muted-foreground text-xs">大龙</p>
-                  <p
-                    class="font-tektur-numbers text-foreground text-lg font-bold"
-                  >
-                    {{ getTeamStats(team).baronKills }}
-                  </p>
+                <div
+                  class="relative flex h-10 w-10 flex-col items-center justify-center rounded"
+                >
+                  <div
+                    class="absolute inset-0 rounded bg-cover bg-center bg-no-repeat opacity-50"
+                    :style="{
+                      backgroundImage: `url(${staticAssets.getIcon('xiaolong2')})`,
+                      backgroundSize: '40px 40px',
+                    }"
+                  ></div>
+                  <div class="relative z-10">
+                    <p class="dark:text-muted-foreground text-xs text-gray-800">
+                      小龙
+                    </p>
+                    <p
+                      class="font-tektur-numbers text-foreground text-lg font-bold"
+                    >
+                      {{ getTeamStats(team).dragonKills }}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-muted-foreground text-xs">防御塔</p>
-                  <p
-                    class="font-tektur-numbers text-foreground text-lg font-bold"
-                  >
-                    {{ getTeamStats(team).towerKills }}
-                  </p>
+
+                <div
+                  class="flex h-10 w-10 flex-col items-center justify-center rounded"
+                >
+                  <div>
+                    <p class="dark:text-muted-foreground text-xs text-gray-800">
+                      防御塔
+                    </p>
+                    <p
+                      class="font-tektur-numbers text-foreground text-lg font-bold"
+                    >
+                      {{ getTeamStats(team).towerKills }}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-muted-foreground text-xs">水晶</p>
-                  <p
-                    class="font-tektur-numbers text-foreground text-lg font-bold"
-                  >
-                    {{ getTeamStats(team).inhibitorKills }}
-                  </p>
+                <div
+                  class="flex h-10 w-10 flex-col items-center justify-center rounded"
+                >
+                  <div>
+                    <p class="dark:text-muted-foreground text-xs text-gray-800">
+                      水晶
+                    </p>
+                    <p
+                      class="font-tektur-numbers text-foreground text-lg font-bold"
+                    >
+                      {{ getTeamStats(team).inhibitorKills }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -290,20 +334,20 @@ const searchPlayerHistory = async (name: string) => {
           >
             <!-- 表头 -->
             <div
-              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2.5fr_0.5fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-1 pl-4 text-sm font-medium"
+              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-2 py-1 pl-2 text-sm font-medium"
             >
               <div>玩家</div>
-              <div class="text-center">KDA</div>
-              <div class="text-center">金币/补刀</div>
-              <div class="text-center">伤害/承受</div>
-              <div class="text-center">装备</div>
+              <div>KDA</div>
+              <div>金币/补刀</div>
+              <div>伤害/承受</div>
+              <div>装备</div>
             </div>
 
             <!-- 玩家数据行 -->
             <div
               v-for="participant in getTeamParticipants(team.teamId)"
               :key="participant.participantId"
-              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2.5fr_0.5fr_1fr_1fr_2.5fr] gap-1 border-b px-2 py-0.5 pl-4 transition-colors last:border-b-0"
+              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-2 py-0.5 pl-2 transition-colors last:border-b-0"
             >
               <!-- 玩家信息 -->
               <div>
@@ -317,11 +361,11 @@ const searchPlayerHistory = async (name: string) => {
                         )
                       "
                       :alt="getChampionName(participant.championId)"
-                      class="ring-border/30 h-12 w-12 rounded-lg object-cover ring-2"
+                      class="h-10 w-10 rounded-lg object-cover"
                     />
                     <!-- 等级显示在头像右下角 -->
                     <div
-                      class="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white ring-2 ring-white dark:ring-gray-800"
+                      class="bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
                     >
                       <span class="font-tektur-numbers text-xs font-bold">
                         {{ participant.champLevel || 0 }}
@@ -338,14 +382,14 @@ const searchPlayerHistory = async (name: string) => {
                           staticAssets.getSpellIcon(`${participant.spell1Id}`)
                         "
                         :alt="`召唤师技能${participant.spell1Id}`"
-                        class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
                       />
                       <img
                         :src="
                           staticAssets.getSpellIcon(`${participant.spell2Id}`)
                         "
                         :alt="`召唤师技能${participant.spell2Id}`"
-                        class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
                       />
                     </div>
 
@@ -359,7 +403,7 @@ const searchPlayerHistory = async (name: string) => {
                           )
                         "
                         :alt="`主要天赋系${getPlayerRunes(participant)[0]}`"
-                        class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
                         title="主要天赋系"
                       />
                       <img
@@ -370,7 +414,7 @@ const searchPlayerHistory = async (name: string) => {
                           )
                         "
                         :alt="`次要天赋系${getPlayerRunes(participant)[1]}`"
-                        class="border-border/40 h-6 w-6 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
                         title="次要天赋系"
                       />
                     </div>
@@ -407,9 +451,6 @@ const searchPlayerHistory = async (name: string) => {
                         <Copy class="h-3 w-3" />
                       </button>
                     </div>
-                    <p class="text-muted-foreground truncate text-xs">
-                      {{ getChampionName(participant.championId) }}
-                    </p>
                     <!-- 段位信息 -->
                     <div class="flex items-center gap-1">
                       <!-- 段位图标 -->
@@ -478,53 +519,49 @@ const searchPlayerHistory = async (name: string) => {
               </div>
 
               <!-- KDA -->
-              <div
-                class="flex flex-col items-center justify-center text-center"
-              >
-                <div class="space-y-0.5">
-                  <p class="font-tektur-numbers text-sm font-medium">
-                    {{ participant.kills || 0 }}/{{
-                      participant.deaths || 0
-                    }}/{{ participant.assists || 0 }}
-                  </p>
-                  <Badge
-                    variant="secondary"
-                    class="font-tektur-numbers text-xs"
-                    :class="{
-                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
-                        calculateKDA(
-                          participant.kills || 0,
-                          participant.deaths || 0,
-                          participant.assists || 0
-                        ).ratio >= 3,
-                      'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
-                        calculateKDA(
-                          participant.kills || 0,
-                          participant.deaths || 0,
-                          participant.assists || 0
-                        ).ratio >= 2 &&
-                        calculateKDA(
-                          participant.kills || 0,
-                          participant.deaths || 0,
-                          participant.assists || 0
-                        ).ratio < 3,
-                      'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
-                        calculateKDA(
-                          participant.kills || 0,
-                          participant.deaths || 0,
-                          participant.assists || 0
-                        ).ratio < 1,
-                    }"
-                  >
-                    {{
+              <div class="flex flex-col justify-center">
+                <p class="font-tektur-numbers text-sm font-medium">
+                  {{ participant.kills || 0 }}/{{ participant.deaths || 0 }}/{{
+                    participant.assists || 0
+                  }}
+                </p>
+                <Badge
+                  variant="secondary"
+                  class="font-tektur-numbers text-xs"
+                  :class="{
+                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
                       calculateKDA(
                         participant.kills || 0,
                         participant.deaths || 0,
                         participant.assists || 0
-                      ).ratio.toFixed(1)
-                    }}
-                  </Badge>
-                </div>
+                      ).ratio >= 3,
+                    'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400':
+                      calculateKDA(
+                        participant.kills || 0,
+                        participant.deaths || 0,
+                        participant.assists || 0
+                      ).ratio >= 2 &&
+                      calculateKDA(
+                        participant.kills || 0,
+                        participant.deaths || 0,
+                        participant.assists || 0
+                      ).ratio < 3,
+                    'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
+                      calculateKDA(
+                        participant.kills || 0,
+                        participant.deaths || 0,
+                        participant.assists || 0
+                      ).ratio < 1,
+                  }"
+                >
+                  {{
+                    calculateKDA(
+                      participant.kills || 0,
+                      participant.deaths || 0,
+                      participant.assists || 0
+                    ).ratio.toFixed(1)
+                  }}
+                </Badge>
               </div>
 
               <!-- 金币/补刀 -->
@@ -692,7 +729,7 @@ const searchPlayerHistory = async (name: string) => {
               </div>
 
               <!-- 装备 -->
-              <div class="flex items-center justify-center">
+              <div class="flex items-center">
                 <div class="flex gap-1">
                   <div
                     v-for="(_itemId, index) in Array.from({ length: 6 })"
