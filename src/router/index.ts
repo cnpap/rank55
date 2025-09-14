@@ -5,6 +5,10 @@ import {
 } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
+// 布局组件
+import MainLayout from '@/layouts/MainLayout.vue';
+import PopupLayout from '@/layouts/PopupLayout.vue';
+
 // 页面组件
 import Home from '@/views/Home.vue';
 import Equipment from '@/views/Equipment.vue';
@@ -13,6 +17,7 @@ import BanPick from '@/views/BanPick.vue';
 import Match from '@/views/Match.vue';
 import RoomManagement from '@/views/RoomManagement.vue';
 import Settings from '@/views/Settings.vue';
+import ChampionSelectorWindow from '@/views/ChampionSelectorWindow.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -23,6 +28,7 @@ const routes: RouteRecordRaw[] = [
       title: '战绩查询',
       icon: '📊',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -33,6 +39,7 @@ const routes: RouteRecordRaw[] = [
       title: '装备分析',
       icon: '⚔️',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -43,6 +50,7 @@ const routes: RouteRecordRaw[] = [
       title: '英雄选择',
       icon: '🏆',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -53,6 +61,7 @@ const routes: RouteRecordRaw[] = [
       title: '禁/选',
       icon: '🚫',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -63,6 +72,7 @@ const routes: RouteRecordRaw[] = [
       title: '对局',
       icon: '⚡',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -73,6 +83,7 @@ const routes: RouteRecordRaw[] = [
       title: '房间管理',
       icon: '🏠',
       keepAlive: true,
+      layout: 'main',
     },
   },
   {
@@ -83,9 +94,34 @@ const routes: RouteRecordRaw[] = [
       title: '设置',
       icon: '⚙️',
       keepAlive: true,
+      layout: 'main',
+    },
+  },
+  {
+    path: '/champion-selector',
+    name: 'ChampionSelectorWindow',
+    component: ChampionSelectorWindow,
+    meta: {
+      title: '英雄选择器',
+      icon: '🏆',
+      keepAlive: false,
+      layout: 'popup',
     },
   },
 ];
+
+// 布局组件映射
+const layoutComponents = {
+  main: MainLayout,
+  popup: PopupLayout,
+};
+
+// 获取布局组件的辅助函数
+export const getLayoutComponent = (layoutName: string) => {
+  return (
+    layoutComponents[layoutName as keyof typeof layoutComponents] || MainLayout
+  );
+};
 
 // 检测是否在Electron环境中
 const isElectron =

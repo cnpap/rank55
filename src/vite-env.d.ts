@@ -35,6 +35,9 @@ declare global {
       lcuIsConnected: () => Promise<boolean>;
       // 新增：获取 LCU 凭据信息
       getLcuCredentials: () => Promise<LCUCredentials>;
+      // 英雄选择器窗口相关方法
+      openChampionSelectorWindow: () => Promise<void>;
+      closeChampionSelectorWindow: () => Promise<void>;
     };
   }
 }

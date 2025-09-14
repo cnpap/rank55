@@ -82,13 +82,26 @@ function selectPosition(position: AssignedPosition) {
   selectedPosition.value = position;
 }
 
-// 添加英雄
+// 添加英雄 - 原有模态框方式
 function addBanChampion() {
   openChampionSelector(selectedPosition.value, 'ban');
 }
 
 function addPickChampion() {
   openChampionSelector(selectedPosition.value, 'pick');
+}
+
+// 添加英雄 - 新窗口方式
+function addBanChampionWindow() {
+  if (window.electronAPI) {
+    window.electronAPI.openChampionSelectorWindow();
+  }
+}
+
+function addPickChampionWindow() {
+  if (window.electronAPI) {
+    window.electronAPI.openChampionSelectorWindow();
+  }
 }
 
 onMounted(() => {
@@ -139,13 +152,22 @@ defineExpose({
           <h4 class="text-sm font-medium text-red-600 dark:text-red-400">
             禁用英雄
           </h4>
-          <button
-            @click="addBanChampion"
-            class="flex items-center gap-1 rounded-md bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
-          >
-            <Plus class="h-3 w-3" />
-            添加
-          </button>
+          <div class="flex gap-2">
+            <button
+              @click="addBanChampion"
+              class="flex items-center gap-1 rounded-md bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
+            >
+              <Plus class="h-3 w-3" />
+              添加(模态框)
+            </button>
+            <button
+              @click="addBanChampionWindow"
+              class="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1 text-xs text-white transition-colors hover:bg-red-700"
+            >
+              <Plus class="h-3 w-3" />
+              添加(新窗口)
+            </button>
+          </div>
         </div>
 
         <!-- 英雄列表区域 -->
@@ -273,13 +295,22 @@ defineExpose({
           >
             优选英雄
           </h4>
-          <button
-            @click="addPickChampion"
-            class="flex items-center gap-1 rounded-md bg-emerald-500 px-3 py-1 text-xs text-white transition-colors hover:bg-emerald-600"
-          >
-            <Plus class="h-3 w-3" />
-            添加
-          </button>
+          <div class="flex gap-2">
+            <button
+              @click="addPickChampion"
+              class="flex items-center gap-1 rounded-md bg-emerald-500 px-3 py-1 text-xs text-white transition-colors hover:bg-emerald-600"
+            >
+              <Plus class="h-3 w-3" />
+              添加(模态框)
+            </button>
+            <button
+              @click="addPickChampionWindow"
+              class="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1 text-xs text-white transition-colors hover:bg-emerald-700"
+            >
+              <Plus class="h-3 w-3" />
+              添加(新窗口)
+            </button>
+          </div>
         </div>
 
         <!-- 英雄列表区域 -->

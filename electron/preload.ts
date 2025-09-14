@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 新增：获取 LCU 凭据信息
   getLcuCredentials: () => ipcRenderer.invoke('lcu-get-credentials'),
+
+  // 英雄选择器窗口相关方法
+  openChampionSelectorWindow: () =>
+    ipcRenderer.invoke('open-champion-selector-window'),
+  closeChampionSelectorWindow: () =>
+    ipcRenderer.invoke('close-champion-selector-window'),
 });
 
 // 类型声明
@@ -65,6 +71,9 @@ declare global {
         locale?: string;
         serverHost?: string;
       }>;
+      // 英雄选择器窗口相关方法
+      openChampionSelectorWindow: () => Promise<void>;
+      closeChampionSelectorWindow: () => Promise<void>;
     };
   }
 }

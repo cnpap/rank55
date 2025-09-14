@@ -31,6 +31,7 @@ console.log('__dirname:', __dirname);
 
 // 存储主窗口引用
 let mainWindow: BrowserWindow | null = null;
+let championSelectorWindow: BrowserWindow | null = null;
 
 // 创建更新管理器
 const updateManager = new UpdateManager(isDev);
@@ -330,5 +331,54 @@ ipcMain.handle('lcu-get-credentials', async () => {
   } catch (error) {
     console.error('获取 LCU 凭据失败:', error);
     throw error;
+  }
+});
+
+// 英雄选择器窗口相关处理器
+ipcMain.handle('open-champion-selector-window', async () => {
+  if (championSelectorWindow) {
+    championSelectorWindow.focus();
+    return;
+  }
+
+  championSelectorWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    minWidth: 600,
+    minHeight: 400,
+    parent: mainWindow || undefined,
+    modal: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: join(__dirname, 'preload.js'),
+      sandbox: false,
+      webSecurity: !isDev,
+      allowRunningInsecureContent: false,
+    },
+    autoHideMenuBar: true,
+    frame: false,
+    titleBarStyle: 'hidden',
+  });
+
+  // 加载英雄选择器页面
+  if (VITE_DEV_SERVER_URL) {
+    championSelectorWindow.loadURL(`${VITE_DEV_SERVER_URL}#/champion-selector`);
+  } else {
+    const indexPath = join(__dirname, '..', 'dist', 'index.html');
+    championSelectorWindow.loadFile(indexPath, { hash: 'champion-selector' });
+  }
+
+  championSelectorWindow.on('closed', () => {
+    championSelectorWindow = null;
+  });
+
+  championSelectorWindow.show();
+});
+
+ipcMain.handle('close-champion-selector-window', () => {
+  if (championSelectorWindow) {
+    championSelectorWindow.close();
+    championSelectorWindow = null;
   }
 });
