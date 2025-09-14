@@ -70,7 +70,7 @@ function handleReorderChampions(champions: ChampionSummary[]) {
     >
       <!-- 简化的标题栏 -->
       <div
-        class="flex flex-shrink-0 items-center justify-between border-b px-6 py-4"
+        class="flex flex-shrink-0 items-center justify-between border-b px-6 py-2"
       >
         <div
           class="flex items-center gap-3 object-cover opacity-70 brightness-0 dark:invert"
@@ -82,9 +82,9 @@ function handleReorderChampions(champions: ChampionSummary[]) {
           />
           <span class="text-lg font-semibold">{{ position.name }}</span>
         </div>
-        <AlertDialogCancel asChild>
-          <Button variant="ghost" size="icon">
-            <X class="h-4 w-4" />
+        <AlertDialogCancel asChild class="border-none">
+          <Button variant="ghost" size="sm">
+            <X class="h-2 w-2" />
           </Button>
         </AlertDialogCancel>
       </div>
@@ -94,7 +94,7 @@ function handleReorderChampions(champions: ChampionSummary[]) {
         <!-- 已选英雄区域 - 始终显示，避免布局抖动 -->
         <div
           v-if="selectedChampions.length > 0"
-          class="flex-shrink-0 px-6 py-3"
+          class="flex-shrink-0 px-6 pt-1 pb-2"
         >
           <SelectedChampionsList
             :champions="selectedChampions"
@@ -105,7 +105,7 @@ function handleReorderChampions(champions: ChampionSummary[]) {
         </div>
 
         <!-- 搜索区域 -->
-        <div class="flex-shrink-0 px-6 py-4">
+        <div class="flex-shrink-0 px-6 pb-2">
           <div class="relative">
             <Search
               class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"

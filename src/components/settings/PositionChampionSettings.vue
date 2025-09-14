@@ -8,6 +8,7 @@ import { GripVertical, Plus } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { positions } from '@/config/position-config';
 import { usePositionChampionSettings } from '@/lib/composables/usePositionChampionSettings';
+import Button from '../ui/button/Button.vue';
 
 // Props
 interface Props {
@@ -212,12 +213,22 @@ defineExpose({
                 {{ champion.name }}
               </span>
 
+              <!-- 高级设置按钮 -->
+              <Button
+                class="cursor-pointer"
+                variant="ghost"
+                size="sm"
+                @click="() => {}"
+              >
+                高级设置
+              </Button>
+
               <!-- 删除按钮 -->
               <img
                 @click="removeUserChampion(selectedPosition, 'ban', index)"
                 :src="staticAssets.getIcon('close')"
                 alt="删除"
-                class="h-4 w-4 cursor-pointer"
+                class="h-5 w-5 cursor-pointer"
               />
             </div>
           </VueDraggable>
@@ -260,7 +271,7 @@ defineExpose({
           <h4
             class="text-sm font-medium text-emerald-600 dark:text-emerald-400"
           >
-            优先英雄
+            优选英雄
           </h4>
           <button
             @click="addPickChampion"
@@ -336,12 +347,22 @@ defineExpose({
                 {{ champion.name }}
               </span>
 
+              <!-- 高级设置按钮 -->
+              <Button
+                class="cursor-pointer"
+                variant="ghost"
+                size="sm"
+                @click="() => {}"
+              >
+                高级设置
+              </Button>
+
               <!-- 删除按钮 -->
               <img
                 @click="removeUserChampion(selectedPosition, 'pick', index)"
                 :src="staticAssets.getIcon('close')"
                 alt="删除"
-                class="h-4 w-4 cursor-pointer"
+                class="h-5 w-5 cursor-pointer"
               />
             </div>
           </VueDraggable>

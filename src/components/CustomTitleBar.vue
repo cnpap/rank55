@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { User } from 'lucide-vue-next';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import AppNavigation from '@/components/AppNavigation.vue';
@@ -11,6 +12,10 @@ import { useGameState } from '@/lib/composables/useGameState';
 // 使用 user store 获取用户信息
 const userStore = useClientUserStore();
 const { isConnected } = useGameState();
+const route = useRoute();
+
+// 检查是否有 tinybar 参数
+const isTinyBar = computed(() => 'tinybar' in route.query);
 
 // 用户信息计算属性 - 直接使用 store 中的计算属性
 const isLoggedIn = computed(() => userStore.isLoggedIn);
@@ -39,11 +44,13 @@ const handleDoubleClick = () => {
   >
     <!-- 主标题栏 -->
     <div
-      class="bg-background flex h-10 w-full items-center justify-between"
+      class="bg-background flex h-10 w-full items-center"
+      :class="isTinyBar ? 'justify-end' : 'justify-between'"
       style="-webkit-app-region: drag"
     >
-      <!-- 可拖拽区域 -->
+      <!-- 可拖拽区域 - 仅在非 tinybar 模式显示 -->
       <div
+        v-if="!isTinyBar"
         class="flex h-full flex-1 items-center select-none"
         style="-webkit-app-region: drag"
         @dblclick="handleDoubleClick"
@@ -57,9 +64,18 @@ const handleDoubleClick = () => {
         </div>
       </div>
 
-      <!-- 右侧控制区 -->
+      <!-- tinybar 模式的拖拽区域 -->
       <div
-        class="flex h-full items-center gap-2"
+        v-if="isTinyBar"
+        class="flex h-full flex-1 items-center select-none"
+        style="-webkit-app-region: drag"
+        @dblclick="handleDoubleClick"
+      ></div>
+
+      <!-- 右侧控制区 - 仅在非 tinybar 模式显示完整内容 -->
+      <div
+        v-if="!isTinyBar"
+        class="flex h-full items-center gap-2 pr-2"
         style="-webkit-app-region: no-drag"
       >
         <!-- 用户信息区域 -->
@@ -118,8 +134,10 @@ const handleDoubleClick = () => {
         <div class="bg-muted/30 flex items-center gap-1.5 rounded-md">
           <ThemeToggle />
         </div>
+      </div>
 
-        <!-- 窗口控制按钮组件 -->
+      <!-- 窗口控制按钮组件 - 始终显示，放在上层容器中 -->
+      <div class="flex h-full items-center" style="-webkit-app-region: no-drag">
         <WindowControls />
       </div>
     </div>
