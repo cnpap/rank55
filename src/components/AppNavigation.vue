@@ -4,10 +4,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { navigationItems } from '@/config/navigation';
 import SummonerSearch from './SummonerSearch.vue';
 import { useClientUserStore } from '@/stores/client-user';
+import { useGameState } from '@/lib/composables/useGameState';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useClientUserStore();
+const { isConnected } = useGameState();
 
 // 当前激活的路由
 const currentRoute = computed(() => route.name);
@@ -32,7 +34,10 @@ const navigateTo = async (path: string) => {
 
 <template>
   <!-- 桌面端导航 -->
-  <nav class="flex h-full w-full items-center justify-between">
+  <nav
+    v-if="isConnected"
+    class="flex h-full w-full items-center justify-between"
+  >
     <!-- 左侧导航菜单 -->
     <div class="flex h-full items-center">
       <button

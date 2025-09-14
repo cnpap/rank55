@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center p-8 text-center rounded-lg border-1 border-dashed border-gray-300 dark:border-gray-600">
+  <div class="flex flex-col items-center justify-center p-8 text-center rounded-lg ">
     <!-- 图标 -->
     <div class="mb-4">
       <img

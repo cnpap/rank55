@@ -6,9 +6,11 @@ import AppNavigation from '@/components/AppNavigation.vue';
 import WindowControls from '@/components/WindowControls.vue';
 import { useClientUserStore } from '@/stores/client-user';
 import { staticAssets } from '@/assets/data-assets';
+import { useGameState } from '@/lib/composables/useGameState';
 
 // 使用 user store 获取用户信息
 const userStore = useClientUserStore();
+const { isConnected } = useGameState();
 
 // 用户信息计算属性 - 直接使用 store 中的计算属性
 const isLoggedIn = computed(() => userStore.isLoggedIn);
@@ -64,7 +66,7 @@ const handleDoubleClick = () => {
         <div class="flex items-center gap-2">
           <!-- 用户头像和信息 -->
           <div
-            v-if="isLoggedIn"
+            v-if="isLoggedIn && isConnected"
             class="flex items-center gap-2 px-2 py-1"
             :title="`等级: ${summonerLevel}\n名称: ${displayName}`"
           >
@@ -79,18 +81,11 @@ const handleDoubleClick = () => {
                 class="relative rounded-full bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-pink-500/50 p-0.5"
               >
                 <img
-                  v-if="profileIconUrl"
                   :src="profileIconUrl"
                   :alt="displayName"
                   class="h-6 w-6 rounded-full shadow-sm"
                   @error="() => {}"
                 />
-                <div
-                  v-else
-                  class="bg-muted flex h-6 w-6 items-center justify-center rounded-full shadow-sm"
-                >
-                  <User class="text-muted-foreground h-3.5 w-3.5 opacity-30" />
-                </div>
               </div>
             </div>
             <!-- 用户名 -->
@@ -113,20 +108,6 @@ const handleDoubleClick = () => {
               <User class="h-3 w-3 text-red-500" />
             </div>
             <span class="text-xs text-red-500">连接失败</span>
-          </div>
-
-          <!-- 未登录状态 -->
-          <div
-            v-else
-            class="flex items-center gap-2 px-2 py-1"
-            title="未连接到LOL客户端"
-          >
-            <div
-              class="bg-muted border-border flex h-6 w-6 items-center justify-center rounded-full border"
-            >
-              <User class="text-muted-foreground h-3 w-3" />
-            </div>
-            <span class="text-muted-foreground text-xs">未连接</span>
           </div>
         </div>
 

@@ -95,8 +95,16 @@ export function useGamePhaseHandler() {
       'banpick',
       async () => {
         if (type === 'ban') {
+          const autoBan = $local.getItem('autoBanEnabled');
+          if (!autoBan) {
+            return;
+          }
           await autoActionService.executeBanAction(flatActions, myPositionInfo);
         } else if (type === 'pick') {
+          const autoPick = $local.getItem('autoPickEnabled');
+          if (!autoPick) {
+            return;
+          }
           await autoActionService.executePickAction(
             flatActions,
             myPositionInfo

@@ -88,12 +88,14 @@ export class GameDataDB extends Dexie {
 
   // 加载所有英雄数据到内存
   async loadAllChampions(): Promise<void> {
-    const champions = await this.champions.toArray();
+    let champions = await this.champions.toArray();
     if (champions.length === 0) {
       const championsSummaries =
         await lolStaticAssetsService.getChampionSummary();
       await this.champions.clear();
       await this.champions.bulkPut(championsSummaries);
+      // 重新获取存储后的数据
+      champions = await this.champions.toArray();
     }
     const championsMap = champions.reduce(
       (acc, champion) => {
@@ -108,11 +110,13 @@ export class GameDataDB extends Dexie {
 
   // 加载所有物品数据到内存
   async loadAllItems(): Promise<void> {
-    const items = await this.items.toArray();
+    let items = await this.items.toArray();
     if (items.length === 0) {
-      const items = await lolStaticAssetsService.getItems();
+      const itemsData = await lolStaticAssetsService.getItems();
       await this.items.clear();
-      await this.items.bulkPut(items);
+      await this.items.bulkPut(itemsData);
+      // 重新获取存储后的数据
+      items = await this.items.toArray();
     }
     const itemsMap = items.reduce(
       (acc, item) => {
