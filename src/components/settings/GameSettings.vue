@@ -15,7 +15,7 @@ import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 import { AcceptableValue } from 'reka-ui';
 import type { RegionType, TierType } from '@/lib/service/opgg/types';
 import { getRankMiniImageUrl } from '@/lib/rank-helpers';
-import { staticAssets } from '@/assets/data-assets';
+
 const savedAutoAccept = $local.getItem('autoAcceptGame');
 const autoAcceptGame = ref(savedAutoAccept || false);
 
@@ -45,20 +45,6 @@ const regionOptions = [
   { value: 'kr', label: '韩服' },
   { value: 'na', label: '北美' },
 ] as const;
-
-// 段位 ID 到英文名称的映射（基于 download-rank-icons.ts）
-const tierToEnglishMap: Record<string, string> = {
-  challenger: 'CHALLENGER',
-  grandmaster: 'GRANDMASTER',
-  master: 'MASTER',
-  diamond: 'DIAMOND',
-  emerald: 'EMERALD',
-  platinum: 'PLATINUM',
-  gold: 'GOLD',
-  silver: 'SILVER',
-  bronze: 'BRONZE',
-  iron: 'IRON',
-};
 
 // 分段选项
 const tierOptions = [

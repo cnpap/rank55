@@ -19,7 +19,6 @@ export function useGamePhaseHandler() {
   const handleChampSelectPhase = async (): Promise<void> => {
     const session = await banPickService.getChampSelectSession();
     const currentGameId = session.gameId;
-    console.log(`gameId`, currentGameId);
     const { actions, myTeam, localPlayerCellId } = session;
     const flatActions = actions.flat();
     const positionSettings = $local.getItem('positionSettings')!;
