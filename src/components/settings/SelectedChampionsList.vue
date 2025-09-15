@@ -60,7 +60,7 @@ function onEnd() {
       chosen-class="chosen-item"
       drag-class="drag-item"
       handle=".drag-handle"
-      class="grid grid-cols-8 gap-3"
+      class="grid grid-cols-7 gap-2 p-3"
       @end="onEnd"
     >
       <div
@@ -74,8 +74,12 @@ function onEnd() {
             :src="getChampionImageUrl(champion.id)"
             :alt="champion.name"
             :title="champion.name"
-            class="h-full w-full border-2 object-cover transition-all duration-200 group-hover:scale-105"
-            :class="type === 'ban' ? 'border-red-500' : 'border-blue-500'"
+            class="h-full w-full object-cover transition-all duration-200 group-hover:scale-105"
+            :class="
+              type === 'ban'
+                ? 'border-2 border-red-500'
+                : 'border-2 border-green-500'
+            "
           />
 
           <!-- 拖拽手柄 -->
@@ -105,7 +109,10 @@ function onEnd() {
     </VueDraggable>
 
     <!-- 当没有选择英雄时显示空占位符 -->
-    <div v-else class="grid grid-cols-8 gap-3">
+    <div
+      v-else
+      class="grid grid-cols-5 gap-2 p-3 sm:grid-cols-6 sm:gap-2 md:grid-cols-8 md:gap-3 lg:grid-cols-10 xl:grid-cols-12"
+    >
       <div class="aspect-square border-2 border-dashed border-gray-300">
         <div class="flex h-full w-full items-center justify-center">
           <span class="text-xs text-gray-400 dark:text-gray-500">?</span>
@@ -155,6 +162,12 @@ function onEnd() {
 @media (min-width: 1024px) {
   .lg\:grid-cols-14 {
     grid-template-columns: repeat(14, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-16 {
+    grid-template-columns: repeat(16, minmax(0, 1fr));
   }
 }
 </style>

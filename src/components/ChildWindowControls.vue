@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { ref, onMounted } from 'vue';
-import { Minus, Square, X, Copy } from 'lucide-vue-next';
+import { X } from 'lucide-vue-next';
 
 const isMaximized = ref(false);
 

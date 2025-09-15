@@ -98,9 +98,10 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/champion-selector',
+    path: '/champion-selector/:position/:type',
     name: 'ChampionSelectorWindow',
     component: ChampionSelectorWindow,
+    props: true,
     meta: {
       title: '英雄选择器',
       icon: '🏆',

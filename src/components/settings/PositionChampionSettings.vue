@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 import type { PositionSettings } from '@/storages/storage-use';
 import type { AssignedPosition } from '@/types/players-info';
@@ -94,19 +94,49 @@ function addPickChampion() {
 // 添加英雄 - 新窗口方式
 function addBanChampionWindow() {
   if (window.electronAPI) {
-    window.electronAPI.openChampionSelectorWindow();
+    window.electronAPI.openChampionSelectorWindow(
+      selectedPosition.value,
+      'ban'
+    );
   }
 }
 
 function addPickChampionWindow() {
   if (window.electronAPI) {
-    window.electronAPI.openChampionSelectorWindow();
+    window.electronAPI.openChampionSelectorWindow(
+      selectedPosition.value,
+      'pick'
+    );
   }
 }
 
 onMounted(() => {
   loadSettings();
   loadChampionSummaries();
+
+  // 监听窗口关闭事件（通用API）
+  if (window.electronAPI && window.electronAPI.onWindowClosed) {
+    window.electronAPI.onWindowClosed((event, data) => {
+      if (data.windowType === 'champion-selector') {
+        console.log('英雄选择器窗口已关闭22');
+        loadSettings();
+        // 在这里可以添加窗口关闭后的处理逻辑
+        // 例如：刷新数据、更新UI状态等
+      }
+    });
+  }
+});
+
+// 组件卸载时清理监听器
+onUnmounted(() => {
+  // 清理监听器
+  if (window.electronAPI && window.electronAPI.removeWindowClosedListener) {
+    window.electronAPI.removeWindowClosedListener((event, data) => {
+      if (data.windowType === 'champion-selector') {
+        console.log('英雄选择器窗口已关闭');
+      }
+    });
+  }
 });
 
 // 暴露方法给父组件
@@ -158,15 +188,15 @@ defineExpose({
               class="flex items-center gap-1 rounded-md bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
             >
               <Plus class="h-3 w-3" />
-              添加(模态框)
+              添加
             </button>
-            <button
+            <!-- <button
               @click="addBanChampionWindow"
               class="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1 text-xs text-white transition-colors hover:bg-red-700"
             >
               <Plus class="h-3 w-3" />
               添加(新窗口)
-            </button>
+            </button> -->
           </div>
         </div>
 
@@ -301,15 +331,15 @@ defineExpose({
               class="flex items-center gap-1 rounded-md bg-emerald-500 px-3 py-1 text-xs text-white transition-colors hover:bg-emerald-600"
             >
               <Plus class="h-3 w-3" />
-              添加(模态框)
+              添加
             </button>
-            <button
+            <!-- <button
               @click="addPickChampionWindow"
               class="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1 text-xs text-white transition-colors hover:bg-emerald-700"
             >
               <Plus class="h-3 w-3" />
               添加(新窗口)
-            </button>
+            </button> -->
           </div>
         </div>
 

@@ -4,7 +4,6 @@ import 'vue-sonner/style.css';
 import CustomTitleBar from '@/components/CustomTitleBar.vue';
 import Loading from '@/components/Loading.vue';
 import { onMounted, onUnmounted, ref, provide } from 'vue';
-import { eventBus } from '@/lib/event-bus';
 import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
 import { versionUtils } from '@/assets/versioned-assets';
 import Button from '@/components/ui/button/Button.vue';
@@ -30,23 +29,7 @@ const handleReload = () => {
   window.location.reload();
 };
 
-// 监听应用焦点状态
-const handleFocus = () => {
-  eventBus.emit('app:focus', true);
-};
-
-const handleBlur = () => {
-  eventBus.emit('app:focus', false);
-};
-
 onMounted(async () => {
-  // 添加焦点事件监听
-  window.addEventListener('focus', handleFocus);
-  window.addEventListener('blur', handleBlur);
-
-  // 初始化时发送当前焦点状态
-  eventBus.emit('app:focus', document.hasFocus());
-
   try {
     // 初始化版本信息
     const versionsInitialized = await versionUtils.initializeVersions();
@@ -57,12 +40,6 @@ onMounted(async () => {
   } finally {
     isVersionsLoading.value = false;
   }
-});
-
-onUnmounted(() => {
-  // 移除事件监听
-  window.removeEventListener('focus', handleFocus);
-  window.removeEventListener('blur', handleBlur);
 });
 </script>
 

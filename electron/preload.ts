@@ -36,10 +36,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLcuCredentials: () => ipcRenderer.invoke('lcu-get-credentials'),
 
   // 英雄选择器窗口相关方法
-  openChampionSelectorWindow: () =>
-    ipcRenderer.invoke('open-champion-selector-window'),
+  openChampionSelectorWindow: (position?: string, type?: 'ban' | 'pick') =>
+    ipcRenderer.invoke('open-champion-selector-window', position, type),
   closeChampionSelectorWindow: () =>
     ipcRenderer.invoke('close-champion-selector-window'),
+
+  // 监听英雄选择器参数
+  onChampionSelectorParams: (
+    callback: (params: { position: string; type: 'ban' | 'pick' }) => void
+  ) =>
+    ipcRenderer.on('champion-selector-params', (event, params) =>
+      callback(params)
+    ),
+  removeChampionSelectorParamsListener: () =>
+    ipcRenderer.removeAllListeners('champion-selector-params'),
+
+  // 通用窗口关闭事件监听
+  onWindowClosed: (
+    callback: (
+      event: any,
+      data: { windowType: string; windowId: string }
+    ) => void
+  ) => ipcRenderer.on('window-closed', callback),
+
+  // 移除通用窗口关闭事件监听器
+  removeWindowClosedListener: (
+    callback: (
+      event: any,
+      data: { windowType: string; windowId: string }
+    ) => void
+  ) => ipcRenderer.removeListener('window-closed', callback),
 });
 
 // 类型声明
@@ -72,8 +98,31 @@ declare global {
         serverHost?: string;
       }>;
       // 英雄选择器窗口相关方法
-      openChampionSelectorWindow: () => Promise<void>;
+      openChampionSelectorWindow: (
+        position?: string,
+        type?: 'ban' | 'pick'
+      ) => Promise<void>;
       closeChampionSelectorWindow: () => Promise<void>;
+
+      // 监听英雄选择器参数
+      onChampionSelectorParams: (
+        callback: (params: { position: string; type: 'ban' | 'pick' }) => void
+      ) => void;
+      removeChampionSelectorParamsListener: () => void;
+
+      // 通用窗口关闭事件监听
+      onWindowClosed: (
+        callback: (
+          event: any,
+          data: { windowType: string; windowId: string }
+        ) => void
+      ) => void;
+      removeWindowClosedListener: (
+        callback: (
+          event: any,
+          data: { windowType: string; windowId: string }
+        ) => void
+      ) => void;
     };
   }
 }

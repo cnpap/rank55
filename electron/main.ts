@@ -335,46 +335,80 @@ ipcMain.handle('lcu-get-credentials', async () => {
 });
 
 // 英雄选择器窗口相关处理器
-ipcMain.handle('open-champion-selector-window', async () => {
-  if (championSelectorWindow) {
-    championSelectorWindow.focus();
-    return;
+ipcMain.handle(
+  'open-champion-selector-window',
+  async (event, position?: string, type?: 'ban' | 'pick') => {
+    if (championSelectorWindow) {
+      championSelectorWindow.focus();
+      // 如果窗口已存在，通过IPC发送新的参数
+      if (position && type) {
+        championSelectorWindow.webContents.send('champion-selector-params', {
+          position,
+          type,
+        });
+      }
+      return;
+    }
+
+    championSelectorWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      minWidth: 600,
+      minHeight: 400,
+      parent: mainWindow || undefined,
+      modal: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: join(__dirname, 'preload.js'),
+        sandbox: false,
+        webSecurity: !isDev,
+        allowRunningInsecureContent: false,
+      },
+      autoHideMenuBar: true,
+      frame: false,
+      titleBarStyle: 'hidden',
+    });
+
+    // 加载英雄选择器页面
+    const routePath =
+      position && type
+        ? `/champion-selector/${position}/${type}`
+        : '/champion-selector/top/ban';
+
+    if (VITE_DEV_SERVER_URL) {
+      championSelectorWindow.loadURL(`${VITE_DEV_SERVER_URL}#${routePath}`);
+    } else {
+      const indexPath = join(__dirname, '..', 'dist', 'index.html');
+      championSelectorWindow.loadFile(indexPath, {
+        hash: routePath.substring(1),
+      });
+    }
+
+    championSelectorWindow.on('closed', () => {
+      // 通知主窗口窗口已关闭（使用通用事件）
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('window-closed', {
+          windowType: 'champion-selector',
+          windowId: 'champion-selector-window',
+        });
+      }
+      championSelectorWindow = null;
+    });
+
+    // 窗口准备好后发送参数
+    championSelectorWindow.webContents.once('did-finish-load', () => {
+      if (position && type) {
+        championSelectorWindow?.webContents.send('champion-selector-params', {
+          position,
+          type,
+        });
+      }
+    });
+
+    championSelectorWindow.show();
   }
-
-  championSelectorWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    minWidth: 600,
-    minHeight: 400,
-    parent: mainWindow || undefined,
-    modal: false,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: join(__dirname, 'preload.js'),
-      sandbox: false,
-      webSecurity: !isDev,
-      allowRunningInsecureContent: false,
-    },
-    autoHideMenuBar: true,
-    frame: false,
-    titleBarStyle: 'hidden',
-  });
-
-  // 加载英雄选择器页面
-  if (VITE_DEV_SERVER_URL) {
-    championSelectorWindow.loadURL(`${VITE_DEV_SERVER_URL}#/champion-selector`);
-  } else {
-    const indexPath = join(__dirname, '..', 'dist', 'index.html');
-    championSelectorWindow.loadFile(indexPath, { hash: 'champion-selector' });
-  }
-
-  championSelectorWindow.on('closed', () => {
-    championSelectorWindow = null;
-  });
-
-  championSelectorWindow.show();
-});
+);
 
 ipcMain.handle('close-champion-selector-window', () => {
   if (championSelectorWindow) {

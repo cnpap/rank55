@@ -36,8 +36,29 @@ declare global {
       // 新增：获取 LCU 凭据信息
       getLcuCredentials: () => Promise<LCUCredentials>;
       // 英雄选择器窗口相关方法
-      openChampionSelectorWindow: () => Promise<void>;
+      openChampionSelectorWindow: (
+        position?: string,
+        type?: 'ban' | 'pick'
+      ) => Promise<void>;
+      onChampionSelectorParams: (
+        callback: (params: { position: string; type: 'ban' | 'pick' }) => void
+      ) => void;
+      removeChampionSelectorParamsListener: () => void;
       closeChampionSelectorWindow: () => Promise<void>;
+      // 监听英雄选择器窗口关闭事件
+      // 通用窗口关闭事件监听
+      onWindowClosed: (
+        callback: (
+          event: any,
+          data: { windowType: string; windowId: string }
+        ) => void
+      ) => void;
+      removeWindowClosedListener: (
+        callback: (
+          event: any,
+          data: { windowType: string; windowId: string }
+        ) => void
+      ) => void;
     };
   }
 }

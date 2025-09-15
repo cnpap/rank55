@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// 弹窗布局组件 - 不包含主应用的顶部栏
-// 用于独立窗口，如英雄选择器等
+import { Toaster } from 'vue-sonner';
 </script>
 
 <template>
@@ -8,6 +7,8 @@
     <!-- 直接渲染页面内容，不包含主应用的顶部栏 -->
     <slot />
   </div>
+  <!-- 全局通知 -->
+  <Toaster class="max-w-[250px]" position="bottom-right" />
 </template>
 
 <style scoped>
