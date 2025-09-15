@@ -173,7 +173,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 英雄列表区域 -->
-      <div class="bg-background min-h-0 flex-1 overflow-hidden">
+      <!-- <div class="bg-background min-h-0 flex-1 overflow-hidden">
         <ChampionList
           :champions="champions"
           :selected-champion-ids="selectedChampionIds"
@@ -182,7 +182,7 @@ onUnmounted(() => {
           :selection-type="championSelection.currentType as 'ban' | 'pick'"
           @toggle-champion="handleToggleChampion"
         />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
