@@ -8,7 +8,6 @@ import { GripVertical, Plus } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { positions } from '@/config/position-config';
 import { usePositionChampionSettings } from '@/lib/composables/usePositionChampionSettings';
-import Button from '../ui/button/Button.vue';
 
 // Props
 interface Props {
@@ -91,24 +90,24 @@ function addPickChampion() {
   openChampionSelector(selectedPosition.value, 'pick');
 }
 
-// 添加英雄 - 新窗口方式
-function addBanChampionWindow() {
-  if (window.electronAPI) {
-    window.electronAPI.openChampionSelectorWindow(
-      selectedPosition.value,
-      'ban'
-    );
-  }
-}
+// // 添加英雄 - 新窗口方式
+// function addBanChampionWindow() {
+//   if (window.electronAPI) {
+//     window.electronAPI.openChampionSelectorWindow(
+//       selectedPosition.value,
+//       'ban'
+//     );
+//   }
+// }
 
-function addPickChampionWindow() {
-  if (window.electronAPI) {
-    window.electronAPI.openChampionSelectorWindow(
-      selectedPosition.value,
-      'pick'
-    );
-  }
-}
+// function addPickChampionWindow() {
+//   if (window.electronAPI) {
+//     window.electronAPI.openChampionSelectorWindow(
+//       selectedPosition.value,
+//       'pick'
+//     );
+//   }
+// }
 
 onMounted(() => {
   loadSettings();
@@ -202,7 +201,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto rounded-lg bg-red-50/30 p-3 dark:bg-red-950/20"
+          class="h-[300px] overflow-y-auto border bg-red-50/30 p-3 dark:bg-red-950/20"
         >
           <div
             v-if="currentPositionBanChampions.length === 0"
@@ -289,29 +288,31 @@ defineExpose({
         <!-- 推荐英雄区域 -->
         <div v-if="currentPositionBanRecommended.length > 0" class="mt-3">
           <h5 class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-            推荐禁用
+            推荐禁用：按照 opgg 总榜胜率从高到低
           </h5>
           <div
-            class="flex flex-wrap gap-1 rounded-lg bg-red-50/50 p-2 dark:bg-red-950/10"
+            class="h-48 overflow-y-auto border bg-red-50/50 p-2 dark:bg-red-950/10"
           >
-            <div
-              v-for="champion in currentPositionBanRecommended"
-              :key="`rec-ban-${champion.id}`"
-              class="group relative"
-            >
-              <img
-                :src="getChampionImageUrl(champion.id)"
-                :alt="champion.name"
-                :title="`推荐禁用: ${champion.name}`"
-                class="h-8 w-8 cursor-pointer border border-red-300 object-cover grayscale transition-all hover:border-red-500 hover:grayscale-0"
-                @click="
-                  selectRecommendedChampion(
-                    selectedPosition,
-                    'ban',
-                    champion.id
-                  )
-                "
-              />
+            <div class="grid grid-cols-8 gap-1">
+              <div
+                v-for="champion in currentPositionBanRecommended"
+                :key="`rec-ban-${champion.id}`"
+                class="group relative aspect-square"
+              >
+                <img
+                  :src="getChampionImageUrl(champion.id)"
+                  :alt="champion.name"
+                  :title="`推荐禁用: ${champion.name}`"
+                  class="h-full w-full cursor-pointer rounded-sm border border-red-300 object-cover transition-all hover:border-red-500"
+                  @click="
+                    selectRecommendedChampion(
+                      selectedPosition,
+                      'ban',
+                      champion.id
+                    )
+                  "
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -345,7 +346,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto rounded-lg bg-emerald-50/30 p-3 dark:bg-emerald-950/20"
+          class="h-[300px] overflow-y-auto border bg-emerald-50/30 p-3 dark:bg-emerald-950/20"
         >
           <div
             v-if="currentPositionPickChampions.length === 0"
@@ -432,29 +433,31 @@ defineExpose({
         <!-- 推荐英雄区域 -->
         <div v-if="currentPositionPickRecommended.length > 0" class="mt-3">
           <h5 class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-            推荐选择
+            推荐选择：按照 opgg 当前位置胜率从高到低
           </h5>
           <div
-            class="flex flex-wrap gap-1 rounded-lg bg-emerald-50/50 p-2 dark:bg-emerald-950/10"
+            class="h-48 overflow-y-auto border bg-emerald-50/50 p-2 dark:bg-emerald-950/10"
           >
-            <div
-              v-for="champion in currentPositionPickRecommended"
-              :key="`rec-pick-${champion.id}`"
-              class="group relative"
-            >
-              <img
-                :src="getChampionImageUrl(champion.id)"
-                :alt="champion.name"
-                :title="`推荐选择: ${champion.name}`"
-                class="h-8 w-8 cursor-pointer border border-emerald-300 object-cover grayscale transition-all hover:border-emerald-500 hover:grayscale-0"
-                @click="
-                  selectRecommendedChampion(
-                    selectedPosition,
-                    'pick',
-                    champion.id
-                  )
-                "
-              />
+            <div class="grid grid-cols-8 gap-1">
+              <div
+                v-for="champion in currentPositionPickRecommended"
+                :key="`rec-pick-${champion.id}`"
+                class="group relative aspect-square"
+              >
+                <img
+                  :src="getChampionImageUrl(champion.id)"
+                  :alt="champion.name"
+                  :title="`推荐选择: ${champion.name}`"
+                  class="h-full w-full cursor-pointer rounded-sm border border-emerald-300 object-cover transition-all hover:border-emerald-500"
+                  @click="
+                    selectRecommendedChampion(
+                      selectedPosition,
+                      'pick',
+                      champion.id
+                    )
+                  "
+                />
+              </div>
             </div>
           </div>
         </div>

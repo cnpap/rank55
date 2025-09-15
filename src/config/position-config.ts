@@ -171,5 +171,5 @@ export const recommendedChampions: PositionRecommendations = {
 };
 
 // 常量定义
-export const MAX_BAN_CHAMPIONS = 5;
-export const MAX_PICK_CHAMPIONS = 10;
+export const MAX_BAN_CHAMPIONS = 500;
+export const MAX_PICK_CHAMPIONS = 500;

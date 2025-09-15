@@ -13,7 +13,6 @@ interface Props {
   isLoading: boolean;
   selectionType: 'ban' | 'pick';
 }
-console.log();
 
 interface Emits {
   (e: 'toggle-champion', champion: ChampionSummary): void;

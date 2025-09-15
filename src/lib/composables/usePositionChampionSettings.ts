@@ -5,7 +5,6 @@ import { AssignedPosition } from '@/types/players-info';
 import { gameDataStore } from '@/storages/game-data-db';
 import {
   positions,
-  recommendedChampions,
   MAX_BAN_CHAMPIONS,
   MAX_PICK_CHAMPIONS,
 } from '@/config/position-config';
@@ -93,30 +92,60 @@ export function usePositionChampionSettings(
     const setting = positionSettings[position];
     const userChampions =
       type === 'ban' ? setting.banChampions : setting.pickChampions;
-    const maxCount = type === 'ban' ? MAX_BAN_CHAMPIONS : MAX_PICK_CHAMPIONS;
-    const recommended = recommendedChampions[position];
-    const recommendedList =
-      type === 'ban' ? recommended.banChampions : recommended.pickChampions;
 
-    const userChampionKeys = userChampions.slice(0, maxCount);
-    const availableRecommended = recommendedList
-      .map(r => r.championId.toString())
-      .filter(key => !userChampionKeys.includes(key));
+    const userChampionKeys = userChampions;
 
-    const needRecommendedCount = maxCount - userChampionKeys.length;
-    const recommendedToShow = availableRecommended.slice(
-      0,
-      needRecommendedCount
-    );
+    // 获取推荐英雄
+    let recommendedChampions: ChampionSummary[] = [];
+
+    if (type === 'ban') {
+      // 推荐禁用：返回总榜前30名英雄（按总体胜率排序）
+      recommendedChampions = champions.value
+        .filter(champion => !userChampionKeys.includes(champion.id.toString()))
+        .slice(0, 30); // 已经在 loadChampionSummaries 中按胜率排序了
+    } else {
+      // 推荐选用：返回当前位置所有英雄按胜率排序
+      const positionName = position;
+
+      recommendedChampions = champions.value
+        .filter(champion => {
+          // 过滤掉用户已选择的英雄
+          if (userChampionKeys.includes(champion.id.toString())) {
+            return false;
+          }
+
+          // 检查英雄是否有该位置的数据
+          return (
+            champion.positions &&
+            champion.positions.some(
+              pos => pos.name.toLowerCase() === positionName
+            )
+          );
+        })
+        .sort((a, b) => {
+          // 按该位置的胜率排序
+          const aPosition = a.positions.find(
+            pos => pos.name.toLowerCase() === positionName
+          );
+          const bPosition = b.positions.find(
+            pos => pos.name.toLowerCase() === positionName
+          );
+
+          const aWinRate = aPosition?.stats?.win_rate || 0;
+          const bWinRate = bPosition?.stats?.win_rate || 0;
+
+          return bWinRate - aWinRate;
+        });
+    }
+
+    const recommendedKeys = recommendedChampions.map(c => c.id.toString());
 
     return {
       userChampions: userChampionKeys
         .map(key => getChampionByKey(key))
         .filter(Boolean) as ChampionSummary[],
-      recommendedChampions: recommendedToShow
-        .map(key => getChampionByKey(key))
-        .filter(Boolean) as ChampionSummary[],
-      totalDisplay: [...userChampionKeys, ...recommendedToShow],
+      recommendedChampions,
+      totalDisplay: [...userChampionKeys, ...recommendedKeys],
     };
   }
 
@@ -133,7 +162,24 @@ export function usePositionChampionSettings(
   // 数据加载
   async function loadChampionSummaries() {
     if (champions.value.length > 0) return;
-    champions.value = Object.values(gameDataStore.champions);
+    champions.value = Object.values(gameDataStore.champions)
+      .filter(c => !c.name.startsWith('末日人机') && c.name !== '无')
+      .sort((a, b) => {
+        console.log(a, b);
+        try {
+          let aRate = 0;
+          if (a.positions.length > 0) {
+            aRate = a.positions[0].stats.win_rate || 0;
+          }
+          let bRate = 0;
+          if (b.positions.length > 0) {
+            bRate = b.positions[0].stats.win_rate || 0;
+          }
+          return bRate - aRate;
+        } catch {
+          return 0;
+        }
+      });
     syncLocalChampions();
   }
 

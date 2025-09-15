@@ -25,7 +25,7 @@ export const getChampionName = (championId: string) => {
   return gameDataStore.champions[championId].name;
 };
 
-const v = 1;
+const v = 2;
 
 // 定义数据库结构
 export class GameDataDB extends Dexie {
@@ -82,6 +82,9 @@ export class GameDataDB extends Dexie {
     )) as OpggRankedChampionsSummary;
     await this.rankedChampions.clear();
     rankedChampions.data.forEach(item => {
+      if (item.average_stats === null) {
+        console.log(`未找到排名数据的英雄: ${item.id}`);
+      }
       for (const position of item.positions) {
         let positionKey = position.name;
         if (positionKey === 'MID') {
