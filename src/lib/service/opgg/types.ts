@@ -245,15 +245,13 @@ export interface OpggRankedDataItem {
   is_rotation: boolean;
   is_rip: boolean;
   average_stats: Averagestat | null;
-  positions: (
-    | Position
-    | Positions2
-    | Positions3
-    | Positions4
-    | Positions5
-    | Positions6
-    | Positions7
-  )[];
+  positions: Position[];
+  // | Positions2
+  // | Positions3
+  // | Positions4
+  // | Positions5
+  // | Positions6
+  // | Positions7
   roles: any[];
 }
 
@@ -347,7 +345,7 @@ interface Tierdata2 {
   rank_prev_patch: null | number;
 }
 
-interface Position {
+export interface Position {
   name: string;
   stats: Stats;
   roles: Role[];

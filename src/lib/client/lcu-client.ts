@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import https from 'https';
 import { LCUClientInterface, RequestOptions } from './interface';
 import { LCUCredentials } from '@/types/lcu';
+import { DebounceCache } from '../service/debounce-cache';
 
 const execAsync = promisify(exec);
 
@@ -41,23 +42,25 @@ export class LCUClient implements LCUClientInterface {
     return new LCUClient(credentials);
   }
 
-  // 刷新LCU凭据
+  // 刷新LCU凭据（带防抖功能）
   private async refreshCredentials(): Promise<void> {
-    try {
-      const credentials = await LCUClient.getLCUCredentials();
-      this.port = credentials.port;
-      this.authToken = credentials.token;
-      this.baseURL = `https://127.0.0.1:${credentials.port}`;
-      this.region = credentials.region;
-      this.rsoPlatformId = credentials.rsoPlatformId;
-      this.locale = credentials.locale;
-      this.serverHost = credentials.serverHost;
-      // 更新新增参数
-      this.riotClientPort = credentials.riotClientPort;
-      this.riotClientAuthToken = credentials.riotClientAuthToken;
-    } catch (error) {
-      throw new Error(`刷新凭据失败: ${error}`);
-    }
+    return DebounceCache.debounce('lcu-refresh-credentials', async () => {
+      try {
+        const credentials = await LCUClient.getLCUCredentials();
+        this.port = credentials.port;
+        this.authToken = credentials.token;
+        this.baseURL = `https://127.0.0.1:${credentials.port}`;
+        this.region = credentials.region;
+        this.rsoPlatformId = credentials.rsoPlatformId;
+        this.locale = credentials.locale;
+        this.serverHost = credentials.serverHost;
+        // 更新新增参数
+        this.riotClientPort = credentials.riotClientPort;
+        this.riotClientAuthToken = credentials.riotClientAuthToken;
+      } catch (error) {
+        throw new Error(`刷新凭据失败: ${error}`);
+      }
+    });
   }
 
   // 延迟工具函数

@@ -266,14 +266,14 @@ defineExpose({
               </span>
 
               <!-- 高级设置按钮 -->
-              <Button
+              <!-- <Button
                 class="cursor-pointer"
                 variant="ghost"
                 size="sm"
                 @click="() => {}"
               >
                 高级设置
-              </Button>
+              </Button> -->
 
               <!-- 删除按钮 -->
               <img
@@ -409,14 +409,14 @@ defineExpose({
               </span>
 
               <!-- 高级设置按钮 -->
-              <Button
+              <!-- <Button
                 class="cursor-pointer"
                 variant="ghost"
                 size="sm"
                 @click="() => {}"
               >
                 高级设置
-              </Button>
+              </Button> -->
 
               <!-- 删除按钮 -->
               <img

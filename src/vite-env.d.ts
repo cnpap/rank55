@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import { LCUCredentials } from './types/lcu';
+import { ChampionSummary } from './types/lol-game-data';
 
 declare global {
   interface Window {
@@ -45,6 +46,10 @@ declare global {
       ) => void;
       removeChampionSelectorParamsListener: () => void;
       closeChampionSelectorWindow: () => Promise<void>;
+      // 处理英雄拼音数据
+      processChampionsPinyin: (
+        champions: ChampionSummary[]
+      ) => Promise<ChampionSummary[]>;
       // 监听英雄选择器窗口关闭事件
       // 通用窗口关闭事件监听
       onWindowClosed: (

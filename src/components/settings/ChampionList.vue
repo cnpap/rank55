@@ -3,11 +3,13 @@ import { computed } from 'vue';
 import Loading from '@/components/Loading.vue';
 import { staticAssets } from '@/assets/data-assets';
 import { ChampionSummary } from '@/types/lol-game-data';
+import type { AssignedPosition } from '@/types/players-info';
 
 interface Props {
   champions: ChampionSummary[];
   selectedChampionIds: string[];
   searchTerm: string;
+  positionFilter: AssignedPosition | 'all';
   isLoading: boolean;
   selectionType: 'ban' | 'pick';
 }
@@ -21,18 +23,35 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const filteredChampions = computed(() => {
-  if (!props.searchTerm) {
-    return props.champions;
+  let champions = props.champions;
+
+  // 过滤掉末日人机
+  champions = champions.filter(
+    champion => !champion.name.startsWith('末日人机')
+  );
+
+  // 位置过滤
+  if (props.positionFilter !== 'all') {
+    champions = champions.filter(champion => {
+      // 检查英雄的positions数组中是否包含选中的位置
+      return (
+        champion.positions &&
+        champion.positions.some(
+          position => position.name.toLowerCase() === props.positionFilter
+        )
+      );
+    });
   }
 
-  const term = props.searchTerm.toLowerCase();
-  return props.champions.filter(
-    champion =>
-      champion.name.toLowerCase().includes(term) ||
-      champion.id.toString().toLowerCase().includes(term) ||
-      champion.description.toLowerCase().includes(term) ||
-      champion.alias.toLowerCase().includes(term)
-  );
+  // 搜索过滤
+  if (props.searchTerm) {
+    const term = props.searchTerm.toLowerCase();
+    champions = champions.filter(champion =>
+      champion.query.toLowerCase().includes(term)
+    );
+  }
+
+  return champions;
 });
 
 function handleToggleChampion(champion: ChampionSummary) {

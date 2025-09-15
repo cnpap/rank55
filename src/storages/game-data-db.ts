@@ -81,7 +81,25 @@ export class GameDataDB extends Dexie {
       options
     )) as OpggRankedChampionsSummary;
     await this.rankedChampions.clear();
+    rankedChampions.data.forEach(item => {
+      for (const position of item.positions) {
+        let positionKey = position.name;
+        if (positionKey === 'MID') {
+          positionKey = 'middle';
+        } else if (positionKey === 'ADC') {
+          positionKey = 'bottom';
+        } else if (positionKey === 'JUNGLE') {
+          positionKey = 'jungle';
+        } else if (positionKey === 'SUPPORT') {
+          positionKey = 'support';
+        } else if (positionKey === 'TOP') {
+          positionKey = 'top';
+        }
+        position.name = positionKey;
+      }
+    });
     await this.rankedChampions.bulkPut(rankedChampions.data);
+
     // 更新全局存储
     console.log(`📦 已保存 ${rankedChampions.data.length} 个排名数据到数据库`);
   }
@@ -92,8 +110,30 @@ export class GameDataDB extends Dexie {
     if (champions.length === 0) {
       const championsSummaries =
         await lolStaticAssetsService.getChampionSummary();
+      for (const champion of championsSummaries) {
+        const rankedChampion = await this.rankedChampions.get(champion.id);
+        if (rankedChampion) {
+          champion.positions = rankedChampion.positions;
+        } else {
+          console.log(`未找到排名数据的英雄: ${champion.id}`);
+        }
+      }
+      // 如果在 Electron 环境中，使用 IPC 处理拼音
+      let processedChampions = championsSummaries;
+      if (window.electronAPI && window.electronAPI.processChampionsPinyin) {
+        try {
+          console.log('🔤 开始处理英雄拼音数据...');
+          processedChampions =
+            await window.electronAPI.processChampionsPinyin(championsSummaries);
+          console.log('🔤 英雄拼音数据处理完成');
+        } catch (error) {
+          console.error('处理英雄拼音数据失败，使用原始数据:', error);
+          processedChampions = championsSummaries;
+        }
+      }
+
       await this.champions.clear();
-      await this.champions.bulkPut(championsSummaries);
+      await this.champions.bulkPut(processedChampions);
       // 重新获取存储后的数据
       champions = await this.champions.toArray();
     }
@@ -131,9 +171,9 @@ export class GameDataDB extends Dexie {
 
   // 加载所有数据到内存
   async loadAll() {
+    await this.loadRankedChampions();
     await this.loadAllChampions();
     await this.loadAllItems();
-    await this.loadRankedChampions();
   }
 }
 

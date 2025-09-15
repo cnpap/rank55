@@ -9,6 +9,7 @@ import {
   registerRank55Protocol,
   registerRank55ProtocolPrivileges,
 } from './protocol-handler';
+import { pinyin } from 'pinyin-pro';
 
 // 配置日志
 log.transports.file.level = 'info';
@@ -45,6 +46,48 @@ async function ensureLCUClient(): Promise<LCUClient> {
     lcuClient = await LCUClient.create();
   }
   return lcuClient;
+}
+
+// 生成拼音和简写拼音
+function generatePinyin(text: string): { full: string; short: string } {
+  // 获取完整拼音（不带音调）
+  const fullPinyin = pinyin(text, { toneType: 'none', type: 'array' }).join('');
+
+  // 获取简写拼音（首字母）
+  const shortPinyin = pinyin(text, { pattern: 'first', toneType: 'none' });
+
+  return {
+    full: fullPinyin.toLowerCase().replace(/\s+/g, ''), // 去除所有空格
+    short: shortPinyin.toLowerCase().replace(/\s+/g, ''), // 去除所有空格
+  };
+}
+
+// 处理英雄数据，添加拼音查询字段
+function processChampionsWithPinyin(champions: any[]): any[] {
+  return champions.map(champion => {
+    // 生成 name 的拼音
+    const namePinyin = generatePinyin(champion.name);
+
+    // 生成 description 的拼音
+    const descriptionPinyin = generatePinyin(champion.description);
+
+    // 创建 query 字段，包含 id、name、description、alias 以及拼音
+    const queryParts = [
+      champion.id,
+      champion.name,
+      champion.description,
+      champion.alias,
+      namePinyin.short,
+      namePinyin.full,
+      descriptionPinyin.short,
+      descriptionPinyin.full,
+    ];
+
+    return {
+      ...champion,
+      query: queryParts.join(','),
+    };
+  });
 }
 
 // ===== 注册所有IPC处理器 =====
@@ -330,6 +373,19 @@ ipcMain.handle('lcu-get-credentials', async () => {
     return client.getCredentials();
   } catch (error) {
     console.error('获取 LCU 凭据失败:', error);
+    throw error;
+  }
+});
+
+// 处理英雄数据拼音
+ipcMain.handle('process-champions-pinyin', async (event, champions: any[]) => {
+  try {
+    console.log(`开始处理 ${champions.length} 个英雄的拼音数据...`);
+    const processedChampions = processChampionsWithPinyin(champions);
+    console.log(`拼音处理完成，共处理 ${processedChampions.length} 个英雄`);
+    return processedChampions;
+  } catch (error) {
+    console.error('处理英雄拼音数据失败:', error);
     throw error;
   }
 });

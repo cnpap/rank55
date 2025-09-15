@@ -48,6 +48,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('champion-selector-params', (event, params) =>
       callback(params)
     ),
+
+  // 处理英雄拼音数据
+  processChampionsPinyin: (champions: any[]) =>
+    ipcRenderer.invoke('process-champions-pinyin', champions),
   removeChampionSelectorParamsListener: () =>
     ipcRenderer.removeAllListeners('champion-selector-params'),
 
@@ -109,6 +113,9 @@ declare global {
         callback: (params: { position: string; type: 'ban' | 'pick' }) => void
       ) => void;
       removeChampionSelectorParamsListener: () => void;
+
+      // 处理英雄拼音数据
+      processChampionsPinyin: (champions: any[]) => Promise<any[]>;
 
       // 通用窗口关闭事件监听
       onWindowClosed: (

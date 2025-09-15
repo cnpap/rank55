@@ -1,3 +1,5 @@
+import { Position } from '@/lib/service/opgg/types';
+
 export interface Spell {
   id: number;
   name: string;
@@ -50,9 +52,11 @@ export interface ChampionSummary {
   id: number;
   name: string;
   description: string;
+  query: string;
   alias: string;
   contentId: string;
   squarePortraitPath: string;
+  positions: Position[];
   roles: string[];
 }
 

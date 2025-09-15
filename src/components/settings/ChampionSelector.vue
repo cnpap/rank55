@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Search, X } from 'lucide-vue-next';
 import { ChampionSummary } from '@/types/lol-game-data';
+import { positions } from '@/config/position-config';
+import type { AssignedPosition } from '@/types/players-info';
 
 interface Props {
   isOpen: boolean;
@@ -32,6 +34,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const searchTerm = ref('');
+const selectedPositionFilter = ref<AssignedPosition | 'all'>('all');
 
 const selectedChampionIds = computed(() =>
   props.selectedChampions.map(c => c.id.toString())
@@ -39,7 +42,12 @@ const selectedChampionIds = computed(() =>
 
 function handleClose() {
   searchTerm.value = '';
+  selectedPositionFilter.value = 'all';
   emit('close');
+}
+
+function selectPositionFilter(position: AssignedPosition | 'all') {
+  selectedPositionFilter.value = position;
 }
 
 function handleToggleChampion(champion: ChampionSummary) {
@@ -129,12 +137,61 @@ function handleReorderChampions(champions: ChampionSummary[]) {
           </div>
         </div>
 
+        <!-- 位置过滤区域 -->
+        <div class="flex-shrink-0 px-3 pb-3">
+          <div class="border-border flex h-10 items-center border-b">
+            <!-- 全部选项 -->
+            <button
+              @click="selectPositionFilter('all')"
+              class="relative flex h-full flex-1 items-center justify-center gap-2 text-sm font-medium transition-all duration-200"
+              :class="{
+                'bg-primary/10': selectedPositionFilter === 'all',
+                'text-muted-foreground hover:text-foreground hover:bg-muted/50':
+                  selectedPositionFilter !== 'all',
+              }"
+            >
+              <span>全部</span>
+              <!-- 活跃指示器 -->
+              <div
+                v-if="selectedPositionFilter === 'all'"
+                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+              ></div>
+            </button>
+
+            <!-- 位置选项 -->
+            <button
+              v-for="position in positions"
+              :key="position.key"
+              @click="selectPositionFilter(position.key)"
+              class="relative flex h-full flex-1 items-center justify-center gap-2 text-sm font-medium transition-all duration-200"
+              :class="{
+                'bg-primary/10': selectedPositionFilter === position.key,
+                'text-muted-foreground hover:text-foreground hover:bg-muted/50':
+                  selectedPositionFilter !== position.key,
+              }"
+            >
+              <img
+                :src="`./role/${position.icon}`"
+                :alt="position.name"
+                class="h-4 w-4 object-cover opacity-70 brightness-0 dark:invert"
+              />
+              <span>{{ position.name }}</span>
+              <!-- 活跃指示器 -->
+              <div
+                v-if="selectedPositionFilter === position.key"
+                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+              ></div>
+            </button>
+          </div>
+        </div>
+
         <!-- 英雄列表区域 -->
         <div class="bg-background min-h-0 flex-1 overflow-hidden">
           <ChampionList
             :champions="champions"
             :selected-champion-ids="selectedChampionIds"
             :search-term="searchTerm"
+            :position-filter="selectedPositionFilter"
             :is-loading="isLoading"
             :selection-type="selectionType"
             @toggle-champion="handleToggleChampion"
