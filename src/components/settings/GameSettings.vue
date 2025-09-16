@@ -226,7 +226,7 @@ defineExpose({
       <div>
         <h4 class="text-foreground font-medium">默认服务器</h4>
         <p class="text-muted-foreground mt-1 text-sm">
-          设置从 OP.GG 获取数据时的默认服务器（重启或 ctrl + r 刷新后生效）
+          设置从 OP.GG 获取数据时的默认服务器（重启或 CTRL + R 刷新后生效）
         </p>
       </div>
 
@@ -255,7 +255,7 @@ defineExpose({
       <div>
         <h4 class="text-foreground font-medium">默认分段</h4>
         <p class="text-muted-foreground mt-1 text-sm">
-          设置从 OP.GG 获取数据时的默认分段过滤器（重启或 ctrl + r 刷新后生效）
+          设置从 OP.GG 获取数据时的默认分段过滤器（重启或 CTRL + R 刷新后生效）
         </p>
       </div>
 

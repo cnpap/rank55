@@ -123,12 +123,12 @@ const queueType = computed(() => {
               <img
                 :src="staticAssets.getSpellIcon(`${spells[0]}`)"
                 :alt="`召唤师技能${spells[0]}`"
-                class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+                class="border-border/40 h-5 w-5 object-cover shadow-sm"
               />
               <img
                 :src="staticAssets.getSpellIcon(`${spells[1]}`)"
                 :alt="`召唤师技能${spells[1]}`"
-                class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+                class="border-border/40 h-5 w-5 object-cover shadow-sm"
               />
             </div>
 
@@ -139,11 +139,11 @@ const queueType = computed(() => {
                   v-if="runes[0]"
                   :src="staticAssets.getRuneIcon(`${runes[0]}`)"
                   :alt="`主要天赋系${runes[0]}`"
-                  class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+                  class="border-border/40 h-full w-full object-cover shadow-sm"
                 />
                 <div
                   v-else
-                  class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                  class="border-border/20 bg-muted/30 h-full w-full border"
                 />
               </div>
               <div class="relative h-5 w-5">
@@ -151,11 +151,11 @@ const queueType = computed(() => {
                   v-if="runes[1]"
                   :src="staticAssets.getRuneIcon(`${runes[1]}`)"
                   :alt="`次要天赋系${runes[1]}`"
-                  class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+                  class="border-border/40 h-full w-full object-cover shadow-sm"
                 />
                 <div
                   v-else
-                  class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                  class="border-border/20 bg-muted/30 h-full w-full border"
                 />
               </div>
             </div>
@@ -218,12 +218,9 @@ const queueType = computed(() => {
           v-if="items[index]"
           :src="staticAssets.getItemIcon(`${items[index]}`)"
           :alt="`装备${items[index]}`"
-          class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
+          class="border-border/40 h-full w-full border object-cover shadow-sm"
         />
-        <div
-          v-else
-          class="border-border/20 bg-muted/30 h-full w-full rounded border"
-        />
+        <div v-else class="border-border/20 bg-muted/30 h-full w-full border" />
       </div>
     </div>
   </div>
@@ -239,7 +236,7 @@ const queueType = computed(() => {
             staticAssets.getChampionIcon(`${currentPlayer?.championId || 0}`)
           "
           :alt="currentPlayer?.championName || '未知英雄'"
-          class="h-11 w-11 rounded"
+          class="h-11 w-11"
         />
       </div>
 
@@ -248,12 +245,12 @@ const queueType = computed(() => {
         <img
           :src="staticAssets.getSpellIcon(`${spells[0]}`)"
           :alt="`召唤师技能${spells[0]}`"
-          class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+          class="border-border/40 h-5 w-5 object-cover shadow-sm"
         />
         <img
           :src="staticAssets.getSpellIcon(`${spells[1]}`)"
           :alt="`召唤师技能${spells[1]}`"
-          class="border-border/40 h-5 w-5 rounded object-cover shadow-sm"
+          class="border-border/40 h-5 w-5 object-cover shadow-sm"
         />
       </div>
 
@@ -264,11 +261,11 @@ const queueType = computed(() => {
             v-if="runes[0]"
             :src="staticAssets.getRuneIcon(`${runes[0]}`)"
             :alt="`主要天赋系${runes[0]}`"
-            class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+            class="border-border/40 h-full w-full object-cover shadow-sm"
           />
           <div
             v-else
-            class="border-border/20 bg-muted/30 h-full w-full rounded border"
+            class="border-border/20 bg-muted/30 h-full w-full border"
           />
         </div>
         <div class="relative h-5 w-5">
@@ -276,11 +273,11 @@ const queueType = computed(() => {
             v-if="runes[1]"
             :src="staticAssets.getRuneIcon(`${runes[1]}`)"
             :alt="`次要天赋系${runes[1]}`"
-            class="border-border/40 h-full w-full rounded object-cover shadow-sm"
+            class="border-border/40 h-full w-full object-cover shadow-sm"
           />
           <div
             v-else
-            class="border-border/20 bg-muted/30 h-full w-full rounded border"
+            class="border-border/20 bg-muted/30 h-full w-full border"
           />
         </div>
       </div>
@@ -324,12 +321,9 @@ const queueType = computed(() => {
           v-if="items[index]"
           :src="staticAssets.getItemIcon(`${items[index]}`)"
           :alt="`装备${items[index]}`"
-          class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
+          class="border-border/40 h-full w-full border object-cover shadow-sm"
         />
-        <div
-          v-else
-          class="border-border/20 bg-muted/30 h-full w-full rounded border"
-        />
+        <div v-else class="border-border/20 bg-muted/30 h-full w-full border" />
       </div>
     </div>
 

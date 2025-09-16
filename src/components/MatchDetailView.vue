@@ -188,9 +188,9 @@ const searchPlayerHistory = async (name: string) => {
           <div
             class="flex items-center justify-between border-b px-4 py-1"
             :class="{
-              'bg-blue-50/80 dark:bg-blue-950/30':
+              'bg-blue-50 dark:bg-blue-900/20':
                 getTeamDisplayInfo(team.teamId).color === 'blue',
-              'bg-red-50/80 dark:bg-red-950/30':
+              'bg-red-50 dark:bg-red-900/20':
                 getTeamDisplayInfo(team.teamId).color === 'red',
             }"
           >
@@ -350,9 +350,9 @@ const searchPlayerHistory = async (name: string) => {
           <!-- 玩家数据表格 -->
           <div
             :class="{
-              'bg-blue-50/80 dark:bg-blue-950/30':
+              'bg-blue-50 dark:bg-blue-900/20':
                 getTeamDisplayInfo(team.teamId).color === 'blue',
-              'bg-red-50/80 dark:bg-red-950/30':
+              'bg-red-50 dark:bg-red-900/20':
                 getTeamDisplayInfo(team.teamId).color === 'red',
             }"
             class="overflow-x-auto"

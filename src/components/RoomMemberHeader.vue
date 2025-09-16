@@ -247,7 +247,7 @@ const positionPreferences = computed(() => {
         :class="[
           'flex h-5 w-5 items-center justify-center border transition-all duration-150',
           member.isLeader || !canKick
-            ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500'
+            ? 'bg-card cursor-not-allowed border-slate-300 text-slate-400 dark:border-slate-600 dark:text-slate-500'
             : 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70',
         ]"
         :title="
@@ -275,7 +275,7 @@ const positionPreferences = computed(() => {
 
       <!-- 第一位置偏好 -->
       <div
-        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+        class="bg-card flex h-5 w-5 items-center justify-center border border-slate-200 dark:border-slate-600"
       >
         <img
           v-if="positionPreferences.first?.icon"
