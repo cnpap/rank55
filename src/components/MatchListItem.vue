@@ -149,7 +149,7 @@ const showDetailedMode = computed(() => {
   </div>
 
   <div
-    class="group bg-card relative w-4xl overflow-hidden border transition-all duration-300"
+    class="group relative w-4xl overflow-hidden border bg-gradient-to-r from-slate-50/80 to-white/80 backdrop-blur-sm transition-all duration-300 dark:from-[#131313]/80 dark:to-[#151515]/90"
   >
     <!-- 胜负纹理背景 -->
     <div

@@ -335,7 +335,7 @@ const queueType = computed(() => {
 
     <!-- 游戏信息区域 -->
     <div
-      class="ml-auto flex min-w-[120px] flex-shrink-0 flex-col items-end gap-1 text-xs"
+      class="ml-auto flex min-w-[120px] flex-shrink-0 flex-col items-end gap-1 py-2 text-xs"
     >
       <h4 class="text-foreground text-right text-sm font-semibold">
         {{ queueType }}
@@ -343,8 +343,7 @@ const queueType = computed(() => {
       <div class="text-muted-foreground flex flex-col items-end gap-0.5">
         <p class="text-right whitespace-nowrap">
           {{ formatDateToDay(match.json.gameCreation as unknown as string) }}
-        </p>
-        <p class="text-right font-medium whitespace-nowrap">
+          <span class="text-muted-foreground">·</span>
           {{ formatGameDuration(match.json.gameDuration) }}
         </p>
       </div>
