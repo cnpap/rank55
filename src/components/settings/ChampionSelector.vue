@@ -36,6 +36,10 @@ const emit = defineEmits<Emits>();
 const searchTerm = ref('');
 const selectedPositionFilter = ref<AssignedPosition | 'all'>('all');
 
+// 排序状态管理
+type SortBy = 'tier' | 'winRate';
+const sortBy = ref<SortBy>('tier'); // 默认按强度排序
+
 const selectedChampionIds = computed(() =>
   props.selectedChampions.map(c => c.id.toString())
 );
@@ -48,6 +52,11 @@ function handleClose() {
 
 function selectPositionFilter(position: AssignedPosition | 'all') {
   selectedPositionFilter.value = position;
+}
+
+// 切换排序方式
+function setSortBy(newSortBy: SortBy) {
+  sortBy.value = newSortBy;
 }
 
 function handleToggleChampion(champion: ChampionSummary) {
@@ -138,8 +147,8 @@ function handleReorderChampions(champions: ChampionSummary[]) {
         </div>
 
         <!-- 位置过滤区域 -->
-        <div class="flex-shrink-0 px-3 pb-3">
-          <div class="border-border flex h-10 items-center border-b">
+        <div class="flex-shrink-0">
+          <div class="border-border flex h-10 items-center border-y">
             <!-- 全部选项 -->
             <button
               @click="selectPositionFilter('all')"
@@ -154,7 +163,7 @@ function handleReorderChampions(champions: ChampionSummary[]) {
               <!-- 活跃指示器 -->
               <div
                 v-if="selectedPositionFilter === 'all'"
-                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2"
               ></div>
             </button>
 
@@ -179,23 +188,84 @@ function handleReorderChampions(champions: ChampionSummary[]) {
               <!-- 活跃指示器 -->
               <div
                 v-if="selectedPositionFilter === position.key"
-                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+                class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2"
               ></div>
             </button>
           </div>
         </div>
 
         <!-- 英雄列表区域 -->
-        <div class="bg-background min-h-0 flex-1 overflow-hidden">
-          <ChampionList
-            :champions="champions"
-            :selected-champion-ids="selectedChampionIds"
-            :search-term="searchTerm"
-            :position-filter="selectedPositionFilter"
-            :is-loading="isLoading"
-            :selection-type="selectionType"
-            @toggle-champion="handleToggleChampion"
-          />
+        <div class="bg-background flex min-h-0 flex-1 flex-col">
+          <!-- 英雄列表 - 可滚动区域 -->
+          <div class="flex-1 overflow-hidden">
+            <ChampionList
+              :champions="champions"
+              :selected-champion-ids="selectedChampionIds"
+              :search-term="searchTerm"
+              :position-filter="selectedPositionFilter"
+              :is-loading="isLoading"
+              :selection-type="selectionType"
+              :sort-by="sortBy"
+              @toggle-champion="handleToggleChampion"
+            />
+          </div>
+
+          <!-- 固定表头 - 底部 -->
+          <div
+            v-if="!isLoading"
+            class="bg-background border-border flex h-10 flex-shrink-0 items-center border-t px-6"
+          >
+            <!-- 英雄/位置 -->
+            <div
+              class="text-muted-foreground relative flex h-full items-center justify-start text-sm font-medium"
+              style="width: 200px"
+            >
+              <span>英雄/位置</span>
+            </div>
+
+            <!-- 强度 -->
+            <button
+              @click="setSortBy('tier')"
+              class="relative flex h-full flex-1 items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="{
+                'bg-primary/10 text-foreground': sortBy === 'tier',
+                'text-muted-foreground hover:text-foreground hover:bg-muted/50':
+                  sortBy !== 'tier',
+              }"
+            >
+              <span>强度</span>
+              <!-- 活跃指示器 -->
+              <div
+                v-if="sortBy === 'tier'"
+                class="bg-primary absolute top-0 left-1/2 h-0.5 w-full -translate-x-1/2"
+              ></div>
+            </button>
+
+            <!-- 胜率 -->
+            <button
+              @click="setSortBy('winRate')"
+              class="relative flex h-full flex-1 items-center justify-center text-sm font-medium transition-all duration-200"
+              :class="{
+                'bg-primary/10 text-foreground': sortBy === 'winRate',
+                'text-muted-foreground hover:text-foreground hover:bg-muted/50':
+                  sortBy !== 'winRate',
+              }"
+            >
+              <span>胜率</span>
+              <!-- 活跃指示器 -->
+              <div
+                v-if="sortBy === 'winRate'"
+                class="bg-primary absolute top-0 left-1/2 h-0.5 w-full -translate-x-1/2"
+              ></div>
+            </button>
+
+            <!-- 状态 -->
+            <div
+              class="text-muted-foreground relative flex h-full w-16 items-center justify-center text-sm font-medium"
+            >
+              <span>状态</span>
+            </div>
+          </div>
         </div>
       </div>
     </AlertDialogContent>

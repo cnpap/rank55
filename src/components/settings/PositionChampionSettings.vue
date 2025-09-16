@@ -4,6 +4,7 @@ import { VueDraggable } from 'vue-draggable-plus';
 import type { PositionSettings } from '@/storages/storage-use';
 import type { AssignedPosition } from '@/types/players-info';
 import ChampionSelector from './ChampionSelector.vue';
+import ChampionListItem from './ChampionListItem.vue';
 import { GripVertical, Plus } from 'lucide-vue-next';
 import { staticAssets } from '@/assets/data-assets';
 import { positions } from '@/config/position-config';
@@ -36,7 +37,6 @@ const {
   localPickChampions,
   currentSelectedChampions,
   currentPosition,
-  getDisplayChampions,
   loadSettings,
   loadChampionSummaries,
   resetSettings,
@@ -48,7 +48,6 @@ const {
   handleReorderBan,
   handleReorderPick,
   removeUserChampion,
-  selectRecommendedChampion,
 } = usePositionChampionSettings(props.modelValue);
 
 // 视图相关的辅助函数
@@ -63,17 +62,6 @@ const currentPositionBanChampions = computed(() => {
 
 const currentPositionPickChampions = computed(() => {
   return localPickChampions.value[selectedPosition.value] || [];
-});
-
-// 获取当前位置的推荐英雄
-const currentPositionBanRecommended = computed(() => {
-  return getDisplayChampions(selectedPosition.value, 'ban')
-    .recommendedChampions;
-});
-
-const currentPositionPickRecommended = computed(() => {
-  return getDisplayChampions(selectedPosition.value, 'pick')
-    .recommendedChampions;
 });
 
 // 选择位置
@@ -168,7 +156,7 @@ defineExpose({
         <!-- 活跃指示器 -->
         <div
           v-if="selectedPosition === position.key"
-          class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+          class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2"
         ></div>
       </button>
     </div>
@@ -232,89 +220,20 @@ defineExpose({
                 )
             "
           >
-            <div
+            <ChampionListItem
               v-for="(champion, index) in currentPositionBanChampions"
               :key="`ban-${champion.id}`"
-              class="group bg-card flex items-center gap-3 rounded-lg p-2"
-            >
-              <!-- 拖拽手柄 -->
-              <div class="drag-handle cursor-move">
-                <GripVertical class="h-4 w-4 text-gray-400" />
-              </div>
-
-              <!-- 序号 -->
-              <div
-                class="flex h-5 w-5 items-center justify-center text-xs font-bold"
-              >
-                {{ index + 1 }}
-              </div>
-
-              <!-- 英雄头像 -->
-              <img
-                :src="getChampionImageUrl(champion.id)"
-                :alt="champion.name"
-                :title="champion.name"
-                class="h-10 w-10 border-1"
-              />
-
-              <!-- 英雄名称 -->
-              <span
-                class="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {{ champion.name }}
-              </span>
-
-              <!-- 高级设置按钮 -->
-              <!-- <Button
-                class="cursor-pointer"
-                variant="ghost"
-                size="sm"
-                @click="() => {}"
-              >
-                高级设置
-              </Button> -->
-
-              <!-- 删除按钮 -->
-              <img
-                @click="removeUserChampion(selectedPosition, 'ban', index)"
-                :src="staticAssets.getIcon('close')"
-                alt="删除"
-                class="h-5 w-5 cursor-pointer"
-              />
-            </div>
+              :champion="champion"
+              :position="selectedPosition"
+              :index="index"
+              :show-drag-handle="true"
+              :show-index="true"
+              :show-tier-info="true"
+              :show-delete-button="true"
+              variant="ban"
+              @delete="removeUserChampion(selectedPosition, 'ban', index)"
+            />
           </VueDraggable>
-        </div>
-
-        <!-- 推荐英雄区域 -->
-        <div v-if="currentPositionBanRecommended.length > 0" class="mt-3">
-          <h5 class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-            推荐禁用：按照 opgg 总榜胜率从高到低
-          </h5>
-          <div
-            class="h-48 overflow-y-auto border bg-red-50/50 p-2 dark:bg-red-950/10"
-          >
-            <div class="grid grid-cols-8 gap-1">
-              <div
-                v-for="champion in currentPositionBanRecommended"
-                :key="`rec-ban-${champion.id}`"
-                class="group relative aspect-square"
-              >
-                <img
-                  :src="getChampionImageUrl(champion.id)"
-                  :alt="champion.name"
-                  :title="`推荐禁用: ${champion.name}`"
-                  class="h-full w-full cursor-pointer rounded-sm border border-red-300 object-cover transition-all hover:border-red-500"
-                  @click="
-                    selectRecommendedChampion(
-                      selectedPosition,
-                      'ban',
-                      champion.id
-                    )
-                  "
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -377,89 +296,20 @@ defineExpose({
                 )
             "
           >
-            <div
+            <ChampionListItem
               v-for="(champion, index) in currentPositionPickChampions"
               :key="`pick-${champion.id}`"
-              class="group bg-card flex items-center gap-3 rounded-lg p-2"
-            >
-              <!-- 拖拽手柄 -->
-              <div class="drag-handle cursor-move">
-                <GripVertical class="h-4 w-4 text-gray-400" />
-              </div>
-
-              <!-- 序号 -->
-              <div
-                class="flex h-5 w-5 items-center justify-center text-xs font-bold"
-              >
-                {{ index + 1 }}
-              </div>
-
-              <!-- 英雄头像 -->
-              <img
-                :src="getChampionImageUrl(champion.id)"
-                :alt="champion.name"
-                :title="champion.name"
-                class="h-10 w-10 border-1"
-              />
-
-              <!-- 英雄名称 -->
-              <span
-                class="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {{ champion.name }}
-              </span>
-
-              <!-- 高级设置按钮 -->
-              <!-- <Button
-                class="cursor-pointer"
-                variant="ghost"
-                size="sm"
-                @click="() => {}"
-              >
-                高级设置
-              </Button> -->
-
-              <!-- 删除按钮 -->
-              <img
-                @click="removeUserChampion(selectedPosition, 'pick', index)"
-                :src="staticAssets.getIcon('close')"
-                alt="删除"
-                class="h-5 w-5 cursor-pointer"
-              />
-            </div>
+              :champion="champion"
+              :position="selectedPosition"
+              :index="index"
+              :show-drag-handle="true"
+              :show-index="true"
+              :show-tier-info="true"
+              :show-delete-button="true"
+              variant="pick"
+              @delete="removeUserChampion(selectedPosition, 'pick', index)"
+            />
           </VueDraggable>
-        </div>
-
-        <!-- 推荐英雄区域 -->
-        <div v-if="currentPositionPickRecommended.length > 0" class="mt-3">
-          <h5 class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
-            推荐选择：按照 opgg 当前位置胜率从高到低
-          </h5>
-          <div
-            class="h-48 overflow-y-auto border bg-emerald-50/50 p-2 dark:bg-emerald-950/10"
-          >
-            <div class="grid grid-cols-8 gap-1">
-              <div
-                v-for="champion in currentPositionPickRecommended"
-                :key="`rec-pick-${champion.id}`"
-                class="group relative aspect-square"
-              >
-                <img
-                  :src="getChampionImageUrl(champion.id)"
-                  :alt="champion.name"
-                  :title="`推荐选择: ${champion.name}`"
-                  class="h-full w-full cursor-pointer rounded-sm border border-emerald-300 object-cover transition-all hover:border-emerald-500"
-                  @click="
-                    selectRecommendedChampion(
-                      selectedPosition,
-                      'pick',
-                      champion.id
-                    )
-                  "
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

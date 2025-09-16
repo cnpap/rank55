@@ -55,7 +55,7 @@ const navigateTo = async (path: string) => {
         <!-- 活跃指示器 -->
         <div
           v-if="currentRoute === item.name"
-          class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full"
+          class="bg-primary absolute bottom-0 left-1/2 h-0.5 w-full -translate-x-1/2"
         ></div>
       </button>
     </div>

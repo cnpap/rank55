@@ -165,7 +165,6 @@ export function usePositionChampionSettings(
     champions.value = Object.values(gameDataStore.champions)
       .filter(c => !c.name.startsWith('末日人机') && c.name !== '无')
       .sort((a, b) => {
-        console.log(a, b);
         try {
           let aRate = 0;
           if (a.positions.length > 0) {

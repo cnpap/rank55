@@ -60,7 +60,7 @@ function onEnd() {
       chosen-class="chosen-item"
       drag-class="drag-item"
       handle=".drag-handle"
-      class="grid grid-cols-7 gap-2 p-3"
+      class="grid grid-cols-8 gap-2 p-3"
       @end="onEnd"
     >
       <div
@@ -74,12 +74,7 @@ function onEnd() {
             :src="getChampionImageUrl(champion.id)"
             :alt="champion.name"
             :title="champion.name"
-            class="h-full w-full object-cover transition-all duration-200 group-hover:scale-105"
-            :class="
-              type === 'ban'
-                ? 'border-2 border-red-500'
-                : 'border-2 border-green-500'
-            "
+            class="h-full w-full object-cover transition-all duration-200"
           />
 
           <!-- 拖拽手柄 -->
@@ -96,7 +91,7 @@ function onEnd() {
           <!-- 删除按钮 -->
           <span
             @click="handleRemove(index)"
-            class="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
+            class="absolute -top-2.5 -right-2.5 z-[9999] h-5 w-5 cursor-pointer rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
           >
             <img
               :src="staticAssets.getIcon('close')"
