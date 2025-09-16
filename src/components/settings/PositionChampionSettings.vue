@@ -135,7 +135,7 @@ defineExpose({
 <template>
   <div class="space-y-6">
     <!-- 位置选择器 -->
-    <div class="border-border flex h-10 items-center border-b">
+    <div class="flex h-10 items-center border-b">
       <button
         v-for="position in positions"
         :key="position.key"

@@ -76,6 +76,7 @@ export function useGameStartMembers() {
       isMyTeam: player.isMyTeam,
       assignedPosition:
         player.assignedPosition || player.selectedPosition.toLowerCase(),
+      championId: player.championId,
       isLoading: false,
     }));
 
@@ -135,6 +136,7 @@ export function useGameStartMembers() {
               assignedPosition:
                 updatedPlayer.assignedPosition ||
                 updatedPlayer.selectedPosition.toLowerCase(),
+              championId: updatedPlayer.championId,
             };
           }
           return existingMember;

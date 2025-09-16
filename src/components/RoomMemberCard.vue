@@ -11,6 +11,7 @@ import { getPlayerDisplayName } from '@/lib/player-helpers';
 interface Props {
   member: MemberWithDetails;
   canKick?: boolean;
+  isGameStartPhase?: boolean;
 }
 
 interface Emits {
@@ -111,6 +112,7 @@ onMounted(() => {
       :display-name="displayName"
       :current-ranked-stats="currentRankedStats"
       :can-kick="canKick"
+      :is-game-start-phase="isGameStartPhase"
       @kick="handleKick"
     />
 

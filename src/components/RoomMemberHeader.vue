@@ -16,6 +16,7 @@ interface Props {
   displayName: string;
   currentRankedStats: any;
   canKick?: boolean;
+  isGameStartPhase?: boolean;
 }
 
 interface Emits {
@@ -66,12 +67,22 @@ const searchPlayerHistory = async (displayName: string) => {
   console.log(`displayName: ${displayName}`);
   await matchHistoryStore.searchSummonerByName(displayName, serverId);
 };
-// 在 script setup 部分添加计算属性
+// 头像显示逻辑 - 游戏开始阶段显示英雄头像，其他阶段显示玩家头像
 const avatarIconId = computed(() => {
   // 优先使用 summonerData 中的 profileIconId，然后是 member 的 summonerIconId
   return (
     props.member.summonerData?.profileIconId || props.member.summonerIconId || 1
   );
+});
+
+// 计算头像图片URL - 根据游戏阶段选择英雄头像或玩家头像
+const avatarImageUrl = computed(() => {
+  // 如果是游戏开始阶段且有英雄ID，显示英雄头像
+  if (props.isGameStartPhase && props.member.championId) {
+    return staticAssets.getChampionIcon(`${props.member.championId}`);
+  }
+  // 否则显示玩家头像
+  return staticAssets.getProfileIcon(`${avatarIconId.value}`);
 });
 
 // 获取位置图标路径
@@ -156,7 +167,7 @@ const positionPreferences = computed(() => {
 
           <!-- 头像 -->
           <img
-            :src="staticAssets.getProfileIcon(`${avatarIconId}`)"
+            :src="avatarImageUrl"
             :alt="displayName"
             class="relative h-11 w-11 object-cover"
           />
@@ -247,7 +258,7 @@ const positionPreferences = computed(() => {
         :class="[
           'flex h-5 w-5 items-center justify-center border transition-all duration-150',
           member.isLeader || !canKick
-            ? 'bg-card cursor-not-allowed border-slate-300 text-slate-400 dark:border-slate-600 dark:text-slate-500'
+            ? 'bg-card cursor-not-allowed text-slate-400'
             : 'border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/70',
         ]"
         :title="
@@ -274,9 +285,7 @@ const positionPreferences = computed(() => {
       </button>
 
       <!-- 第一位置偏好 -->
-      <div
-        class="bg-card flex h-5 w-5 items-center justify-center border border-slate-200 dark:border-slate-600"
-      >
+      <div class="bg-card flex h-5 w-5 items-center justify-center border">
         <img
           v-if="positionPreferences.first?.icon"
           :src="positionPreferences.first.icon"
@@ -304,7 +313,7 @@ const positionPreferences = computed(() => {
       <!-- 第二位置偏好 -->
       <div
         v-if="positionPreferences.second?.icon"
-        class="flex h-5 w-5 items-center justify-center border border-slate-200 bg-white/90 dark:border-slate-600 dark:bg-slate-800/90"
+        class="bg-card flex h-5 w-5 items-center justify-center border"
       >
         <img
           :src="positionPreferences.second.icon"

@@ -107,16 +107,7 @@ const validMatches = computed(
           <img
             :src="staticAssets.getChampionIcon(`${player.championId}`)"
             :alt="`英雄${player.championId}`"
-            class="h-12 w-12 rounded-lg object-cover"
-            :class="{
-              'shadow-lg shadow-emerald-500/25':
-                player.win && !isRemakeGame(game.json.gameDuration),
-              'shadow-lg shadow-pink-500/25 dark:shadow-rose-500/25':
-                !player.win && !isRemakeGame(game.json.gameDuration),
-              'shadow-lg shadow-gray-500/25': isRemakeGame(
-                game.json.gameDuration
-              ),
-            }"
+            class="h-12 w-12"
           />
           <!-- 英雄头像装饰光效 -->
           <div
