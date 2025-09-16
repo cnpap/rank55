@@ -42,6 +42,8 @@ type $LocalStorage = {
   defaultGameMode: string; // 游戏模式过滤
   defaultRegion: RegionType; // 默认服务器
   defaultTier: TierType; // 默认分段
+  matchHistoryType: 'lightweight' | 'detailed'; // 战绩类型
+  dataDisplayMode: 'damage' | 'tank'; // 数据展示模式
 
   // 位置设置
   positionSettings: PositionSettings; // 位置设置 {position: {banChampions: [], pickChampions: []}}

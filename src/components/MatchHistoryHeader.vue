@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue';
+import { computed } from 'vue';
 import type { Game } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 import PaginationControl from './PaginationControl.vue';
 import GameModeFilterControl from './GameModeFilterControl.vue';
 import Button from './ui/button/Button.vue';
-import type { Ref } from 'vue';
 import { isPlayerMVP } from '@/lib/match-helpers';
+import { useGameSettingsStore } from '@/stores/game-settings';
 
 interface Props {
   matches: Game[];
@@ -17,8 +17,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// 注入数据展示模式 - 修复类型定义
-const dataDisplayMode = inject<Ref<'damage' | 'tank'>>('dataDisplayMode');
+// 使用游戏设置store获取数据展示模式
+const gameSettingsStore = useGameSettingsStore();
 
 // 位置映射 - 添加固定顺序
 const positionMap = {
@@ -182,7 +182,7 @@ const recentChampions = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl">
+  <div class="font-tektur-numbers mx-auto max-w-4xl">
     <!-- 整体布局：左侧筛选分页 + 中间数据模式选择 + 右侧信息统计 -->
     <div class="flex h-24 items-center justify-between">
       <!-- 最左侧：筛选和分页控制（独立容器，两行布局） -->
@@ -193,42 +193,6 @@ const recentChampions = computed(() => {
 
           <!-- 第二行：分页控制 -->
           <PaginationControl />
-        </div>
-        <!-- 中间：数据展示模式选择 -->
-        <div class="flex-shrink-0">
-          <div class="flex flex-col gap-1">
-            <!-- 看输出按钮 -->
-            <Button
-              @click="dataDisplayMode = 'damage'"
-              variant="outline"
-              size="sm"
-              class="relative h-9 justify-start gap-2"
-            >
-              <img
-                v-if="dataDisplayMode === 'damage'"
-                :src="staticAssets.getIcon('check2')"
-                class="absolute -top-2.5 -right-2.5 h-5 w-5"
-                alt="如果选中"
-              />
-              <span>看输出</span>
-            </Button>
-
-            <!-- 看承伤按钮 -->
-            <Button
-              @click="dataDisplayMode = 'tank'"
-              variant="outline"
-              size="sm"
-              class="relative h-9 items-center justify-start gap-2"
-            >
-              <img
-                v-if="dataDisplayMode === 'tank'"
-                :src="staticAssets.getIcon('check2')"
-                class="absolute -top-2.5 -right-2.5 h-5 w-5"
-                alt="如果选中"
-              />
-              <span>看承伤</span>
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -288,33 +252,33 @@ const recentChampions = computed(() => {
                       class="h-8 w-8 border-2 border-white object-cover shadow-sm transition-transform group-hover:scale-110 dark:border-slate-600"
                     />
                     <div
-                      class="font-tektur-numbers bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
+                      class="bg-card/80 text-card-foreground border-border/30 absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center border text-xs font-medium shadow-sm backdrop-blur-sm"
                     >
                       {{ champion.games }}
                     </div>
 
                     <!-- Tooltip -->
                     <div
-                      class="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 transform bg-slate-800 px-3 py-2 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                      class="bg-card absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 transform rounded-lg px-3 py-2 text-xs shadow-xl backdrop-blur-sm group-hover:block"
                     >
                       <div class="font-tektur-numbers whitespace-nowrap">
-                        <div class="mt-1 space-y-0.5">
-                          <div class="flex justify-between gap-2">
-                            <span class="text-emerald-400"
+                        <div class="space-y-1">
+                          <div class="flex justify-between gap-3">
+                            <span class="font-medium text-emerald-400"
                               >{{ champion.wins }}胜</span
                             >
-                            <span class="text-red-400"
+                            <span class="font-medium text-red-400"
                               >{{ champion.losses }}负</span
                             >
                           </div>
-                          <div class="text-center font-medium">
+                          <div class="text-center font-medium text-slate-200">
                             胜率 {{ champion.winRate }}%
                           </div>
                         </div>
                       </div>
                       <!-- Tooltip arrow -->
                       <div
-                        class="absolute top-full left-1/2 -translate-x-1/2 transform border-4 border-transparent border-t-slate-800 dark:border-t-slate-700"
+                        class="border-t-card absolute top-full left-1/2 -translate-x-1/2 transform border-4 border-transparent"
                       ></div>
                     </div>
                   </div>
@@ -347,7 +311,7 @@ const recentChampions = computed(() => {
                   <div
                     v-if="stat.count > 0"
                     :class="[
-                      'relative w-full bg-blue-500 transition-all duration-200 group-hover:bg-blue-600 dark:bg-blue-900 dark:group-hover:bg-blue-600',
+                      'relative w-full bg-blue-500 transition-all duration-200 group-hover:bg-blue-600 dark:bg-blue-600 dark:group-hover:bg-blue-500',
                     ]"
                     :style="{
                       height: `${stat.height}%`,
@@ -389,17 +353,19 @@ const recentChampions = computed(() => {
 
                 <!-- Tooltip -->
                 <div
-                  class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block dark:bg-slate-700"
+                  class="bg-card absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg px-3 py-2 text-xs shadow-xl backdrop-blur-sm group-hover:block"
                 >
                   <div class="text-center whitespace-nowrap">
-                    <div class="font-medium">{{ stat.name }}</div>
-                    <div class="text-[10px] opacity-90">
+                    <div class="font-medium text-slate-200">
+                      {{ stat.name }}
+                    </div>
+                    <div class="mt-0.5 text-[11px] text-slate-300">
                       {{ stat.count }}场 ({{ stat.percentage }}%)
                     </div>
                   </div>
                   <!-- Tooltip arrow -->
                   <div
-                    class="absolute top-full left-1/2 -translate-x-1/2 transform border-2 border-transparent border-t-slate-800 dark:border-t-slate-700"
+                    class="border-t-card absolute top-full left-1/2 -translate-x-1/2 transform border-4 border-transparent"
                   ></div>
                 </div>
               </div>

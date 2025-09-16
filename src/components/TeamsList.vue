@@ -3,8 +3,8 @@ import type { Game } from '@/types/match-history-sgp';
 import { staticAssets } from '@/assets/data-assets';
 import { useMatchHistoryStore } from '@/stores/match-history';
 import { useClientUserStore } from '@/stores/client-user';
+import { useGameSettingsStore } from '@/stores/game-settings';
 import { computed, inject } from 'vue';
-import type { Ref } from 'vue';
 
 interface Props {
   match: Game;
@@ -14,8 +14,8 @@ const props = defineProps<Props>();
 const puuid = inject<string>('puuid');
 const matchHistoryStore = useMatchHistoryStore();
 const clientUserStore = useClientUserStore();
+const gameSettingsStore = useGameSettingsStore();
 const serverId = inject<string>('serverId');
-const dataDisplayMode = inject<Ref<'damage' | 'tank'>>('dataDisplayMode');
 
 // 获取队伍信息
 const teams = computed(() => {
@@ -115,7 +115,7 @@ const searchPlayerHistory = async (displayName: string) => {
 const maxValueForCurrentMode = computed(() => {
   const allPlayers = props.match.json.participants;
 
-  if (dataDisplayMode?.value === 'damage') {
+  if (gameSettingsStore.dataDisplayMode === 'damage') {
     return Math.max(...allPlayers.map(p => p.totalDamageDealtToChampions));
   } else {
     return Math.max(...allPlayers.map(p => p.totalDamageTaken));
@@ -124,7 +124,7 @@ const maxValueForCurrentMode = computed(() => {
 
 // 获取玩家当前模式下的数值
 const getPlayerValue = (player: any) => {
-  if (dataDisplayMode?.value === 'damage') {
+  if (gameSettingsStore.dataDisplayMode === 'damage') {
     return player.stats.damage;
   } else {
     return player.stats.damageTaken;

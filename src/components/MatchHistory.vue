@@ -14,10 +14,6 @@ const { serverId, puuid } = route.query as { serverId: string; puuid: string };
 provide('serverId', serverId);
 provide('puuid', puuid);
 
-// 添加数据展示模式状态
-const dataDisplayMode = ref<'damage' | 'tank'>('damage'); // 默认看输出
-provide('dataDisplayMode', dataDisplayMode);
-
 // 使用新的战绩查询 hook
 const {
   isLoading,
@@ -55,7 +51,7 @@ const handleRefresh = async () => {
 </script>
 
 <template>
-  <main class="relative flex h-[calc(100vh-40px)] flex-col">
+  <main class="font-tektur-numbers relative flex h-[calc(100vh-40px)] flex-col">
     <!-- 主内容容器 -->
     <div class="relative z-10 mx-auto flex flex-1 flex-col">
       <!-- 主内容区域 - 调整为单列布局 -->

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { $local } from '@/storages/storage-use';
 import { toast } from 'vue-sonner';
 import { RotateCcw } from 'lucide-vue-next';
 import Button from '../ui/button/Button.vue';
@@ -11,102 +9,59 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GAME_MODE_TAGS } from '@/types/match-history-ui';
 import { AcceptableValue } from 'reka-ui';
 import type { RegionType, TierType } from '@/lib/service/opgg/types';
 import { getRankMiniImageUrl } from '@/lib/rank-helpers';
+import {
+  useGameSettingsStore,
+  GAME_MODE_OPTIONS,
+  REGION_OPTIONS,
+  TIER_OPTIONS,
+  MATCH_HISTORY_TYPE_OPTIONS,
+  DATA_DISPLAY_MODE_OPTIONS,
+} from '@/stores/game-settings';
 
-const savedAutoAccept = $local.getItem('autoAcceptGame');
-const autoAcceptGame = ref(savedAutoAccept || false);
-
-// 默认游戏过滤模式设置
-const savedDefaultGameMode = $local.getItem('defaultGameMode');
-const defaultGameMode = ref(savedDefaultGameMode || 'all');
-
-// 游戏模式选项
-const gameModeOptions = Object.entries(GAME_MODE_TAGS).map(
-  ([value, label]) => ({
-    value,
-    label,
-  })
-);
-
-// 默认服务器设置
-const savedDefaultRegion = $local.getItem('defaultRegion');
-const defaultRegion = ref<RegionType>(savedDefaultRegion || 'kr');
-
-// 默认分段设置
-const savedDefaultTier = $local.getItem('defaultTier');
-const defaultTier = ref<TierType>(savedDefaultTier || 'diamond_plus');
-
-// 服务器选项
-const regionOptions = [
-  { value: 'global', label: '全球' },
-  { value: 'kr', label: '韩服' },
-  { value: 'na', label: '北美' },
-] as const;
-
-// 分段选项
-const tierOptions = [
-  { value: 'all', label: '全部分段', tier: null },
-  { value: 'challenger', label: '王者', tier: 'CHALLENGER' },
-  { value: 'grandmaster', label: '宗师', tier: 'GRANDMASTER' },
-  { value: 'master_plus', label: '大师以上', tier: 'MASTER' },
-  { value: 'master', label: '大师', tier: 'MASTER' },
-  { value: 'diamond_plus', label: '钻石以上', tier: 'DIAMOND' },
-  { value: 'emerald_plus', label: '翡翠以上', tier: 'EMERALD' },
-  { value: 'platinum_plus', label: '白金以上', tier: 'PLATINUM' },
-  { value: 'gold_plus', label: '黄金以上', tier: 'GOLD' },
-] as const;
-
-// 保存设置
-function saveSettings() {
-  $local.setItem('autoAcceptGame', autoAcceptGame.value);
-  $local.setItem('defaultGameMode', defaultGameMode.value);
-  $local.setItem('defaultRegion', defaultRegion.value);
-  $local.setItem('defaultTier', defaultTier.value);
-  toast.success('游戏设置已保存');
-}
-
-// 监听设置变化并自动保存
-watch(autoAcceptGame, () => {
-  saveSettings();
-});
-
-watch(defaultGameMode, () => {
-  saveSettings();
-});
-
-watch(defaultRegion, () => {
-  saveSettings();
-});
-
-watch(defaultTier, () => {
-  saveSettings();
-});
+// 使用游戏设置store
+const gameSettingsStore = useGameSettingsStore();
 
 // 处理游戏模式变更
 function handleGameModeChange(value: AcceptableValue) {
-  defaultGameMode.value = value as string;
+  gameSettingsStore.setDefaultGameMode(value as string);
+  toast.success('游戏设置已保存');
 }
 
 // 处理服务器变更
 function handleRegionChange(value: AcceptableValue) {
-  defaultRegion.value = value as RegionType;
+  gameSettingsStore.setDefaultRegion(value as RegionType);
+  toast.success('游戏设置已保存');
 }
 
 // 处理分段变更
 function handleTierChange(value: AcceptableValue) {
-  defaultTier.value = value as TierType;
+  gameSettingsStore.setDefaultTier(value as TierType);
+  toast.success('游戏设置已保存');
+}
+
+// 处理自动接受游戏变更
+function handleAutoAcceptChange() {
+  toast.success('游戏设置已保存');
+}
+
+// 处理战绩类型变更
+function handleMatchHistoryTypeChange(value: AcceptableValue) {
+  gameSettingsStore.setMatchHistoryType(value as 'lightweight' | 'detailed');
+  toast.success('游戏设置已保存');
+}
+
+// 处理数据展示模式变更
+function handleDataDisplayModeChange(value: AcceptableValue) {
+  gameSettingsStore.setDataDisplayMode(value as 'damage' | 'tank');
+  toast.success('游戏设置已保存');
 }
 
 // 重置设置
 function resetSettings() {
-  autoAcceptGame.value = false;
-  defaultGameMode.value = 'all';
-  defaultRegion.value = 'kr';
-  defaultTier.value = 'diamond_plus';
-  saveSettings();
+  gameSettingsStore.resetSettings();
   toast.success('游戏设置已重置');
 }
 
@@ -140,11 +95,80 @@ defineExpose({
 
       <!-- 开关 -->
       <label class="relative inline-flex cursor-pointer items-center">
-        <input type="checkbox" v-model="autoAcceptGame" class="peer sr-only" />
+        <input
+          type="checkbox"
+          v-model="gameSettingsStore.autoAcceptGame"
+          @change="handleAutoAcceptChange"
+          class="peer sr-only"
+        />
         <div
           class="bg-muted-foreground/20 peer relative h-6 w-11 rounded-full peer-checked:bg-emerald-500 peer-focus:ring-4 peer-focus:ring-emerald-300/20 peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
         ></div>
       </label>
+    </div>
+
+    <!-- 战绩类型 -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h4 class="text-foreground font-medium">战绩类型</h4>
+        <p class="text-muted-foreground mt-1 text-sm">选择战绩显示的详细程度</p>
+      </div>
+
+      <!-- 战绩类型选择器 -->
+      <Select
+        :model-value="gameSettingsStore.matchHistoryType"
+        @update:model-value="handleMatchHistoryTypeChange"
+      >
+        <SelectTrigger class="h-8 w-48 text-sm">
+          <SelectValue placeholder="选择类型" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="option in MATCH_HISTORY_TYPE_OPTIONS"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <!-- 数据展示模式 -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h4 class="text-foreground font-medium">数据展示模式</h4>
+        <p class="text-muted-foreground mt-1 text-sm">
+          选择关注输出还是承受伤害（仅在详细模式下生效）
+        </p>
+      </div>
+
+      <!-- 数据展示模式选择器 -->
+      <Select
+        :model-value="gameSettingsStore.dataDisplayMode"
+        @update:model-value="handleDataDisplayModeChange"
+        :disabled="gameSettingsStore.matchHistoryType === 'lightweight'"
+      >
+        <SelectTrigger
+          :class="[
+            'h-8 w-48 text-sm',
+            gameSettingsStore.matchHistoryType === 'lightweight'
+              ? 'cursor-not-allowed opacity-50'
+              : '',
+          ]"
+        >
+          <SelectValue placeholder="选择模式" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="option in DATA_DISPLAY_MODE_OPTIONS"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <!-- 默认游戏过滤模式 -->
@@ -158,7 +182,7 @@ defineExpose({
 
       <!-- 游戏模式选择器 -->
       <Select
-        :model-value="defaultGameMode"
+        :model-value="gameSettingsStore.defaultGameMode"
         @update:model-value="handleGameModeChange"
       >
         <SelectTrigger class="h-8 w-48 text-sm">
@@ -166,7 +190,7 @@ defineExpose({
         </SelectTrigger>
         <SelectContent>
           <SelectItem
-            v-for="option in gameModeOptions"
+            v-for="option in GAME_MODE_OPTIONS"
             :key="option.value"
             :value="option.value"
           >
@@ -187,7 +211,7 @@ defineExpose({
 
       <!-- 服务器选择器 -->
       <Select
-        :model-value="defaultRegion"
+        :model-value="gameSettingsStore.defaultRegion"
         @update:model-value="handleRegionChange"
       >
         <SelectTrigger class="h-8 w-48 text-sm">
@@ -195,7 +219,7 @@ defineExpose({
         </SelectTrigger>
         <SelectContent>
           <SelectItem
-            v-for="option in regionOptions"
+            v-for="option in REGION_OPTIONS"
             :key="option.value"
             :value="option.value"
           >
@@ -215,28 +239,42 @@ defineExpose({
       </div>
 
       <!-- 分段选择器 -->
-      <Select :model-value="defaultTier" @update:model-value="handleTierChange">
+      <Select
+        :model-value="gameSettingsStore.defaultTier"
+        @update:model-value="handleTierChange"
+      >
         <SelectTrigger class="h-8 w-48 text-sm">
           <div class="flex items-center gap-2">
             <img
-              v-if="tierOptions.find(opt => opt.value === defaultTier)?.tier"
+              v-if="
+                TIER_OPTIONS.find(
+                  opt => opt.value === gameSettingsStore.defaultTier
+                )?.tier
+              "
               :src="
                 getRankMiniImageUrl(
-                  tierOptions.find(opt => opt.value === defaultTier)?.tier!
+                  TIER_OPTIONS.find(
+                    opt => opt.value === gameSettingsStore.defaultTier
+                  )?.tier!
                 )
               "
-              :alt="tierOptions.find(opt => opt.value === defaultTier)?.label"
+              :alt="
+                TIER_OPTIONS.find(
+                  opt => opt.value === gameSettingsStore.defaultTier
+                )?.label
+              "
               class="mt-0.5 h-4 w-4"
             />
             <span>{{
-              tierOptions.find(opt => opt.value === defaultTier)?.label ||
-              '选择分段'
+              TIER_OPTIONS.find(
+                opt => opt.value === gameSettingsStore.defaultTier
+              )?.label || '选择分段'
             }}</span>
           </div>
         </SelectTrigger>
         <SelectContent>
           <SelectItem
-            v-for="option in tierOptions"
+            v-for="option in TIER_OPTIONS"
             :key="option.value"
             :value="option.value"
           >

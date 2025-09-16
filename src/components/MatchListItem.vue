@@ -7,7 +7,6 @@ import TeamsList from './TeamsList.vue';
 import { inject, computed } from 'vue';
 import { ref } from 'vue';
 import Button from './ui/button/Button.vue';
-import { staticAssets } from '@/assets/data-assets';
 import { isPlayerMVP } from '@/lib/match-helpers';
 
 interface Props {
@@ -50,13 +49,84 @@ const isCurrentPlayerMVP = computed(() => {
 </script>
 
 <template>
-  <!-- MVP 图标 -->
-  <div v-if="isCurrentPlayerMVP" class="absolute top-2 -left-12 z-999">
-    <img
-      :src="staticAssets.getIcon('most-valuable-player2')"
-      alt="MVP"
-      class="h-10 w-10 drop-shadow-md"
-    />
+  <!-- MVP 标识 -->
+  <div v-if="isCurrentPlayerMVP" class="absolute top-0 -left-14 z-999">
+    <div class="relative h-6 w-12">
+      <!-- 外层边框 -->
+      <div
+        class="absolute inset-0 rounded-sm bg-gradient-to-br from-amber-600/80 to-yellow-600/80 shadow-lg dark:from-amber-500/70 dark:to-yellow-500/70"
+      ></div>
+
+      <!-- 内层背景 -->
+      <div
+        class="absolute inset-0.5 rounded-sm bg-gradient-to-br from-amber-300/90 to-yellow-300/90 dark:from-amber-400/80 dark:to-yellow-400/80"
+      ></div>
+
+      <!-- 光泽效果 -->
+      <div
+        class="absolute inset-0.5 rounded-sm bg-gradient-to-t from-transparent via-white/20 to-white/40 dark:via-white/15 dark:to-white/30"
+      ></div>
+
+      <!-- MVP 文字 -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span
+          class="text-xs leading-none font-black tracking-tight text-amber-900 drop-shadow-sm dark:text-amber-800"
+          >MVP</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- 胜利/失败标识 -->
+  <div
+    v-if="gameResult !== 'remake'"
+    class="absolute z-999"
+    :class="{
+      'top-0 -left-14': !isCurrentPlayerMVP,
+      'top-7 -left-14': isCurrentPlayerMVP,
+    }"
+  >
+    <div class="relative h-6 w-12">
+      <!-- 外层边框 -->
+      <div
+        class="absolute inset-0 rounded-sm shadow-lg"
+        :class="{
+          'bg-gradient-to-br from-emerald-600/80 to-green-600/80 dark:from-emerald-500/70 dark:to-green-500/70':
+            gameResult === 'victory',
+          'bg-gradient-to-br from-red-600/80 to-rose-600/80 dark:from-red-500/70 dark:to-rose-500/70':
+            gameResult === 'defeat',
+        }"
+      ></div>
+
+      <!-- 内层背景 -->
+      <div
+        class="absolute inset-0.5 rounded-sm"
+        :class="{
+          'bg-gradient-to-br from-emerald-300/90 to-green-300/90 dark:from-emerald-400/80 dark:to-green-400/80':
+            gameResult === 'victory',
+          'bg-gradient-to-br from-red-300/90 to-rose-300/90 dark:from-red-400/80 dark:to-rose-400/80':
+            gameResult === 'defeat',
+        }"
+      ></div>
+
+      <!-- 光泽效果 -->
+      <div
+        class="absolute inset-0.5 rounded-sm bg-gradient-to-t from-transparent via-white/20 to-white/40 dark:via-white/15 dark:to-white/30"
+      ></div>
+
+      <!-- 胜利/失败文字 -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span
+          class="text-xs leading-none font-black tracking-tight drop-shadow-sm"
+          :class="{
+            'text-emerald-900 dark:text-emerald-800': gameResult === 'victory',
+            'text-red-900 dark:text-red-800': gameResult === 'defeat',
+          }"
+        >
+          {{ gameResult === 'victory' ? 'WIN' : 'LOSE' }}
+        </span>
+      </div>
+    </div>
   </div>
 
   <!-- 战绩索引 -->

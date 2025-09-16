@@ -4,7 +4,7 @@ import { staticAssets } from '@/assets/data-assets';
 import type { ChampionSummary } from '@/types/lol-game-data';
 import type { Position } from '@/lib/service/opgg/types';
 import type { AssignedPosition } from '@/types/players-info';
-import { GripVertical } from 'lucide-vue-next';
+import { GripVertical, X } from 'lucide-vue-next';
 
 interface Props {
   champion: ChampionSummary;
@@ -65,11 +65,6 @@ function getChampionImageUrl(championKey: string | number): string {
   return staticAssets.getChampionIcon(championKey as string);
 }
 
-// 获取删除按钮图标
-function getDeleteIcon(): string {
-  return staticAssets.getIcon('close');
-}
-
 // 处理删除事件
 function handleDelete() {
   emit('delete');
@@ -77,71 +72,87 @@ function handleDelete() {
 </script>
 
 <template>
-  <div
-    class="group bg-card flex items-center gap-3 border p-2"
-    :class="{
-      'font-tektur-numbers': variant === 'pick',
-    }"
-  >
+  <div class="font-tektur-numbers bg-card flex items-center border">
     <!-- 拖拽手柄 -->
-    <div v-if="showDragHandle" class="drag-handle cursor-move">
+    <div
+      v-if="showDragHandle"
+      class="drag-handle flex cursor-move items-center justify-center self-stretch border-r border-gray-200 px-2 dark:border-gray-700"
+    >
       <GripVertical class="h-4 w-4 text-gray-400" />
+    </div>
+
+    <div class="flex flex-1 items-center gap-3 py-1 pl-2">
+      <!-- 英雄头像 -->
+      <img
+        :src="getChampionImageUrl(champion.id)"
+        :alt="champion.name"
+        :title="champion.name"
+        class="h-10 w-10 flex-shrink-0 border-1"
+      />
+
+      <!-- 英雄信息 -->
+      <div class="min-w-0 flex-1">
+        <!-- 英雄名称 -->
+        <div
+          class="truncate text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          {{ champion.name }}
+        </div>
+
+        <!-- 段位信息 -->
+        <div v-if="showTierInfo && positionData?.stats?.tier_data">
+          <span
+            :class="`inline-flex items-center rounded-md px-1.5 text-xs font-bold text-white ${getTierColorClass(positionData.stats.tier_data.tier)}`"
+          >
+            T{{ positionData.stats.tier_data.tier }}
+            <span class="ml-1 text-xs opacity-75">
+              #{{ positionData.stats.tier_data.rank || '-' }}
+            </span>
+          </span>
+        </div>
+
+        <!-- 无段位信息时的占位 -->
+        <div v-else-if="showTierInfo">
+          <span class="text-xs text-gray-400">#</span>
+        </div>
+      </div>
     </div>
 
     <!-- 序号 -->
     <div
       v-if="showIndex"
-      class="flex h-5 w-6 items-center justify-center text-xs font-bold"
+      class="mx-2 flex h-5 w-7 items-center justify-center text-xs font-bold"
     >
-      {{ index !== undefined ? index + 1 : '' }}
-    </div>
-
-    <!-- 英雄头像 -->
-    <img
-      :src="getChampionImageUrl(champion.id)"
-      :alt="champion.name"
-      :title="champion.name"
-      class="h-10 w-10 flex-shrink-0 border-1"
-    />
-
-    <!-- 英雄信息 -->
-    <div class="min-w-0 flex-1">
-      <!-- 英雄名称 -->
-      <div
-        class="truncate text-sm font-medium text-gray-700 dark:text-gray-300"
-      >
-        {{ champion.name }}
-      </div>
-
-      <!-- 段位信息 -->
-      <div v-if="showTierInfo && positionData?.stats?.tier_data">
-        <span
-          :class="`inline-flex items-center rounded-md px-1.5 text-xs font-bold text-white ${getTierColorClass(positionData.stats.tier_data.tier)}`"
-        >
-          T{{ positionData.stats.tier_data.tier }}
-          <span class="ml-1 text-xs opacity-75">
-            #{{ positionData.stats.tier_data.rank || '-' }}
-          </span>
-        </span>
-      </div>
-
-      <!-- 无段位信息时的占位 -->
-      <div v-else-if="showTierInfo" class="mt-1">
-        <span class="text-xs text-gray-400">-</span>
-      </div>
+      {{ index !== undefined ? (index === 0 ? '首选' : index + 1) : '' }}
     </div>
 
     <!-- 删除按钮 -->
-    <img
+    <div
       v-if="showDeleteButton"
       @click="handleDelete"
-      :src="getDeleteIcon()"
-      alt="删除"
-      class="h-5 w-5 flex-shrink-0 cursor-pointer"
-    />
+      class="delete-btn flex cursor-pointer items-center justify-center self-stretch border-l border-gray-200 px-2 dark:border-gray-700"
+    >
+      <X class="h-4 w-4" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* 组件样式继承父组件的拖拽样式 */
+
+.delete-btn {
+  transition: all 0.15s ease;
+}
+
+.delete-btn:hover {
+  background-color: #ef4444;
+}
+
+.delete-btn:hover svg {
+  color: white;
+}
+
+.delete-btn:active {
+  transform: scale(0.95);
+}
 </style>
