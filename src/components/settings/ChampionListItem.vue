@@ -119,12 +119,12 @@ function handleDelete() {
     </div>
 
     <!-- 序号 -->
-    <div
+    <!-- <div
       v-if="showIndex"
       class="mx-2 flex h-5 w-7 items-center justify-center text-xs font-bold"
     >
       {{ index !== undefined ? (index === 0 ? '首选' : index + 1) : '' }}
-    </div>
+    </div> -->
 
     <!-- 删除按钮 -->
     <div

@@ -316,6 +316,7 @@ defineExpose({
 
     <!-- 英雄选择器组件 -->
     <ChampionSelector
+      v-if="championSelection.isOpen"
       :is-open="championSelection.isOpen"
       :champions="champions"
       :selected-champions="currentSelectedChampions"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue';
+import { onMounted, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import SummonerProfileComponent from '@/components/SummonerProfile.vue';
 import Loading from '@/components/Loading.vue';
@@ -11,6 +11,7 @@ import Button from './ui/button/Button.vue';
 
 const route = useRoute();
 const { serverId, puuid } = route.query as { serverId: string; puuid: string };
+
 provide('serverId', serverId);
 provide('puuid', puuid);
 

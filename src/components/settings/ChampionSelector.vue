@@ -34,7 +34,9 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const searchTerm = ref('');
-const selectedPositionFilter = ref<AssignedPosition | 'all'>('all');
+const selectedPositionFilter = ref<AssignedPosition | 'all'>(
+  props.position.key as AssignedPosition
+);
 
 // 排序状态管理
 type SortBy = 'tier' | 'winRate';

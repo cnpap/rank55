@@ -8,6 +8,7 @@ import { inject, computed } from 'vue';
 import { ref } from 'vue';
 import Button from './ui/button/Button.vue';
 import { isPlayerMVP } from '@/lib/match-helpers';
+import { useGameSettingsStore } from '@/stores/game-settings';
 
 interface Props {
   match: Game;
@@ -24,6 +25,7 @@ const toggleDetail = () => {
 };
 
 const puuid = inject<string>('puuid');
+const gameSettingsStore = useGameSettingsStore();
 
 // 辅助函数：获取当前玩家的参与者信息
 const currentPlayer = computed(() => {
@@ -46,11 +48,23 @@ const gameResult = computed(() => {
 const isCurrentPlayerMVP = computed(() => {
   return puuid ? isPlayerMVP(props.match, puuid) : false;
 });
+
+// 获取当前显示模式
+const displayMode = computed(() => {
+  return gameSettingsStore.matchHistoryType === 'detailed'
+    ? 'detailed'
+    : 'lightweight';
+});
+
+// 是否显示详细模式（包含 TeamsList）
+const showDetailedMode = computed(() => {
+  return displayMode.value === 'detailed';
+});
 </script>
 
 <template>
   <!-- MVP 标识 -->
-  <div v-if="isCurrentPlayerMVP" class="absolute top-0 -left-14 z-999">
+  <div v-if="isCurrentPlayerMVP" class="absolute top-0 -left-28 z-999">
     <div class="relative h-6 w-12">
       <!-- 外层边框 -->
       <div
@@ -78,14 +92,7 @@ const isCurrentPlayerMVP = computed(() => {
   </div>
 
   <!-- 胜利/失败标识 -->
-  <div
-    v-if="gameResult !== 'remake'"
-    class="absolute z-999"
-    :class="{
-      'top-0 -left-14': !isCurrentPlayerMVP,
-      'top-7 -left-14': isCurrentPlayerMVP,
-    }"
-  >
+  <div v-if="gameResult !== 'remake'" class="absolute top-0 -left-14 z-999">
     <div class="relative h-6 w-12">
       <!-- 外层边框 -->
       <div
@@ -142,7 +149,7 @@ const isCurrentPlayerMVP = computed(() => {
   </div>
 
   <div
-    class="group bg-card relative w-4xl overflow-hidden border py-1 transition-all duration-300"
+    class="group bg-card relative w-4xl overflow-hidden border transition-all duration-300"
   >
     <!-- 胜负纹理背景 -->
     <div
@@ -184,14 +191,35 @@ const isCurrentPlayerMVP = computed(() => {
     />
 
     <!-- KDA + 统计 + 装备 + 玩家列表 -->
-    <div class="relative flex w-full items-center gap-4 pl-2">
-      <!-- KDA + 统计数据 + 装备 (分四行显示) -->
-      <div class="flex flex-1 items-center justify-between gap-0.5">
+    <div class="relative flex w-full items-center gap-4 px-4">
+      <!-- 详细模式：原有布局 -->
+      <div
+        v-if="showDetailedMode"
+        class="flex flex-1 items-center justify-between gap-0.5"
+      >
         <!-- 当前玩家信息组件 -->
-        <PlayerSummary :match="match" />
+        <PlayerSummary :match="match" :mode="displayMode" />
 
         <!-- 队伍信息组件 -->
         <TeamsList :match="match" />
+
+        <!-- 展开按钮 -->
+        <Button
+          @click="toggleDetail"
+          variant="outline"
+          class="border-border/20 bg-primary hover:bg-primary/90 flex h-8 w-8 cursor-pointer items-center justify-center border p-0 transition-colors"
+        >
+          <ChevronDown
+            class="h-4 w-4 text-white transition-transform duration-200"
+            :class="{ 'rotate-180': isExpanded }"
+          />
+        </Button>
+      </div>
+
+      <!-- 轻量模式：不显示 TeamsList -->
+      <div v-else class="flex flex-1 items-center justify-between gap-4">
+        <!-- 当前玩家信息组件 -->
+        <PlayerSummary :match="match" :mode="displayMode" />
 
         <!-- 展开按钮 -->
         <Button

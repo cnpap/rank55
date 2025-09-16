@@ -212,7 +212,7 @@ const recentChampions = computed(() => {
                 <span class="font-medium text-red-500 dark:text-red-400">
                   LOSS: {{ overallStats.totalLosses }}
                 </span>
-                <span class="font-medium text-slate-700 dark:text-slate-200">
+                <span class="font-medium text-slate-900 dark:text-slate-200">
                   {{ overallStats.winRate }}%
                 </span>
                 <span class="font-medium text-blue-600 dark:text-blue-400"
@@ -271,7 +271,9 @@ const recentChampions = computed(() => {
                               >{{ champion.losses }}负</span
                             >
                           </div>
-                          <div class="text-center font-medium text-slate-200">
+                          <div
+                            class="text-center font-medium text-slate-900 dark:text-slate-200"
+                          >
                             胜率 {{ champion.winRate }}%
                           </div>
                         </div>
@@ -356,10 +358,12 @@ const recentChampions = computed(() => {
                   class="bg-card absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 transform rounded-lg px-3 py-2 text-xs shadow-xl backdrop-blur-sm group-hover:block"
                 >
                   <div class="text-center whitespace-nowrap">
-                    <div class="font-medium text-slate-200">
+                    <div class="font-medium text-slate-900 dark:text-slate-200">
                       {{ stat.name }}
                     </div>
-                    <div class="mt-0.5 text-[11px] text-slate-300">
+                    <div
+                      class="mt-0.5 text-[11px] text-slate-800 dark:text-slate-300"
+                    >
                       {{ stat.count }}场 ({{ stat.percentage }}%)
                     </div>
                   </div>

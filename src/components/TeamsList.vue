@@ -145,7 +145,7 @@ const formatValue = (value: number) => {
     <!-- 队伍循环 -->
     <template v-for="(team, teamIndex) in teams" :key="teamIndex">
       <!-- 队伍玩家列表 -->
-      <div class="w-86">
+      <div class="w-82">
         <div class="">
           <div
             v-for="player in team?.players || []"

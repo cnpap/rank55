@@ -186,7 +186,7 @@ const searchPlayerHistory = async (name: string) => {
         <div v-for="team in teams" :key="team.teamId">
           <!-- 队伍标题 -->
           <div
-            class="flex items-center justify-between border-b px-2"
+            class="flex items-center justify-between border-b px-4 py-1"
             :class="{
               'bg-blue-50/80 dark:bg-blue-950/30':
                 getTeamDisplayInfo(team.teamId).color === 'blue',
@@ -197,17 +197,50 @@ const searchPlayerHistory = async (name: string) => {
             <div class="flex items-center gap-4">
               <div>
                 <div class="flex items-center gap-2">
-                  <h4
-                    :class="{
-                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400':
-                        team.win,
-                      'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400':
-                        !team.win,
-                    }"
-                    class="text-md px-2 py-1 font-medium"
-                  >
-                    {{ team.win ? '胜利' : '失败' }}
-                  </h4>
+                  <!-- 胜利/失败标识 -->
+                  <div class="relative h-8 w-16">
+                    <!-- 外层边框 -->
+                    <div
+                      class="absolute inset-0 rounded-sm shadow-lg"
+                      :class="{
+                        'bg-gradient-to-br from-emerald-600/80 to-green-600/80 dark:from-emerald-500/70 dark:to-green-500/70':
+                          team.win,
+                        'bg-gradient-to-br from-red-600/80 to-rose-600/80 dark:from-red-500/70 dark:to-rose-500/70':
+                          !team.win,
+                      }"
+                    ></div>
+
+                    <!-- 内层背景 -->
+                    <div
+                      class="absolute inset-0.5 rounded-sm"
+                      :class="{
+                        'bg-gradient-to-br from-emerald-300/90 to-green-300/90 dark:from-emerald-400/80 dark:to-green-400/80':
+                          team.win,
+                        'bg-gradient-to-br from-red-300/90 to-rose-300/90 dark:from-red-400/80 dark:to-rose-400/80':
+                          !team.win,
+                      }"
+                    ></div>
+
+                    <!-- 光泽效果 -->
+                    <div
+                      class="absolute inset-0.5 rounded-sm bg-gradient-to-t from-transparent via-white/20 to-white/40 dark:via-white/15 dark:to-white/30"
+                    ></div>
+
+                    <!-- 胜利/失败文字 -->
+                    <div
+                      class="absolute inset-0 flex items-center justify-center"
+                    >
+                      <span
+                        class="text-sm leading-none font-black tracking-tight drop-shadow-sm"
+                        :class="{
+                          'text-emerald-900 dark:text-emerald-800': team.win,
+                          'text-red-900 dark:text-red-800': !team.win,
+                        }"
+                      >
+                        {{ team.win ? 'WIN' : 'LOSE' }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -225,7 +258,7 @@ const searchPlayerHistory = async (name: string) => {
                         :src="staticAssets.getChampionIcon(`${ban.championId}`)"
                         :alt="ban.championName"
                         :title="ban.championName"
-                        class="h-10 w-10 rounded object-cover opacity-60 grayscale"
+                        class="h-10 w-10 object-cover opacity-60 grayscale"
                       />
                       <!-- 适度透明 -->
                       <img
@@ -248,10 +281,10 @@ const searchPlayerHistory = async (name: string) => {
               <!-- 队伍统计 -->
               <div class="grid grid-cols-4 gap-2 text-center">
                 <div
-                  class="relative flex h-10 w-10 flex-col items-center justify-center rounded"
+                  class="relative flex h-10 w-10 flex-col items-center justify-center"
                 >
                   <div
-                    class="absolute inset-0 rounded bg-cover bg-center bg-no-repeat opacity-50"
+                    class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
                     :style="{
                       backgroundImage: `url(${staticAssets.getIcon('dalong2')})`,
                       backgroundSize: '50px 50px',
@@ -261,18 +294,16 @@ const searchPlayerHistory = async (name: string) => {
                     <p class="dark:text-muted-foreground text-xs text-gray-800">
                       大龙
                     </p>
-                    <p
-                      class="font-tektur-numbers text-foreground text-lg font-bold"
-                    >
+                    <p class="font-tektur-numbers text-foreground font-bold">
                       {{ getTeamStats(team).baronKills }}
                     </p>
                   </div>
                 </div>
                 <div
-                  class="relative flex h-10 w-10 flex-col items-center justify-center rounded"
+                  class="relative flex h-10 w-10 flex-col items-center justify-center"
                 >
                   <div
-                    class="absolute inset-0 rounded bg-cover bg-center bg-no-repeat opacity-50"
+                    class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
                     :style="{
                       backgroundImage: `url(${staticAssets.getIcon('xiaolong2')})`,
                       backgroundSize: '40px 40px',
@@ -282,38 +313,32 @@ const searchPlayerHistory = async (name: string) => {
                     <p class="dark:text-muted-foreground text-xs text-gray-800">
                       小龙
                     </p>
-                    <p
-                      class="font-tektur-numbers text-foreground text-lg font-bold"
-                    >
+                    <p class="font-tektur-numbers text-foreground font-bold">
                       {{ getTeamStats(team).dragonKills }}
                     </p>
                   </div>
                 </div>
 
                 <div
-                  class="flex h-10 w-10 flex-col items-center justify-center rounded"
+                  class="flex h-10 w-10 flex-col items-center justify-center"
                 >
                   <div>
                     <p class="dark:text-muted-foreground text-xs text-gray-800">
                       防御塔
                     </p>
-                    <p
-                      class="font-tektur-numbers text-foreground text-lg font-bold"
-                    >
+                    <p class="font-tektur-numbers text-foreground font-bold">
                       {{ getTeamStats(team).towerKills }}
                     </p>
                   </div>
                 </div>
                 <div
-                  class="flex h-10 w-10 flex-col items-center justify-center rounded"
+                  class="flex h-10 w-10 flex-col items-center justify-center"
                 >
                   <div>
                     <p class="dark:text-muted-foreground text-xs text-gray-800">
                       水晶
                     </p>
-                    <p
-                      class="font-tektur-numbers text-foreground text-lg font-bold"
-                    >
+                    <p class="font-tektur-numbers text-foreground font-bold">
                       {{ getTeamStats(team).inhibitorKills }}
                     </p>
                   </div>
@@ -334,7 +359,7 @@ const searchPlayerHistory = async (name: string) => {
           >
             <!-- 表头 -->
             <div
-              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-2 py-1 pl-2 text-sm font-medium"
+              class="bg-muted/30 text-muted-foreground border-border grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-4 py-1 text-sm font-medium"
             >
               <div>玩家</div>
               <div>KDA</div>
@@ -347,7 +372,7 @@ const searchPlayerHistory = async (name: string) => {
             <div
               v-for="participant in getTeamParticipants(team.teamId)"
               :key="participant.participantId"
-              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-2 py-0.5 pl-2 transition-colors last:border-b-0"
+              class="hover:bg-muted/70 border-border/50 grid grid-cols-[2fr_0.7fr_1.2fr_1.2fr_2.1fr] gap-1 border-b px-4 py-0.5 transition-colors last:border-b-0"
             >
               <!-- 玩家信息 -->
               <div>
@@ -361,7 +386,7 @@ const searchPlayerHistory = async (name: string) => {
                         )
                       "
                       :alt="getChampionName(participant.championId)"
-                      class="h-10 w-10 rounded-lg object-cover"
+                      class="h-10 w-10 object-cover"
                     />
                     <!-- 等级显示在头像右下角 -->
                     <div
@@ -382,14 +407,14 @@ const searchPlayerHistory = async (name: string) => {
                           staticAssets.getSpellIcon(`${participant.spell1Id}`)
                         "
                         :alt="`召唤师技能${participant.spell1Id}`"
-                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 object-cover shadow-sm"
                       />
                       <img
                         :src="
                           staticAssets.getSpellIcon(`${participant.spell2Id}`)
                         "
                         :alt="`召唤师技能${participant.spell2Id}`"
-                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 object-cover shadow-sm"
                       />
                     </div>
 
@@ -403,7 +428,7 @@ const searchPlayerHistory = async (name: string) => {
                           )
                         "
                         :alt="`主要天赋系${getPlayerRunes(participant)[0]}`"
-                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 object-cover shadow-sm"
                         title="主要天赋系"
                       />
                       <img
@@ -414,7 +439,7 @@ const searchPlayerHistory = async (name: string) => {
                           )
                         "
                         :alt="`次要天赋系${getPlayerRunes(participant)[1]}`"
-                        class="border-border/40 h-4 w-4 rounded object-cover shadow-sm"
+                        class="border-border/40 h-4 w-4 object-cover shadow-sm"
                         title="次要天赋系"
                       />
                     </div>
@@ -445,7 +470,7 @@ const searchPlayerHistory = async (name: string) => {
                       <button
                         v-if="getPlayerName(participant) !== '未知玩家'"
                         @click="copyPlayerName(getPlayerName(participant))"
-                        class="text-muted-foreground hover:text-foreground flex-shrink-0 rounded p-1 transition-colors"
+                        class="text-muted-foreground hover:text-foreground flex-shrink-0 p-1 transition-colors"
                         title="复制玩家名称"
                       >
                         <Copy class="h-3 w-3" />
@@ -761,11 +786,11 @@ const searchPlayerHistory = async (name: string) => {
                           }`
                         )
                       "
-                      class="border-border/40 h-full w-full rounded border object-cover shadow-sm"
+                      class="border-border/40 h-full w-full border object-cover shadow-sm"
                     />
                     <div
                       v-else
-                      class="border-border/20 bg-muted/30 h-full w-full rounded border"
+                      class="border-border/20 bg-muted/30 h-full w-full border"
                     />
                   </div>
                 </div>

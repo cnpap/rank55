@@ -172,6 +172,50 @@ export class GameDataDB extends Dexie {
     console.log(`📦 已从数据库加载 ${items.length} 个物品数据到内存`);
   }
 
+  // 重置并重新加载排名数据，同时更新现有英雄的位置信息
+  async resetAndReloadRankedData(
+    options: {
+      region?: RegionType;
+      tier?: TierType;
+    } = {}
+  ): Promise<void> {
+    // 重新加载排名数据
+    await this.loadRankedChampions(options);
+
+    // 获取现有的英雄数据
+    const existingChampions = await this.champions.toArray();
+
+    if (existingChampions.length > 0) {
+      // 更新现有英雄的位置信息
+      for (const champion of existingChampions) {
+        const rankedChampion = await this.rankedChampions.get(champion.id);
+        if (rankedChampion) {
+          champion.positions = rankedChampion.positions;
+        } else {
+          console.log(`未找到排名数据的英雄: ${champion.id}`);
+          // 如果没有排名数据，清空位置信息
+          champion.positions = [];
+        }
+      }
+
+      // 更新数据库中的英雄数据
+      await this.champions.clear();
+      await this.champions.bulkPut(existingChampions);
+
+      // 更新内存中的数据
+      const championsMap = existingChampions.reduce(
+        (acc, champion) => {
+          acc[champion.id] = champion;
+          return acc;
+        },
+        {} as Record<string, ChampionSummary>
+      );
+      Object.assign(gameDataStore.champions, championsMap);
+
+      console.log(`📦 已更新 ${existingChampions.length} 个英雄的位置信息`);
+    }
+  }
+
   // 加载所有数据到内存
   async loadAll() {
     await this.loadRankedChampions();

@@ -20,6 +20,7 @@ import {
   MATCH_HISTORY_TYPE_OPTIONS,
   DATA_DISPLAY_MODE_OPTIONS,
 } from '@/stores/game-settings';
+import { gameDataDB } from '@/storages/game-data-db';
 
 // 使用游戏设置store
 const gameSettingsStore = useGameSettingsStore();
@@ -31,15 +32,35 @@ function handleGameModeChange(value: AcceptableValue) {
 }
 
 // 处理服务器变更
-function handleRegionChange(value: AcceptableValue) {
+async function handleRegionChange(value: AcceptableValue) {
   gameSettingsStore.setDefaultRegion(value as RegionType);
-  toast.success('游戏设置已保存');
+  try {
+    // 重置并重新加载排名数据，更新英雄位置信息
+    await gameDataDB.resetAndReloadRankedData({
+      region: value as RegionType,
+      tier: gameSettingsStore.defaultTier,
+    });
+    toast.success('游戏设置已保存，英雄数据已更新');
+  } catch (error) {
+    console.error('更新英雄数据失败:', error);
+    toast.success('游戏设置已保存');
+  }
 }
 
 // 处理分段变更
-function handleTierChange(value: AcceptableValue) {
+async function handleTierChange(value: AcceptableValue) {
   gameSettingsStore.setDefaultTier(value as TierType);
-  toast.success('游戏设置已保存');
+  try {
+    // 重置并重新加载排名数据，更新英雄位置信息
+    await gameDataDB.resetAndReloadRankedData({
+      region: gameSettingsStore.defaultRegion,
+      tier: value as TierType,
+    });
+    toast.success('游戏设置已保存，英雄数据已更新');
+  } catch (error) {
+    console.error('更新英雄数据失败:', error);
+    toast.success('游戏设置已保存');
+  }
 }
 
 // 处理自动接受游戏变更
@@ -205,7 +226,7 @@ defineExpose({
       <div>
         <h4 class="text-foreground font-medium">默认服务器</h4>
         <p class="text-muted-foreground mt-1 text-sm">
-          设置从 OP.GG 获取数据时的默认服务器
+          设置从 OP.GG 获取数据时的默认服务器（重启或 ctrl + r 刷新后生效）
         </p>
       </div>
 
@@ -234,7 +255,7 @@ defineExpose({
       <div>
         <h4 class="text-foreground font-medium">默认分段</h4>
         <p class="text-muted-foreground mt-1 text-sm">
-          设置从 OP.GG 获取数据时的默认分段过滤器
+          设置从 OP.GG 获取数据时的默认分段过滤器（重启或 ctrl + r 刷新后生效）
         </p>
       </div>
 
