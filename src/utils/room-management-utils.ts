@@ -83,6 +83,7 @@ export function convertGameStartMemberToMemberWithDetails(
     summonerIconId: member.summonerData?.profileIconId || 0,
     summonerLevel: member.summonerData?.summonerLevel || 0,
     teamId: member.teamId,
+    championId: member.championId, // 传递英雄ID
   } as MemberWithDetails;
 }
 

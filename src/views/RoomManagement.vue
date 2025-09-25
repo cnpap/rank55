@@ -216,6 +216,7 @@ onDeactivated(() => {
               :member="member"
               :is-leader="false"
               :can-kick="false"
+              :is-game-start-phase="isGameStartPhase"
               @kick="handleKickMember"
             />
 
@@ -241,6 +242,7 @@ onDeactivated(() => {
               :member="member"
               :is-leader="false"
               :can-kick="false"
+              :is-game-start-phase="isGameStartPhase"
               @kick="handleKickMember"
             />
 
@@ -263,6 +265,7 @@ onDeactivated(() => {
             :member="member"
             :is-leader="index === 0"
             :can-kick="canKickMembers && index !== 0"
+            :is-game-start-phase="isGameStartPhase"
             @kick="handleKickMember"
           />
 

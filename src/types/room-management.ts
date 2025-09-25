@@ -31,6 +31,7 @@ export interface BaseMemberWithDetails {
  */
 export interface MemberWithDetails extends Member, BaseMemberWithDetails {
   assignedPosition?: string;
+  championId?: number; // 英雄ID，游戏开始阶段使用
 }
 
 /**
@@ -53,6 +54,7 @@ export interface GameStartMemberWithDetails extends BaseMemberWithDetails {
   teamId: number; // 1为我方，2为敌方
   isMyTeam: boolean;
   assignedPosition: string; // 添加位置信息用于排序
+  championId: number; // 英雄ID
 }
 
 /**

@@ -76,7 +76,7 @@ function handleDelete() {
     <!-- 拖拽手柄 -->
     <div
       v-if="showDragHandle"
-      class="drag-handle flex cursor-move items-center justify-center self-stretch border-r border-gray-200 px-2 dark:border-gray-700"
+      class="drag-handle flex cursor-move items-center justify-center self-stretch border-r px-2"
     >
       <GripVertical class="h-4 w-4 text-gray-400" />
     </div>
@@ -130,7 +130,7 @@ function handleDelete() {
     <div
       v-if="showDeleteButton"
       @click="handleDelete"
-      class="delete-btn flex cursor-pointer items-center justify-center self-stretch border-l border-gray-200 px-2 dark:border-gray-700"
+      class="delete-btn flex cursor-pointer items-center justify-center self-stretch border-l px-2"
     >
       <X class="h-4 w-4" />
     </div>
