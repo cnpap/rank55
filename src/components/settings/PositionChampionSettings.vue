@@ -162,7 +162,7 @@ defineExpose({
     </div>
 
     <!-- 英雄设置区域 -->
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
       <!-- 禁用英雄列表 -->
       <div class="space-y-3">
         <div class="flex items-center justify-between">
@@ -189,7 +189,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto border bg-red-50/30 p-3 dark:bg-red-950/20"
+          class="h-[300px] overflow-y-auto border bg-red-50/30 p-2 dark:bg-red-950/20"
         >
           <div
             v-if="currentPositionBanChampions.length === 0"
@@ -265,7 +265,7 @@ defineExpose({
 
         <!-- 英雄列表区域 -->
         <div
-          class="h-[300px] overflow-y-auto border bg-emerald-50/30 p-3 dark:bg-emerald-950/20"
+          class="h-[300px] overflow-y-auto border bg-emerald-50/30 p-2 dark:bg-emerald-950/20"
         >
           <div
             v-if="currentPositionPickChampions.length === 0"

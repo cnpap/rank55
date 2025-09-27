@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { staticAssets } from '@/assets/data-assets';
 import type { ChampionSummary } from '@/types/lol-game-data';
 import type { Position } from '@/lib/service/opgg/types';
 import type { AssignedPosition } from '@/types/players-info';
 import { GripVertical, X } from 'lucide-vue-next';
+import SpellSelector from './SpellSelector.vue';
+import RuneSelector from './RuneSelector.vue';
 
 interface Props {
   champion: ChampionSummary;
@@ -15,10 +17,14 @@ interface Props {
   showTierInfo?: boolean; // 是否显示段位信息
   showDeleteButton?: boolean; // 是否显示删除按钮
   variant?: 'ban' | 'pick' | 'default'; // 样式变体
+  spells?: [number, number]; // 召唤师技能配置
+  runes?: [number, number]; // 天赋配置 [主系, 副系]
 }
 
 interface Emits {
   (e: 'delete'): void;
+  (e: 'spells-change', spells: [number, number]): void;
+  (e: 'runes-change', runes: [number, number]): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,9 +33,14 @@ const props = withDefaults(defineProps<Props>(), {
   showTierInfo: true,
   showDeleteButton: false,
   variant: 'default',
+  spells: () => [4, 14], // 默认闪现和点燃
+  runes: () => [8000, 8100], // 默认精密主系，主宰副系
 });
 
 const emit = defineEmits<Emits>();
+
+// 当前选中的天赋
+const selectedRunes = ref<[number, number]>([...props.runes]);
 
 // 获取当前位置的段位信息
 const positionData = computed((): Position | null => {
@@ -65,6 +76,12 @@ function getChampionImageUrl(championKey: string | number): string {
   return staticAssets.getChampionIcon(championKey as string);
 }
 
+// 处理天赋变更
+function handleRunesChange(newRunes: [number, number]) {
+  selectedRunes.value = newRunes;
+  emit('runes-change', newRunes);
+}
+
 // 处理删除事件
 function handleDelete() {
   emit('delete');
@@ -82,19 +99,36 @@ function handleDelete() {
     </div>
 
     <div class="flex flex-1 items-center gap-3 py-1 pl-2">
-      <!-- 英雄头像 -->
-      <img
-        :src="getChampionImageUrl(champion.id)"
-        :alt="champion.name"
-        :title="champion.name"
-        class="h-10 w-10 flex-shrink-0 border-1"
-      />
+      <div class="flex gap-1">
+        <!-- 英雄头像 -->
+        <img
+          :src="getChampionImageUrl(champion.id)"
+          :alt="champion.name"
+          :title="champion.name"
+          class="h-9.5 w-9.5 flex-shrink-0 border-1"
+        />
+
+        <!-- 召唤师技能和天赋配置 -->
+        <div class="flex items-center gap-1">
+          <!-- 召唤师技能选择器 -->
+          <SpellSelector
+            :spells="spells"
+            @spells-change="newSpells => emit('spells-change', newSpells)"
+          />
+
+          <!-- 天赋选择器 -->
+          <RuneSelector
+            :runes="selectedRunes"
+            @runes-change="handleRunesChange"
+          />
+        </div>
+      </div>
 
       <!-- 英雄信息 -->
       <div class="min-w-0 flex-1">
         <!-- 英雄名称 -->
         <div
-          class="truncate text-sm font-medium text-gray-700 dark:text-gray-300"
+          class="truncate text-[12px] font-medium text-gray-700 dark:text-gray-300"
         >
           {{ champion.name }}
         </div>
@@ -102,7 +136,7 @@ function handleDelete() {
         <!-- 段位信息 -->
         <div v-if="showTierInfo && positionData?.stats?.tier_data">
           <span
-            :class="`inline-flex items-center rounded-md px-1.5 text-xs font-bold text-white ${getTierColorClass(positionData.stats.tier_data.tier)}`"
+            :class="`inline-flex items-center px-1.5 text-xs font-bold text-white ${getTierColorClass(positionData.stats.tier_data.tier)}`"
           >
             T{{ positionData.stats.tier_data.tier }}
             <span class="ml-1 text-xs opacity-75">

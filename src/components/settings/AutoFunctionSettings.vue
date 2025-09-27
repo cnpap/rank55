@@ -102,25 +102,24 @@ defineExpose({
 
         <!-- 延迟执行设置 -->
         <div class="flex items-center gap-2">
-          <Clock class="text-muted-foreground h-4 w-4" />
           <span class="text-muted-foreground text-xs">进入阶段后</span>
           <div class="flex items-center gap-1">
             <button
               @click="decrementBanCountdown"
               :disabled="autoBanCountdown <= 1"
-              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Minus class="h-3 w-3" />
             </button>
             <div
-              class="border-border bg-background flex h-6 w-8 items-center justify-center rounded border text-xs font-medium"
+              class="border-border bg-background flex h-6 w-8 items-center justify-center border text-xs font-medium"
             >
               {{ autoBanCountdown }}
             </div>
             <button
               @click="incrementBanCountdown"
               :disabled="autoBanCountdown >= 20"
-              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus class="h-3 w-3" />
             </button>
@@ -153,25 +152,24 @@ defineExpose({
 
         <!-- 延迟执行设置 -->
         <div class="flex items-center gap-2">
-          <Clock class="text-muted-foreground h-4 w-4" />
           <span class="text-muted-foreground text-xs">进入阶段后</span>
           <div class="flex items-center gap-1">
             <button
               @click="decrementPickCountdown"
               :disabled="autoPickCountdown <= 1"
-              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Minus class="h-3 w-3" />
             </button>
             <div
-              class="border-border bg-background flex h-6 w-8 items-center justify-center rounded border text-xs font-medium"
+              class="border-border bg-background flex h-6 w-8 items-center justify-center border text-xs font-medium"
             >
               {{ autoPickCountdown }}
             </div>
             <button
               @click="incrementPickCountdown"
               :disabled="autoPickCountdown >= 20"
-              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              class="border-border bg-background text-foreground hover:bg-muted flex h-6 w-6 items-center justify-center border transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus class="h-3 w-3" />
             </button>

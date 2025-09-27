@@ -7,10 +7,13 @@ import { onMounted, onUnmounted, ref, provide } from 'vue';
 import { useAutoAcceptGame } from '@/hooks/use-auto-accept-game';
 import { versionUtils } from '@/assets/versioned-assets';
 import Button from '@/components/ui/button/Button.vue';
+import { useClientUserStore } from '@/stores/client-user';
+import ConnectionRequired from '@/components/ui/ConnectionRequired.vue';
 
 // 版本初始化状态
 const isVersionsLoaded = ref(false);
 const isVersionsLoading = ref(true);
+const userStore = useClientUserStore();
 
 // 使用自动接受游戏功能
 const { currentPhase, clientUser, gamePhaseManager, isConnected } =
@@ -49,7 +52,7 @@ onMounted(async () => {
     <CustomTitleBar />
 
     <!-- 主内容区域 -->
-    <main class="flex-1 pt-10">
+    <main class="flex-1 pt-10" v-if="userStore.isLoggedIn && isConnected">
       <!-- 版本加载中状态 -->
       <div
         v-if="isVersionsLoading"
@@ -83,6 +86,12 @@ onMounted(async () => {
         <slot />
       </template>
     </main>
+
+    <div v-else class="flex h-full w-full items-center justify-center">
+      <div class="w-4xl">
+        <ConnectionRequired />
+      </div>
+    </div>
 
     <!-- 全局通知 -->
     <Toaster />

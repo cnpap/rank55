@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChampionListItem 召唤师技能配置测试</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-item {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .description {
+        color: #666;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ChampionListItem 召唤师技能配置测试</h1>
+
+      <div class="test-item">
+        <div class="description">
+          <strong>功能说明：</strong>
+          <ul>
+            <li>点击召唤师技能图标可以打开配置弹框</li>
+            <li>弹框显示当前选中的技能组合</li>
+            <li>可以分别为两个技能槽选择不同的召唤师技能</li>
+            <li>选中的技能会有高亮边框显示</li>
+            <li>点击弹框外部区域可以关闭弹框</li>
+            <li>技能变更会通过 spells-change 事件通知父组件</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-item">
+        <div class="description">
+          <strong>测试步骤：</strong>
+          <ol>
+            <li>启动开发服务器：<code>npm run dev</code></li>
+            <li>在项目中找到使用 ChampionListItem 组件的页面</li>
+            <li>点击召唤师技能图标测试弹框功能</li>
+            <li>尝试选择不同的召唤师技能组合</li>
+            <li>验证点击外部关闭功能</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="test-item">
+        <div class="description">
+          <strong>可用的召唤师技能：</strong>
+          <ul>
+            <li>净化 (ID: 1)</li>
+            <li>虚弱 (ID: 3)</li>
+            <li>闪现 (ID: 4) - 默认</li>
+            <li>幽灵疾步 (ID: 6)</li>
+            <li>治疗 (ID: 7)</li>
+            <li>惩戒 (ID: 11)</li>
+            <li>传送 (ID: 12)</li>
+            <li>清晰术 (ID: 13)</li>
+            <li>点燃 (ID: 14) - 默认</li>
+            <li>屏障 (ID: 21)</li>
+            <li>复活 (ID: 30)</li>
+            <li>挖掘 (ID: 31)</li>
+            <li>标记 (ID: 32)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-item">
+        <div class="description">
+          <strong>组件使用示例：</strong>
+          <pre><code>&lt;ChampionListItem
+  :champion="championData"
+  :spells="[4, 14]"
+  @spells-change="handleSpellsChange"
+/&gt;</code></pre>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
